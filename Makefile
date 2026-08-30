@@ -51,7 +51,7 @@ test:
 	. .venv/bin/activate && \
 	python -m pytest
 
-check: check-backend check-frontend
+check: format-check check-backend check-frontend
 
 check-backend:
 	cd backend && \
@@ -71,6 +71,11 @@ format:
 	python -m ruff format . && \
 	python -m ruff check . --fix
 
+format-check:
+	cd backend && \
+	. .venv/bin/activate && \
+	python -m ruff format --check .
+  
 build: check
 	cd frontend && \
 	npm run build
