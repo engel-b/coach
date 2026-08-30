@@ -192,10 +192,7 @@ async def run() -> None:
         #
         # Falls dagegen der Heart-Rate-Task von selbst endet,
         # prüfen wir, ob dort eine Exception aufgetreten ist.
-        if (
-            heart_rate_task in done
-            and not heart_rate_task.cancelled()
-        ):
+        if heart_rate_task in done and not heart_rate_task.cancelled():
             exception = heart_rate_task.exception()
 
             if exception is not None:
