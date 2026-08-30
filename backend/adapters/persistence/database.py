@@ -13,6 +13,14 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 DATABASE_PATH = PROJECT_ROOT / "data" / "health-coach.db"
 
+# SQLite kann die Datenbankdatei selbst erzeugen, aber nicht das
+# übergeordnete Verzeichnis. Das ist insbesondere bei einer frischen
+# Installation oder auf einem CI-Runner relevant.
+DATABASE_PATH.parent.mkdir(
+    parents=True,
+    exist_ok=True,
+)
+
 DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
 
 
