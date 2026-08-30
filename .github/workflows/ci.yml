@@ -36,5 +36,11 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Initialize database
+        working-directory: backend
+        run: |
+          . .venv/bin/activate
+          alembic upgrade head
+
       - name: Check
         run: make check
