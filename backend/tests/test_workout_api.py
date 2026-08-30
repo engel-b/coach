@@ -1,0 +1,241 @@
+from fastapi.testclient import TestClient
+
+from apps.api.main import app
+
+client = TestClient(app)
+
+
+def create_check_in(
+    person_id: int,
+) -> None:
+    """
+    Erstellt den für eine Trainingsempfehlung notwendigen Check-in.
+
+    Der Workout-Endpoint soll bewusst über die echte HTTP-API
+    vorbereitet werden und nicht durch direkten Zugriff auf Services.
+    """
+
+    response = client.post(
+        f"/api/persons/{person_id}/check-ins",
+        json={
+            "energy": 4,
+            "recovery": 4,
+            "muscleSoreness": 1,
+            "stress": 2,
+            "availableTrainingMinutes": 30,
+        },
+    )
+
+    assert response.status_code == 200
+
+
+def start_workout(
+    person_id: int,
+) -> dict[str, object]:
+    """
+    Startet ein Workout über die HTTP-API und liefert
+    den JSON-Response für weitere Tests zurück.
+    """
+
+    create_check_in(person_id)
+
+    response = client.post(
+        f"/api/persons/{person_id}/workouts",
+    )
+
+    assert response.status_code == 200
+
+    result: dict[str, object] = response.json()
+
+    return result
+
+
+def test_workout_can_be_started_via_api() -> None:
+    workout = start_workout(1)
+
+    assert workout["personId"] == 1
+    assert workout["status"] == "running"
+    assert workout["elapsedSeconds"] == 0
+    assert workout["totalDurationMinutes"] == 30
+
+    phases = workout["phases"]
+
+    assert isinstance(phases, list)
+    assert len(phases) > 0
+
+
+def test_workout_can_be_completed_via_api() -> None:
+    workout = start_workout(1)
+
+    workout_id = workout["id"]
+
+    assert isinstance(workout_id, str)
+
+    response = client.post(
+        f"/api/workouts/{workout_id}/complete",
+        json={
+            "elapsedSeconds": 1800,
+        },
+    )
+
+    assert response.status_code == 200
+
+    completed = response.json()
+
+    assert completed["id"] == workout_id
+    assert completed["status"] == "completed"
+    assert completed["elapsedSeconds"] == 1800
+    assert completed["completedAt"] is not None
+
+
+def test_workout_can_be_aborted_via_api() -> None:
+    workout = start_workout(1)
+
+    workout_id = workout["id"]
+
+    assert isinstance(workout_id, str)
+
+    response = client.post(
+        f"/api/workouts/{workout_id}/abort",
+        json={
+            "elapsedSeconds": 723,
+        },
+    )
+
+    assert response.status_code == 200
+
+    aborted = response.json()
+
+    assert aborted["id"] == workout_id
+    assert aborted["status"] == "aborted"
+    assert aborted["elapsedSeconds"] == 723
+    assert aborted["completedAt"] is not None
+
+
+def test_unknown_workout_cannot_be_completed() -> None:
+    response = client.post(
+        "/api/workouts/does-not-exist/complete",
+        json={
+            "elapsedSeconds": 100,
+        },
+    )
+
+    assert response.status_code == 404
+
+
+def test_negative_elapsed_seconds_are_rejected() -> None:
+    workout = start_workout(1)
+
+    workout_id = workout["id"]
+
+    assert isinstance(workout_id, str)
+
+    response = client.post(
+        f"/api/workouts/{workout_id}/abort",
+        json={
+            "elapsedSeconds": -1,
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_get_workout_history_returns_workouts_newest_first() -> None:
+    first = start_workout(1)
+    second = start_workout(1)
+
+    response = client.get(
+        "/api/persons/1/workouts",
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert len(body) >= 2
+
+    assert body[0]["id"] == second["id"]
+    assert body[1]["id"] == first["id"]
+
+
+def test_get_workout_history_respects_limit() -> None:
+    start_workout(1)
+    start_workout(1)
+
+    response = client.get(
+        "/api/persons/1/workouts?limit=1",
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert len(body) == 1
+
+
+def test_get_workout_history_for_unknown_person_returns_404() -> None:
+    response = client.get(
+        "/api/persons/999/workouts",
+    )
+
+    assert response.status_code == 404
+
+    assert response.json() == {
+        "detail": "Person not found",
+    }
+
+
+def test_get_workout_history_rejects_invalid_limit() -> None:
+    response = client.get(
+        "/api/persons/1/workouts?limit=0",
+    )
+
+    assert response.status_code == 422
+
+
+def test_get_workout_summary() -> None:
+    workout = start_workout(1)
+
+    workout_id = workout["id"]
+
+    assert isinstance(workout_id, str)
+
+    complete_response = client.post(
+        f"/api/workouts/{workout_id}/complete",
+        json={
+            "elapsedSeconds": 900,
+        },
+    )
+
+    assert complete_response.status_code == 200
+
+    response = client.get(f"/api/workouts/{workout_id}/summary")
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["elapsedSeconds"] == 900
+    assert body["status"] == "completed"
+
+    # Die Empfehlung kann unterschiedliche Gesamtdauern
+    # enthalten. Deshalb berechnen wir den erwarteten
+    # Wert aus dem tatsächlich gestarteten Workout.
+    total_duration_minutes = workout["totalDurationMinutes"]
+
+    assert isinstance(
+        total_duration_minutes,
+        int,
+    )
+
+    expected_planned_seconds = total_duration_minutes * 60
+
+    assert body["plannedSeconds"] == expected_planned_seconds
+
+    assert body["completionPercent"] == round(900 / expected_planned_seconds * 100)
+
+
+def test_get_workout_summary_for_unknown_workout_returns_404() -> None:
+    response = client.get("/api/workouts/does-not-exist/summary")
+
+    assert response.status_code == 404

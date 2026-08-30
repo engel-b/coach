@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+bleak
+pydantic
+websockets
+sqlalchemy
+alembic
+
+[dev]
+pytest
+pytest-asyncio
+ruff
+mypy
+httpx
