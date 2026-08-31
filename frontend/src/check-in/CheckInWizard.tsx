@@ -196,7 +196,7 @@ export function CheckInWizard({
     <section className="check-in">
       <header className="check-in-header">
         <div className="eyebrow">
-          CHECK-IN · {person.display_name}
+          CHECK-IN · {person.displayName}
         </div>
 
         <div className="check-in-progress">
