@@ -44,14 +44,14 @@ echo "Installing backend dependencies ..."
 echo "Installing frontend dependencies ..."
 
 cd "${FRONTEND_DIR}"
-npm ci
+/usr/bin/npm ci
 
 #
 # Frontend bauen.
 #
 echo "Building frontend ..."
 
-npm run build
+/usr/bin/npm run build
 
 #
 # Datenbankschema auf den Stand des ausgecheckten Codes bringen.
