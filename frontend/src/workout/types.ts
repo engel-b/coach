@@ -16,6 +16,7 @@ export interface Workout {
   startedAt: string
   status: WorkoutStatus
   totalDurationMinutes: number
+  elapsedSeconds: number
   completedAt: string | null
   phases: WorkoutPhase[]
 }
