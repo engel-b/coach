@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-URL="http://127.0.0.1/"
+URL="http://127.0.0.1:8000"
 
 echo "Waiting for Health Coach ..."
 
