@@ -3,7 +3,7 @@ import logging
 from collections.abc import AsyncIterator, Callable
 from datetime import UTC, datetime
 
-from bleak import BleakClient, BleakScanner
+from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 
@@ -62,53 +62,17 @@ class BleHeartRateAdapter:
 
     def __init__(
         self,
-        status_handler: DeviceStatusHandler,
-        scan_interval_seconds: float = 5.0,
+        device_id: str,
+        discovery: BleDiscoveryCoordinator,
     ) -> None:
-        # asyncio.Queue dient als asynchroner Puffer zwischen
-        # dem BLE-Callback und dem Consumer des AsyncIterator.
-        #
-        # Java-Vergleich ungefähr:
-        # BlockingQueue<HeartRateSample>
-        self._queue: asyncio.Queue[HeartRateSample] = asyncio.Queue()
-
-        self._scan_interval_seconds = scan_interval_seconds
-        self._status_handler = status_handler
+        self._device_id = device_id
+        self._discovery = discovery
 
     async def _find_device(self) -> BLEDevice | None:
-        """
-        Führt genau EINEN Scan nach BLE-Herzfrequenzsensoren aus.
-
-        Rückgabe:
-            BLEDevice -> Sensor gefunden
-            None      -> aktuell kein passender Sensor verfügbar
-
-        Wir werfen bei "nicht gefunden" bewusst keine Exception.
-        Das ist im normalen Betrieb ein erwartbarer Zustand.
-        """
-
-        try:
-            devices = await BleakScanner.discover(
-                timeout=10.0,
-                return_adv=True,
-            )
-
-        except BleakError as exc:
-            # BlueZ kann org.bluez.Error.InProgress liefern,
-            # wenn bereits eine Discovery aktiv ist.
-            #
-            # Das ist kein Grund, den gesamten Device Agent zu beenden.
-            logger.warning(
-                "BLE scan currently unavailable: %s",
-                exc,
-            )
-            return None
-
-        for device, advertisement in devices.values():
-            if HEART_RATE_SERVICE_UUID in advertisement.service_uuids:
-                return device
-
-        return None
+        return await self._discovery.find_device_by_address(
+            self._device_id,
+            timeout=10.0,
+        )
 
     async def _wait_for_device(self) -> BLEDevice:
         """

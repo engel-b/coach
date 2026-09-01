@@ -4,9 +4,9 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from bleak import BleakClient, BleakScanner
+from bleak import BleakClient
 from bleak.backends.device import BLEDevice
-from bleak.exc import BleakDBusError, BleakError
+from bleak.exc import BleakError
 
 from adapters.bluetooth.ftms.indoor_bike_parser import (
     FtmsIndoorBikeData,
@@ -17,6 +17,8 @@ from adapters.bluetooth.ftms.indoor_bike_parser import (
 # Den Import ggf. an den tatsächlichen Ort deines bereits vorhandenen
 # Domain-Typs anpassen.
 from domains.telemetry.bike import BikeTelemetry
+
+from adapters.bluetooth.discovery import BleDiscoveryCoordinator
 
 logger = logging.getLogger(__name__)
 
@@ -46,12 +48,11 @@ class FtmsBikeAdapter:
 
     def __init__(
         self,
-        *,
         device_id: str,
-        device_name: str | None = None,
+        discovery: BleDiscoveryCoordinator,
     ) -> None:
         self._device_id = device_id
-        self._device_name = device_name
+        self._discovery = discovery
 
     async def telemetry(self) -> AsyncIterator[BikeTelemetry]:
         """
@@ -163,38 +164,10 @@ class FtmsBikeAdapter:
         )
 
     async def _find_device(self) -> BLEDevice | None:
-        try:
-            return await BleakScanner.find_device_by_address(
-                self._device_id,
-                timeout=10.0,
-            )
-
-        except BleakDBusError as exc:
-            # BlueZ kann einen zweiten parallelen aktiven Scan ablehnen.
-            #
-            # Das passiert beispielsweise, wenn Heart-Rate- und Bike-Adapter
-            # nahezu gleichzeitig nach ihren Geräten suchen.
-            if exc.dbus_error == "org.bluez.Error.InProgress":
-                logger.debug(
-                    "BLE scan already in progress while looking for FTMS bike %s",
-                    self._device_id,
-                )
-                return None
-
-            logger.warning(
-                "BLE discovery failed for FTMS bike %s: %s",
-                self._device_id,
-                exc,
-            )
-            return None
-
-        except BleakError as exc:
-            logger.warning(
-                "BLE discovery failed for FTMS bike %s: %s",
-                self._device_id,
-                exc,
-            )
-            return None
+        return await self._discovery.find_device_by_address(
+            self._device_id,
+            timeout=10.0,
+        )
 
     @staticmethod
     def _update_state(
