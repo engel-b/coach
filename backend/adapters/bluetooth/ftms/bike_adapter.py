@@ -49,9 +49,11 @@ class FtmsBikeAdapter:
         *,
         device_id: str,
         device_name: str | None = None,
+        telemetry_timeout_seconds: float = 15.0,
     ) -> None:
         self._device_id = device_id
         self._device_name = device_name
+        self._telemetry_timeout_seconds = telemetry_timeout_seconds
 
     async def telemetry(self) -> AsyncIterator[BikeTelemetry]:
         """
@@ -136,7 +138,18 @@ class FtmsBikeAdapter:
                 # Nach der ersten erfolgreichen Notification läuft die
                 # Verbindung normal weiter.
                 while True:
-                    yield await queue.get()
+                    try:
+                        telemetry = await asyncio.wait_for(
+                            queue.get(),
+                            timeout=self._telemetry_timeout_seconds,
+                        )
+                    except TimeoutError as exc:
+                        raise BleakError(
+                            "FTMS bike connected but telemetry became silent: "
+                            f"{self._device_id}"
+                        ) from exc
+
+                    yield telemetry
 
             except asyncio.CancelledError:
                 logger.info(
