@@ -516,9 +516,14 @@ h1 {
 }
 
 .workout-view {
+  display: grid;
+  grid-template-rows: 72px minmax(0, 1fr);
+
   width: 100%;
-  min-height: 100vh;
+  height: 100dvh;
   margin: 0;
+
+  overflow: hidden;
 
   background: #070b10;
 }
@@ -607,9 +612,11 @@ h1 {
 
 .workout-stage {
   position: relative;
-  overflow: hidden;
 
-  min-height: calc(100vh - 72px);
+  min-width: 0;
+  min-height: 0;
+
+  overflow: hidden;
 
   background: #101922;
 }
@@ -621,6 +628,10 @@ h1 {
 
   width: 100%;
   height: 100%;
+}
+
+.workout-stage-video {
+  display: block;
 
   object-fit: cover;
 }
