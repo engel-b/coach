@@ -42,6 +42,8 @@ build-backend = "setuptools.build_meta"
 where = ["."]
 include = [
     "apps*",
+    "application*",
+    "contracts*",
     "domains*",
     "adapters*",
 ]

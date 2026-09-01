@@ -115,6 +115,26 @@ class FtmsBikeAdapter:
             )
 
             try:
+                # Die erste Notification ist unser Beweis, dass die
+                # Verbindung nicht nur technisch "connected", sondern
+                # tatsächlich funktional ist.
+                #
+                # Java-Denke:
+                # ungefähr CompletableFuture.get(timeout).
+                try:
+                    first_telemetry = await asyncio.wait_for(
+                        queue.get(),
+                        timeout=10.0,
+                    )
+                except TimeoutError as exc:
+                    raise BleakError(
+                        f"FTMS bike connected but no telemetry received: {self._device_id}"
+                    ) from exc
+
+                yield first_telemetry
+
+                # Nach der ersten erfolgreichen Notification läuft die
+                # Verbindung normal weiter.
                 while True:
                     yield await queue.get()
 
@@ -128,9 +148,14 @@ class FtmsBikeAdapter:
             finally:
                 if client.is_connected:
                     try:
-                        await client.stop_notify(FTMS_INDOOR_BIKE_DATA_UUID)
+                        await client.stop_notify(
+                            FTMS_INDOOR_BIKE_DATA_UUID,
+                        )
                     except BleakError:
-                        logger.exception("Could not stop FTMS notifications cleanly")
+                        logger.warning(
+                            "Could not stop FTMS notifications cleanly for %s",
+                            self._device_id,
+                        )
 
         logger.info(
             "FTMS bike disconnected: %s",
