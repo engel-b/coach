@@ -145,8 +145,7 @@ class FtmsBikeAdapter:
                         )
                     except TimeoutError as exc:
                         raise BleakError(
-                            "FTMS bike connected but telemetry became silent: "
-                            f"{self._device_id}"
+                            f"FTMS bike connected but telemetry became silent: {self._device_id}"
                         ) from exc
 
                     yield telemetry
