@@ -94,7 +94,7 @@ class BackendWebSocketClient:
                 raise
 
             except (ConnectionClosed, OSError) as exc:
-                logger.warning(
+                logger.info(
                     "Backend connection unavailable: %s. Retrying in %.0f seconds ...",
                     exc,
                     self._reconnect_delay_seconds,
