@@ -39,6 +39,11 @@ export interface DeviceState {
   device_name: string
   status: DeviceStatus
   last_seen: string
-  heart_rate_bpm: number | null
-}
 
+  heart_rate_bpm: number | null
+
+  speed_kmh?: number | null
+  cadence_rpm?: number | null
+  power_w?: number | null
+  resistance?: number | null
+}

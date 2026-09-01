@@ -2,9 +2,8 @@ import asyncio
 import logging
 import signal
 
-from adapters.bluetooth.ble_heart_rate_adapter import (
-    BleHeartRateAdapter,
-)
+from adapters.bluetooth.ble_heart_rate_adapter import BleHeartRateAdapter
+from adapters.bluetooth.ftms.bike_adapter import FtmsBikeAdapter
 from adapters.websocket.backend_client import BackendWebSocketClient
 from contracts.telemetry import TelemetryMessage
 from domains.health.device_events import DeviceStatusChanged
@@ -18,6 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 BACKEND_WEBSOCKET_URI = "ws://127.0.0.1:8000/ws/device-agent"
+
+BIKE_ADDRESS = "24:00:0C:A0:9A:95"
+BIKE_NAME = "MRK-S26-1AA7"
 
 
 async def consume_heart_rate(
@@ -52,6 +54,33 @@ async def consume_heart_rate(
             device_id=sample.device_id,
             payload={
                 "bpm": sample.bpm,
+            },
+        )
+
+        await backend_client.send(message)
+
+
+async def consume_bike_telemetry(
+    bike_source: FtmsBikeAdapter,
+    backend_client: BackendWebSocketClient,
+) -> None:
+    async for telemetry in bike_source.telemetry():
+        logger.info(
+            "Bike: speed=%s km/h cadence=%s rpm power=%s W",
+            telemetry.speed_kmh,
+            telemetry.cadence_rpm,
+            telemetry.power_w,
+        )
+
+        message = TelemetryMessage(
+            type="bike.telemetry",
+            timestamp=telemetry.timestamp,
+            device_id=telemetry.device_id,
+            payload={
+                "speedKmh": telemetry.speed_kmh,
+                "cadenceRpm": telemetry.cadence_rpm,
+                "powerW": telemetry.power_w,
+                "resistance": telemetry.resistance,
             },
         )
 
@@ -143,6 +172,11 @@ async def run() -> None:
         status_handler=on_device_status,
     )
 
+    bike_source = FtmsBikeAdapter(
+        device_id=BIKE_ADDRESS,
+        device_name=BIKE_NAME,
+    )
+
     # Beide langlebigen Komponenten laufen als eigene Tasks:
     #
     # 1. WebSocket-Verbindung zum Backend
@@ -158,6 +192,13 @@ async def run() -> None:
             backend_client,
         ),
         name="heart-rate",
+    )
+
+    bike_task = asyncio.create_task(
+        consume_bike_telemetry(
+            bike_source,
+            backend_client,
+        )
     )
 
     # Dieser Task wird fertig, sobald SIGINT oder SIGTERM
@@ -216,6 +257,7 @@ async def run() -> None:
         # verlassen und Bleak kann Notifications und
         # BLE-Verbindung kontrolliert schließen.
         heart_rate_task.cancel()
+        bike_task.cancel()
 
         # Falls wir nicht wegen eines Shutdown-Signals hier
         # gelandet sind, wartet dieser Task möglicherweise
@@ -224,6 +266,7 @@ async def run() -> None:
 
         await asyncio.gather(
             heart_rate_task,
+            bike_task,
             shutdown_task,
             return_exceptions=True,
         )

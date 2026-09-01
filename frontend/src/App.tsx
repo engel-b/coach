@@ -126,21 +126,14 @@ function App() {
               )
 
             const updatedDevice: DeviceState = {
-              device_id:
-                message.deviceId,
-
+              device_id: message.deviceId,
               device_type:
                 deviceType as DeviceState['device_type'],
-
-              device_name:
-                deviceName,
-
+              device_name: deviceName,
               status:
                 status as DeviceState['status'],
-
-              last_seen:
-                message.timestamp,
-
+              last_seen: message.timestamp,
+            
               /*
                * Ein Status-Event enthält keine Herzfrequenz.
                * Falls wir schon einen Messwert kennen,
@@ -148,6 +141,26 @@ function App() {
                */
               heart_rate_bpm:
                 existingDevice?.heart_rate_bpm ??
+                null,
+            
+              /*
+               * Falls wir schon einen Messwert kennen,
+               * behalten wir ihn deshalb bei.
+               */
+              speed_kmh:
+                existingDevice?.speed_kmh ??
+                null,
+            
+              cadence_rpm:
+                existingDevice?.cadence_rpm ??
+                null,
+            
+              power_w:
+                existingDevice?.power_w ??
+                null,
+            
+              resistance:
+                existingDevice?.resistance ??
                 null,
             }
 
@@ -204,6 +217,74 @@ function App() {
             ),
           )
         }
+
+        if (message.type === 'bike.telemetry') {
+          const speedKmh = message.payload.speedKmh
+          const cadenceRpm = message.payload.cadenceRpm
+          const powerW = message.payload.powerW
+          const resistance = message.payload.resistance
+        
+          setDevices((currentDevices) => {
+            const existingDevice =
+              currentDevices.find(
+                (device) =>
+                  device.device_id === message.deviceId,
+              )
+        
+            /*
+             * Normalerweise kam vorher bereits
+             * device.status_changed.
+             *
+             * Wir verlassen uns aber nicht darauf.
+             * Das macht den WebSocket robust gegen
+             * Reconnects und Message-Reihenfolgen.
+             */
+            const bikeDevice: DeviceState = {
+              device_id: message.deviceId,
+              device_type: 'bike',
+              device_name:
+                existingDevice?.device_name ??
+                'FTMS Bike',
+              status: 'connected',
+              last_seen: message.timestamp,
+        
+              heart_rate_bpm:
+                existingDevice?.heart_rate_bpm ??
+                null,
+        
+              speed_kmh:
+                typeof speedKmh === 'number'
+                  ? speedKmh
+                  : existingDevice?.speed_kmh ?? null,
+        
+              cadence_rpm:
+                typeof cadenceRpm === 'number'
+                  ? cadenceRpm
+                  : existingDevice?.cadence_rpm ?? null,
+        
+              power_w:
+                typeof powerW === 'number'
+                  ? powerW
+                  : existingDevice?.power_w ?? null,
+        
+              resistance:
+                typeof resistance === 'number'
+                  ? resistance
+                  : existingDevice?.resistance ?? null,
+            }
+        
+            return [
+              ...currentDevices.filter(
+                (device) =>
+                  device.device_id !==
+                  message.deviceId,
+              ),
+              bikeDevice,
+            ]
+          })
+        
+          return
+        }        
       },
       [],
     )

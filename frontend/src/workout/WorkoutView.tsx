@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { abortWorkout, completeWorkout } from '../api/workouts'
 import type { DeviceState } from '../devices/types'
 import type { Person } from '../persons/types'
-import type { Workout, WorkoutPhase} from './types'
-
+import type { Workout, WorkoutPhase } from './types'
+import { WorkoutVideo } from './WorkoutVideo'
 
 interface WorkoutViewProps {
   person: Person
@@ -20,7 +20,6 @@ interface WorkoutViewProps {
 
   onComplete: (workout: Workout) => void
 }
-
 
 /**
  * Formatiert Sekunden als MM:SS.
@@ -38,7 +37,6 @@ function formatTime(seconds: number): string {
     remainingSeconds,
   ).padStart(2, '0')}`
 }
-
 
 /**
  * Ermittelt anhand der bereits trainierten Sekunden,
@@ -70,21 +68,12 @@ function getCurrentPhase(
     consumedSeconds += phaseSeconds
   }
 
-  /*
-   * Keine Phase mehr gefunden:
-   * Das geplante Training ist vollständig durchlaufen.
-   */
   return {
     phase: null,
     phaseElapsedSeconds: 0,
   }
 }
 
-
-/**
- * Übersetzt den technischen Phase-Type in einen
- * benutzerfreundlichen deutschen Text.
- */
 function phaseLabel(
   phaseType: WorkoutPhase['phaseType'],
 ): string {
@@ -100,68 +89,98 @@ function phaseLabel(
   }
 }
 
+function heartRateMessage(
+  state: 'unknown' | 'below' | 'target' | 'above',
+): string {
+  switch (state) {
+    case 'below':
+      return 'Intensität etwas erhöhen'
+
+    case 'target':
+      return 'Du bist im Zielbereich'
+
+    case 'above':
+      return 'Etwas Tempo herausnehmen'
+
+    case 'unknown':
+      return 'Warte auf Herzfrequenzdaten'
+  }
+}
 
 export function WorkoutView({
-  person,
   workout,
   devices,
   onComplete,
 }: WorkoutViewProps) {
-  /*
-   * Tatsächlich absolvierte Trainingszeit.
-   *
-   * Während einer Pause wird dieser Wert nicht erhöht.
-   */
   const [elapsedSeconds, setElapsedSeconds] =
     useState(0)
 
-  /*
-   * Lokaler Pausenzustand.
-   *
-   * Noch nicht im Backend gespeichert.
-   */
   const [paused, setPaused] =
     useState(false)
 
-  /*
-   * Steuert den Dialog:
-   * "Training wirklich beenden?"
-   */
   const [
     finishConfirmation,
     setFinishConfirmation,
   ] = useState(false)
 
-  /*
-   * Verhindert mehrfaches Absenden des Complete-Requests.
-   */
   const [finishing, setFinishing] =
     useState(false)
 
-  /*
-   * Ermittelt die aktuelle Phase aus der
-   * tatsächlich verstrichenen Trainingszeit.
-   */
   const current = getCurrentPhase(
     workout.phases,
     elapsedSeconds,
   )
 
-  /*
-   * true, sobald keine Phase mehr aktiv ist.
-   */
   const workoutFinished =
     current.phase === null
 
-  /*
-   * Workout-Timer.
-   *
-   * Der Timer läuft NICHT weiter, wenn:
-   *
-   * - der Benutzer pausiert hat,
-   * - der Beenden-Dialog geöffnet ist,
-   * - das komplette geplante Training beendet ist.
-   */
+  const totalDurationSeconds = useMemo(
+    () =>
+      workout.phases.reduce(
+        (total, phase) =>
+          total + phase.durationMinutes * 60,
+        0,
+      ),
+    [workout.phases],
+  )
+
+  const workoutProgress =
+    totalDurationSeconds > 0
+      ? Math.min(
+          100,
+          Math.round(
+            (elapsedSeconds / totalDurationSeconds) *
+              100,
+          ),
+        )
+      : 0
+
+  const phaseDurationSeconds =
+    current.phase !== null
+      ? current.phase.durationMinutes * 60
+      : 0
+
+  const phaseRemainingSeconds =
+    current.phase !== null
+      ? Math.max(
+          0,
+          phaseDurationSeconds -
+            current.phaseElapsedSeconds,
+        )
+      : 0
+
+  const phaseProgress =
+    phaseDurationSeconds > 0
+      ? Math.min(
+          100,
+          Math.round(
+            (current.phaseElapsedSeconds /
+              phaseDurationSeconds) *
+              100,
+          ),
+        )
+      : 100
+
   useEffect(() => {
     if (
       paused ||
@@ -189,8 +208,7 @@ export function WorkoutView({
   /*
    * Wir suchen den aktuell verbundenen Pulsgurt.
    *
-   * Später können mehrere HR-Geräte existieren.
-   * Für V1 nehmen wir das erste verbundene.
+   * Für V1 verwenden wir das erste verbundene HR-Gerät.
    */
   const heartRateDevice = useMemo(
     () =>
@@ -211,12 +229,6 @@ export function WorkoutView({
   const targetMax =
     current.phase?.targetHeartRateMax ?? null
 
-  /*
-   * Fachlich einfacher Zustand für die Live-Anzeige.
-   *
-   * Noch keine KI nötig:
-   * Der Vergleich ist vollständig deterministisch.
-   */
   let heartRateState:
     | 'unknown'
     | 'below'
@@ -236,20 +248,39 @@ export function WorkoutView({
       heartRateState = 'target'
     }
   }
+  
+  const bikeDevice = useMemo(
+    () =>
+      devices.find(
+        (device) =>
+          device.device_type === 'bike' &&
+          device.status === 'connected',
+      ),
+    [devices],
+  )
+  
+  const speedKmh =
+    bikeDevice?.speed_kmh ?? null
+  
+  const cadenceRpm =
+    bikeDevice?.cadence_rpm ?? null
+  
+  const powerW =
+    bikeDevice?.power_w ?? null
 
   async function completeCurrentWorkout(): Promise<void> {
     if (finishing) {
       return
     }
-  
+
     try {
       setFinishing(true)
-  
+
       const completed = await completeWorkout(
         workout.id,
         elapsedSeconds,
       )
-  
+
       onComplete(completed)
     } catch (error) {
       console.error(
@@ -260,21 +291,20 @@ export function WorkoutView({
       setFinishing(false)
     }
   }
-  
-  
+
   async function abortCurrentWorkout(): Promise<void> {
     if (finishing) {
       return
     }
-  
+
     try {
       setFinishing(true)
-  
+
       const aborted = await abortWorkout(
         workout.id,
         elapsedSeconds,
       )
-  
+
       onComplete(aborted)
     } catch (error) {
       console.error(
@@ -286,20 +316,6 @@ export function WorkoutView({
     }
   }
 
-  /*
-   * Globale Tastatursteuerung.
-   *
-   * Normalbetrieb:
-   *   Enter -> Pause / Fortsetzen
-   *   Esc   -> Beenden-Dialog
-   *
-   * Beenden-Dialog:
-   *   Enter -> Workout beenden
-   *   Esc   -> Dialog schließen
-   *
-   * Ein späterer Nummernblock kann dieselben
-   * KeyboardEvents auslösen.
-   */
   useEffect(() => {
     function handleKeyDown(
       event: KeyboardEvent,
@@ -308,10 +324,6 @@ export function WorkoutView({
         return
       }
 
-      /*
-       * Im Bestätigungsdialog haben Enter und Esc
-       * eine andere Bedeutung.
-       */
       if (finishConfirmation) {
         if (event.key === 'Enter') {
           void abortCurrentWorkout()
@@ -325,10 +337,6 @@ export function WorkoutView({
         return
       }
 
-      /*
-       * Nach vollständigem Ablauf des Trainings
-       * soll Enter nicht wieder Pause umschalten.
-       */
       if (workoutFinished) {
         if (event.key === 'Enter') {
           void completeCurrentWorkout()
@@ -364,168 +372,324 @@ export function WorkoutView({
 
   return (
     <section className="workout-view">
-      <header className="workout-header">
-        <div>
-          <div className="eyebrow">
-            TRAINING · {person.displayName}
-          </div>
+      <header className="workout-stage-header">
+        <button
+          type="button"
+          className="workout-exit-button"
+          disabled={finishing}
+          onClick={() => {
+            setFinishConfirmation(true)
+          }}
+        >
+          ← Workout beenden
+        </button>
 
-          <h1>
-            {workoutFinished
-              ? 'Training abgeschlossen'
-              : current.phase !== null
-                ? phaseLabel(
-                    current.phase.phaseType,
-                  )
-                : ''}
-          </h1>
+        <div className="workout-stage-title">
+          <strong>
+            Cycling Basic Endurance
+          </strong>
+
+          <span>
+            {current.phase !== null
+              ? phaseLabel(
+                  current.phase.phaseType,
+                )
+              : 'Abgeschlossen'}
+          </span>
         </div>
 
-        <div className="workout-clock">
-          {formatTime(elapsedSeconds)}
+        <div className="workout-stage-status">
+          <span
+            className={
+              heartRateDevice !== undefined
+                ? 'device-dot connected'
+                : 'device-dot'
+            }
+          />
+
+          {heartRateDevice !== undefined
+            ? heartRateDevice.device_name
+            : 'Pulsgurt nicht verbunden'}
         </div>
       </header>
 
-      {paused && !workoutFinished && (
-        <div className="pause-banner">
-          PAUSE
-        </div>
-      )}
+      <div className="workout-stage">
+        <WorkoutVideo
+          src="/videos/cycling/alpen.mp4"
+          paused={
+            paused ||
+            finishConfirmation ||
+            workoutFinished
+          }
+        />
+        <div className="workout-stage-shade" />
 
-      <div className="workout-main">
-        <div className="heart-rate-panel">
-          <div className="metric-label">
-            HERZFREQUENZ
+        <div className="workout-phase-overlay workout-overlay-card">
+          <div className="workout-overlay-label">
+            NÄCHSTES / AKTUELL
           </div>
 
-          <div className="live-heart-rate">
-            ♥ {heartRate ?? '–'}
-            <span>bpm</span>
+          <div className="workout-overlay-title">
+            {current.phase !== null
+              ? phaseLabel(
+                  current.phase.phaseType,
+                )
+              : 'Training abgeschlossen'}
           </div>
 
           {current.phase !== null && (
             <>
-              <div
-                className={
-                  `target-state ${heartRateState}`
-                }
-              >
-                Zielbereich:{' '}
-                {
-                  current.phase
-                    .targetHeartRateMin
-                }
-                {'–'}
-                {
-                  current.phase
-                    .targetHeartRateMax
-                }{' '}
-                bpm
+              <div className="workout-overlay-meta">
+                <strong>
+                  {formatTime(
+                    phaseRemainingSeconds,
+                  )}
+                </strong>
+
+                <span>
+                  {targetMin ?? '–'}–{targetMax ?? '–'} bpm
+                </span>
               </div>
 
-              {heartRateState === 'below' && (
-                <p>
-                  Du kannst die Intensität etwas erhöhen.
-                </p>
-              )}
-
-              {heartRateState === 'target' && (
-                <p>
-                  Perfekt. Genau in diesem Bereich bleiben.
-                </p>
-              )}
-
-              {heartRateState === 'above' && (
-                <p>
-                  Etwas Tempo herausnehmen.
-                </p>
-              )}
-
-              {heartRateState === 'unknown' && (
-                <p>
-                  Warte auf Herzfrequenzdaten …
-                </p>
-              )}
+              <div className="workout-progress-track">
+                <div
+                  className="workout-progress-value"
+                  style={{
+                    width: `${phaseProgress}%`,
+                  }}
+                />
+              </div>
             </>
           )}
         </div>
 
-        {current.phase !== null && (
-          <div className="phase-panel">
-            <div className="metric-label">
-              AKTUELLE PHASE
+        <div className="workout-total-overlay workout-overlay-card">
+          <div className="workout-overlay-label">
+            FORTSCHRITT
+          </div>
+
+          <div className="workout-overlay-meta">
+            <strong>
+              {formatTime(elapsedSeconds)}
+            </strong>
+
+            <span>
+              / {formatTime(totalDurationSeconds)}
+            </span>
+          </div>
+
+          <div className="workout-progress-track">
+            <div
+              className="workout-progress-value"
+              style={{
+                width: `${workoutProgress}%`,
+              }}
+            />
+          </div>
+        </div>
+
+        <div
+          className={
+            `workout-target-overlay workout-overlay-card ${heartRateState}`
+          }
+        >
+          <div className="workout-overlay-label">
+            ♥ ZIELPULS
+          </div>
+
+          <div className="workout-target-range">
+            {targetMin ?? '–'}–{targetMax ?? '–'}
+            <span>bpm</span>
+          </div>
+
+          <div className="workout-target-message">
+            {heartRateMessage(heartRateState)}
+          </div>
+        </div>
+
+        <div className="workout-total-percent workout-overlay-card">
+          <div
+            className="workout-progress-ring"
+            style={{
+              background: `conic-gradient(
+                #73d55b ${workoutProgress}%,
+                rgba(255, 255, 255, 0.14) 0
+              )`,
+            }}
+          >
+            <div className="workout-progress-ring-inner" />
+          </div>
+
+          <div>
+            <div className="workout-overlay-label">
+              GESAMT
             </div>
 
-            <div className="phase-title">
-              {phaseLabel(
-                current.phase.phaseType,
-              )}
-            </div>
+            <strong>
+              {workoutProgress}%
+            </strong>
+          </div>
+        </div>
 
-            <div className="phase-time">
-              {formatTime(
-                current.phase.durationMinutes *
-                  60 -
-                  current.phaseElapsedSeconds,
-              )}
-            </div>
+        <div className="coach-avatar">
+          <div className="coach-avatar-face">
+            <span>HC</span>
+          </div>
 
-            <div className="phase-caption">
-              verbleibend
-            </div>
+          <div className="coach-avatar-status">
+            Coach
+          </div>
+        </div>
+
+        {paused && !workoutFinished && (
+          <div className="workout-pause-overlay">
+            <strong>PAUSE</strong>
+            <span>Enter zum Fortsetzen</span>
           </div>
         )}
-      </div>
 
-      <footer className="workout-footer">
-        {workoutFinished ? (
-          <>
+        {workoutFinished && (
+          <div className="workout-pause-overlay workout-complete-overlay">
+            <strong>
+              Training abgeschlossen
+            </strong>
             <span>
-              Training vollständig absolviert ·
-              Enter zum Abschließen
+              Enter zum Speichern
             </span>
-
-            <button
-              type="button"
-              className="primary-action"
-              disabled={finishing}
-              onClick={() => {
-                void completeCurrentWorkout()
-              }}
-            >
-              {finishing
-                ? 'Wird abgeschlossen …'
-                : 'Training abschließen'}
-            </button>
-          </>
-        ) : (
-          <>
-            <span>
-              Enter ·{' '}
-              {paused
-                ? 'Fortsetzen'
-                : 'Pause'}
-              {' · '}
-              Esc · Beenden
-            </span>
-
-            <button
-              type="button"
-              className="secondary-action"
-              onClick={() => {
-                setPaused(
-                  (currentPaused) =>
-                    !currentPaused,
-                )
-              }}
-            >
-              {paused
-                ? 'Training fortsetzen'
-                : 'Pause'}
-            </button>
-          </>
+          </div>
         )}
-      </footer>
+
+        <div className="workout-telemetry-bar">
+          <div className="workout-telemetry-metrics">
+            <div className="telemetry-metric heart-rate-metric">
+              <div className="telemetry-label">
+                ♥ PULS
+              </div>
+
+              <div className="telemetry-value">
+                {heartRate ?? '–'}
+                <span>bpm</span>
+              </div>
+
+              <div
+                className={
+                  `telemetry-caption ${heartRateState}`
+                }
+              >
+                {targetMin !== null &&
+                targetMax !== null
+                  ? `${targetMin}–${targetMax} bpm`
+                  : 'Kein Zielbereich'}
+              </div>
+            </div>
+
+            <div className="telemetry-metric">
+              <div className="telemetry-label">
+                ◷ ZEIT
+              </div>
+
+              <div className="telemetry-value">
+                {formatTime(elapsedSeconds)}
+              </div>
+
+              <div className="telemetry-caption">
+                / {formatTime(totalDurationSeconds)}
+              </div>
+            </div>
+
+            <div className="telemetry-metric">
+              <div className="telemetry-label">
+                ◉ GESCHWINDIGKEIT
+              </div>
+
+              <div className="telemetry-value">
+                <strong>{speedKmh !== null ? speedKmh.toFixed(1) : '–'}</strong>
+                <span>km/h</span>
+              </div>
+
+              <div className="telemetry-caption">
+                Bike noch nicht verbunden
+              </div>
+            </div>
+
+            <div className="telemetry-metric">
+              <div className="telemetry-label">
+                ⚡ LEISTUNG
+              </div>
+
+              <div className="telemetry-value">
+                <strong>{powerW !== null ? Math.round(powerW) : '–'}</strong>
+                <span>W</span>
+              </div>
+
+              <div className="telemetry-caption">
+                Bike noch nicht verbunden
+              </div>
+            </div>
+
+            <div className="telemetry-metric">
+              <div className="telemetry-label">
+                ◌ TRITTFREQUENZ
+              </div>
+
+              <div className="telemetry-value">
+                <strong>{cadenceRpm !== null ? Math.round(cadenceRpm) : '–'}</strong>
+                <span>rpm</span>
+              </div>
+
+              <div className="telemetry-caption">
+                Bike noch nicht verbunden
+              </div>
+            </div>
+          </div>
+
+          <div className="workout-telemetry-actions">
+            {workoutFinished ? (
+              <button
+                type="button"
+                className="workout-complete-button"
+                disabled={finishing}
+                onClick={() => {
+                  void completeCurrentWorkout()
+                }}
+              >
+                {finishing
+                  ? 'Wird gespeichert …'
+                  : 'Training speichern'}
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="workout-pause-button"
+                  disabled={finishing}
+                  onClick={() => {
+                    setPaused(
+                      (currentPaused) =>
+                        !currentPaused,
+                    )
+                  }}
+                >
+                  {paused
+                    ? '▶ Fortsetzen'
+                    : 'Ⅱ Pause'}
+                </button>
+
+                <button
+                  type="button"
+                  className="workout-stop-button"
+                  disabled={finishing}
+                  onClick={() => {
+                    setFinishConfirmation(true)
+                  }}
+                >
+                  □ Workout beenden
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
 
       {finishConfirmation && (
         <div className="confirmation-backdrop">
