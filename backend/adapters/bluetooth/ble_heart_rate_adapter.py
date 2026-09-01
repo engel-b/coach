@@ -119,12 +119,16 @@ class BleHeartRateAdapter:
             device = await self._find_device()
 
             if device is not None:
-                print(f"Heart-rate sensor found: {device.name or 'unknown'} ({device.address})")
+                logger.info(
+                    "Heart-rate sensor found: %s (%s)",
+                    device.name or "unknown",
+                    device.address,
+                )
                 return device
 
-            print(
-                "No BLE heart-rate sensor found. "
-                f"Retrying in {self._scan_interval_seconds:.0f} seconds ..."
+            logger.info(
+                "Heart-rate sensor unavailable. Retrying in %.0f seconds ...",
+                self._scan_interval_seconds,
             )
 
             await asyncio.sleep(self._scan_interval_seconds)
@@ -197,7 +201,10 @@ class BleHeartRateAdapter:
                         status=DeviceStatus.CONNECTED,
                     )
 
-                    print(f"Connected to heart-rate sensor: {device_name}")
+                    logger.info(
+                        "Connected to heart-rate sensor: %s",
+                        device_name,
+                    )
 
                     def notification_handler(
                         _sender: object,
@@ -262,11 +269,10 @@ class BleHeartRateAdapter:
                 raise
 
             except (BleakError, OSError, TimeoutError) as exc:
-                print(
-                    "Heart-rate connection lost or failed: "
-                    f"{exc}. "
-                    f"Retrying in "
-                    f"{self._scan_interval_seconds:.0f} seconds ..."
+                logger.info(
+                    "Heart-rate sensor unavailable: %s. Retrying in %.0f seconds ...",
+                    exc,
+                    self._scan_interval_seconds,
                 )
 
                 await asyncio.sleep(self._scan_interval_seconds)
