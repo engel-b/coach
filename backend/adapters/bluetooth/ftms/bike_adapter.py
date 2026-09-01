@@ -13,9 +13,6 @@ from adapters.bluetooth.ftms.indoor_bike_parser import (
     FtmsParseError,
     parse_indoor_bike_data,
 )
-
-# Den Import ggf. an den tatsächlichen Ort deines bereits vorhandenen
-# Domain-Typs anpassen.
 from domains.telemetry.bike import BikeTelemetry
 
 logger = logging.getLogger(__name__)
@@ -117,33 +114,21 @@ class FtmsBikeAdapter:
             )
 
             try:
-                # Die erste Notification ist unser Beweis, dass die
-                # Verbindung nicht nur technisch "connected", sondern
-                # tatsächlich funktional ist.
-                #
-                # Java-Denke:
-                # ungefähr CompletableFuture.get(timeout).
-                try:
-                    first_telemetry = await asyncio.wait_for(
-                        queue.get(),
-                        timeout=10.0,
-                    )
-                except TimeoutError as exc:
-                    raise BleakError(
-                        f"FTMS bike connected but no telemetry received: {self._device_id}"
-                    ) from exc
-
-                yield first_telemetry
-
-                # Nach der ersten erfolgreichen Notification läuft die
-                # Verbindung normal weiter.
                 while True:
                     try:
                         telemetry = await asyncio.wait_for(
                             queue.get(),
                             timeout=self._telemetry_timeout_seconds,
                         )
+
                     except TimeoutError as exc:
+                        # Bleak kann eine Verbindung weiterhin als "connected"
+                        # betrachten, obwohl vom Bike keine Notifications mehr
+                        # eintreffen.
+                        #
+                        # In diesem Fall beenden wir diesen Verbindungs-Lifecycle
+                        # bewusst mit BleakError. Der Device-Worker übernimmt
+                        # anschließend den Retry und baut eine neue Verbindung auf.
                         raise BleakError(
                             f"FTMS bike connected but telemetry became silent: {self._device_id}"
                         ) from exc
@@ -163,10 +148,11 @@ class FtmsBikeAdapter:
                         await client.stop_notify(
                             FTMS_INDOOR_BIKE_DATA_UUID,
                         )
-                    except BleakError:
-                        logger.warning(
-                            "Could not stop FTMS notifications cleanly for %s",
+                    except BleakError as exc:
+                        logger.debug(
+                            "Could not stop FTMS notifications cleanly for %s: %s",
                             self._device_id,
+                            exc,
                         )
 
         logger.info(
