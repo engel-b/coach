@@ -239,7 +239,8 @@ async def run() -> None:
         consume_bike_telemetry(
             bike_source,
             backend_client,
-        )
+        ),
+        name="bike-telemetry",
     )
 
     # Dieser Task wird fertig, sobald SIGINT oder SIGTERM
@@ -265,6 +266,7 @@ async def run() -> None:
         done, _pending = await asyncio.wait(
             {
                 heart_rate_task,
+                bike_task,
                 shutdown_task,
             },
             return_when=asyncio.FIRST_COMPLETED,
@@ -274,11 +276,22 @@ async def run() -> None:
         #
         # Falls dagegen der Heart-Rate-Task von selbst endet,
         # prüfen wir, ob dort eine Exception aufgetreten ist.
-        if heart_rate_task in done and not heart_rate_task.cancelled():
-            exception = heart_rate_task.exception()
+        for task in (
+            heart_rate_task,
+            bike_task,
+        ):
+            if task not in done:
+                continue
+
+            if task.cancelled():
+                continue
+
+            exception = task.exception()
 
             if exception is not None:
                 raise exception
+
+            raise RuntimeError(f"Device Agent task ended unexpectedly: {task.get_name()}")
 
     finally:
         logger.info(

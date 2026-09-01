@@ -149,9 +149,6 @@ class FtmsBikeAdapter:
             #
             # Das passiert beispielsweise, wenn Heart-Rate- und Bike-Adapter
             # nahezu gleichzeitig nach ihren Geräten suchen.
-            #
-            # Für den Device Agent ist das kein fataler Fehler. Der äußere
-            # Retry-Mechanismus versucht die Discovery später erneut.
             if exc.dbus_error == "org.bluez.Error.InProgress":
                 logger.debug(
                     "BLE scan already in progress while looking for FTMS bike %s",
