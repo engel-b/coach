@@ -2,6 +2,8 @@ import asyncio
 import logging
 import signal
 
+from bleak.exc import BleakError
+
 from adapters.bluetooth.ble_heart_rate_adapter import BleHeartRateAdapter
 from adapters.bluetooth.ftms.bike_adapter import FtmsBikeAdapter
 from adapters.websocket.backend_client import BackendWebSocketClient
@@ -64,27 +66,66 @@ async def consume_bike_telemetry(
     bike_source: FtmsBikeAdapter,
     backend_client: BackendWebSocketClient,
 ) -> None:
-    async for telemetry in bike_source.telemetry():
-        logger.info(
-            "Bike: speed=%s km/h cadence=%s rpm power=%s W",
-            telemetry.speed_kmh,
-            telemetry.cadence_rpm,
-            telemetry.power_w,
-        )
+    """
+    Konsumiert dauerhaft die Telemetrie des Bikes.
 
-        message = TelemetryMessage(
-            type="bike.telemetry",
-            timestamp=telemetry.timestamp,
-            device_id=telemetry.device_id,
-            payload={
-                "speedKmh": telemetry.speed_kmh,
-                "cadenceRpm": telemetry.cadence_rpm,
-                "powerW": telemetry.power_w,
-                "resistance": telemetry.resistance,
-            },
-        )
+    Das Bike darf beim Start ausgeschaltet oder vorübergehend
+    nicht erreichbar sein. Ein BLE-Verbindungsfehler beendet
+    deshalb nicht den gesamten Device Agent.
 
-        await backend_client.send(message)
+    Stattdessen versuchen wir nach kurzer Pause erneut,
+    eine Verbindung aufzubauen.
+
+    Java-Vergleich:
+        Ähnlich einem langlebigen Worker mit Retry-Schleife
+        um einen technischen Infrastructure Adapter.
+    """
+
+    retry_delay_seconds = 5.0
+
+    while True:
+        try:
+            async for telemetry in bike_source.telemetry():
+                logger.info(
+                    "Bike: speed=%s km/h cadence=%s rpm power=%s W",
+                    telemetry.speed_kmh,
+                    telemetry.cadence_rpm,
+                    telemetry.power_w,
+                )
+
+                message = TelemetryMessage(
+                    type="bike.telemetry",
+                    timestamp=telemetry.timestamp,
+                    device_id=telemetry.device_id,
+                    payload={
+                        "speedKmh": telemetry.speed_kmh,
+                        "cadenceRpm": telemetry.cadence_rpm,
+                        "powerW": telemetry.power_w,
+                        "resistance": telemetry.resistance,
+                    },
+                )
+
+                await backend_client.send(message)
+
+        except asyncio.CancelledError:
+            # Shutdown des Device Agents.
+            #
+            # Cancellation niemals als normalen Fehler behandeln.
+            raise
+
+        except BleakError as exc:
+            # Ein ausgeschaltetes Bike, ein Verbindungsabbruch oder
+            # ein vorübergehend nicht möglicher BLE-Scan ist ein
+            # normaler Betriebszustand.
+            logger.info(
+                "FTMS bike unavailable: %s. Retrying in %.0f seconds ...",
+                exc,
+                retry_delay_seconds,
+            )
+
+            await asyncio.sleep(
+                retry_delay_seconds,
+            )
 
 
 async def run() -> None:
