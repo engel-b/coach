@@ -2,11 +2,10 @@ import asyncio
 import logging
 import signal
 
-from bleak.exc import BleakError
-
-from adapters.bluetooth.ble_heart_rate_adapter import BleHeartRateAdapter
 from adapters.bluetooth.ftms.bike_adapter import FtmsBikeAdapter
+from adapters.bluetooth.heart_rate.heart_rate_adapter import BleHeartRateAdapter
 from adapters.websocket.backend_client import BackendWebSocketClient
+from apps.device_agent.lifecycle import run_device_worker
 from contracts.telemetry import TelemetryMessage
 from domains.health.device_events import DeviceStatusChanged
 
@@ -29,37 +28,39 @@ async def consume_heart_rate(
     backend_client: BackendWebSocketClient,
 ) -> None:
     """
-    Konsumiert dauerhaft die Herzfrequenzwerte des BLE-Adapters.
+    Konsumiert Heart-Rate-Telemetrie dauerhaft.
 
-    Diese Verarbeitung läuft bewusst in einem eigenen asyncio-Task.
-    Dadurch können wir sie beim Shutdown gezielt abbrechen.
-
-    Die Cancellation läuft anschließend bis in
-    BleHeartRateAdapter.samples() hinein. Dort sorgt der bestehende
-    async-with-Block des BleakClient für das Aufräumen der
-    BLE-Verbindung.
-
-    Java-Vergleich grob:
-        Ein länger laufender Future/Task, den der übergeordnete
-        Service beim Shutdown gezielt canceln kann.
+    Retry und Wartezeit werden genauso wie beim Bike zentral durch
+    run_device_worker() gesteuert.
     """
 
-    async for sample in heart_rate_source.samples():
-        logger.info(
-            "Heart rate: %d bpm",
-            sample.bpm,
-        )
+    async def consume_once() -> None:
+        """
+        Führt genau einen HR-Verbindungs-/Telemetry-Lauf aus.
+        """
 
-        message = TelemetryMessage(
-            type="heart_rate.sample",
-            timestamp=sample.timestamp,
-            device_id=sample.device_id,
-            payload={
-                "bpm": sample.bpm,
-            },
-        )
+        async for sample in heart_rate_source.samples():
+            logger.info(
+                "Heart rate: %s bpm",
+                sample.bpm,
+            )
 
-        await backend_client.send(message)
+            message = TelemetryMessage(
+                type="heart_rate.sample",
+                timestamp=sample.timestamp,
+                device_id="heart-rate",
+                payload={
+                    "bpm": sample.bpm,
+                },
+            )
+
+            await backend_client.send(message)
+
+    await run_device_worker(
+        name="Heart rate sensor",
+        operation=consume_once,
+        retry_delay_seconds=5.0,
+    )
 
 
 async def consume_bike_telemetry(
@@ -67,65 +68,56 @@ async def consume_bike_telemetry(
     backend_client: BackendWebSocketClient,
 ) -> None:
     """
-    Konsumiert dauerhaft die Telemetrie des Bikes.
+    Konsumiert die Telemetrie des Bikes.
 
-    Das Bike darf beim Start ausgeschaltet oder vorübergehend
-    nicht erreichbar sein. Ein BLE-Verbindungsfehler beendet
-    deshalb nicht den gesamten Device Agent.
+    Der eigentliche Retry-Lifecycle liegt bewusst nicht mehr
+    in dieser Funktion, sondern zentral in run_device_worker().
 
-    Stattdessen versuchen wir nach kurzer Pause erneut,
-    eine Verbindung aufzubauen.
+    Dadurch können HR und Bike später dieselbe Retry-Policy
+    verwenden.
 
     Java-Vergleich:
-        Ähnlich einem langlebigen Worker mit Retry-Schleife
-        um einen technischen Infrastructure Adapter.
+    Diese Funktion beschreibt die eigentliche Arbeit.
+    run_device_worker() entspricht dem langlebigen Executor,
+    der diese Arbeit bei technischen Fehlern erneut startet.
     """
 
-    retry_delay_seconds = 5.0
+    async def consume_once() -> None:
+        """
+        Führt genau einen FTMS-Verbindungs-/Telemetry-Lauf aus.
 
-    while True:
-        try:
-            async for telemetry in bike_source.telemetry():
-                logger.info(
-                    "Bike: speed=%s km/h cadence=%s rpm power=%s W",
-                    telemetry.speed_kmh,
-                    telemetry.cadence_rpm,
-                    telemetry.power_w,
-                )
+        FtmsBikeAdapter.telemetry() endet bei einem BLE-Fehler
+        mit einer Exception. run_device_worker() übernimmt danach
+        den Retry.
+        """
 
-                message = TelemetryMessage(
-                    type="bike.telemetry",
-                    timestamp=telemetry.timestamp,
-                    device_id=telemetry.device_id,
-                    payload={
-                        "speedKmh": telemetry.speed_kmh,
-                        "cadenceRpm": telemetry.cadence_rpm,
-                        "powerW": telemetry.power_w,
-                        "resistance": telemetry.resistance,
-                    },
-                )
-
-                await backend_client.send(message)
-
-        except asyncio.CancelledError:
-            # Shutdown des Device Agents.
-            #
-            # Cancellation niemals als normalen Fehler behandeln.
-            raise
-
-        except BleakError as exc:
-            # Ein ausgeschaltetes Bike, ein Verbindungsabbruch oder
-            # ein vorübergehend nicht möglicher BLE-Scan ist ein
-            # normaler Betriebszustand.
+        async for telemetry in bike_source.telemetry():
             logger.info(
-                "FTMS bike unavailable: %s. Retrying in %.0f seconds ...",
-                exc,
-                retry_delay_seconds,
+                "Bike: speed=%s km/h cadence=%s rpm power=%s W",
+                telemetry.speed_kmh,
+                telemetry.cadence_rpm,
+                telemetry.power_w,
             )
 
-            await asyncio.sleep(
-                retry_delay_seconds,
+            message = TelemetryMessage(
+                type="bike.telemetry",
+                timestamp=telemetry.timestamp,
+                device_id=telemetry.device_id,
+                payload={
+                    "speedKmh": telemetry.speed_kmh,
+                    "cadenceRpm": telemetry.cadence_rpm,
+                    "powerW": telemetry.power_w,
+                    "resistance": telemetry.resistance,
+                },
             )
+
+            await backend_client.send(message)
+
+    await run_device_worker(
+        name="FTMS bike",
+        operation=consume_once,
+        retry_delay_seconds=5.0,
+    )
 
 
 async def run() -> None:
