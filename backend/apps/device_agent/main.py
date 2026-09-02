@@ -2,8 +2,8 @@ import asyncio
 import logging
 import signal
 
-from adapters.bluetooth.ble_heart_rate_adapter import BleHeartRateAdapter
 from adapters.bluetooth.ftms.bike_adapter import FtmsBikeAdapter
+from adapters.bluetooth.heart_rate.heart_rate_adapter import BleHeartRateAdapter
 from adapters.websocket.backend_client import BackendWebSocketClient
 from apps.device_agent.lifecycle import run_device_worker
 from contracts.telemetry import TelemetryMessage
@@ -28,37 +28,39 @@ async def consume_heart_rate(
     backend_client: BackendWebSocketClient,
 ) -> None:
     """
-    Konsumiert dauerhaft die Herzfrequenzwerte des BLE-Adapters.
+    Konsumiert Heart-Rate-Telemetrie dauerhaft.
 
-    Diese Verarbeitung läuft bewusst in einem eigenen asyncio-Task.
-    Dadurch können wir sie beim Shutdown gezielt abbrechen.
-
-    Die Cancellation läuft anschließend bis in
-    BleHeartRateAdapter.samples() hinein. Dort sorgt der bestehende
-    async-with-Block des BleakClient für das Aufräumen der
-    BLE-Verbindung.
-
-    Java-Vergleich grob:
-        Ein länger laufender Future/Task, den der übergeordnete
-        Service beim Shutdown gezielt canceln kann.
+    Retry und Wartezeit werden genauso wie beim Bike zentral durch
+    run_device_worker() gesteuert.
     """
 
-    async for sample in heart_rate_source.samples():
-        logger.info(
-            "Heart rate: %d bpm",
-            sample.bpm,
-        )
+    async def consume_once() -> None:
+        """
+        Führt genau einen HR-Verbindungs-/Telemetry-Lauf aus.
+        """
 
-        message = TelemetryMessage(
-            type="heart_rate.sample",
-            timestamp=sample.timestamp,
-            device_id=sample.device_id,
-            payload={
-                "bpm": sample.bpm,
-            },
-        )
+        async for sample in heart_rate_source.samples():
+            logger.info(
+                "Heart rate: %s bpm",
+                sample.bpm,
+            )
 
-        await backend_client.send(message)
+            message = TelemetryMessage(
+                type="heart_rate.sample",
+                timestamp=sample.timestamp,
+                device_id="heart-rate",
+                payload={
+                    "bpm": sample.bpm,
+                },
+            )
+
+            await backend_client.send(message)
+
+    await run_device_worker(
+        name="Heart rate sensor",
+        operation=consume_once,
+        retry_delay_seconds=5.0,
+    )
 
 
 async def consume_bike_telemetry(

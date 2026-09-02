@@ -1,6 +1,6 @@
 import pytest
 
-from adapters.bluetooth.heart_rate_parser import parse_heart_rate
+from adapters.bluetooth.heart_rate.parser import parse_heart_rate
 
 
 def test_parse_8_bit_heart_rate() -> None:
