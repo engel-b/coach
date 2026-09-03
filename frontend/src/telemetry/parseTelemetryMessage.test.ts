@@ -96,6 +96,23 @@ describe('parseTelemetryMessage', () => {
     expect(result).not.toBeNull()
   })
 
+  it('accepts bike telemetry with null values', () => {
+    const result =
+      parseTelemetryMessage({
+        type: 'bike.telemetry',
+        timestamp:
+          '2026-09-03T09:00:00Z',
+        deviceId: 'bike-1',
+        payload: {
+          speedKmh: 24.5,
+          cadenceRpm: 81,
+          powerW: null,
+          resistance: null,
+        },
+      })
+
+    expect(result).not.toBeNull()
+  })
 
   it('rejects bike telemetry with invalid values', () => {
     const result =

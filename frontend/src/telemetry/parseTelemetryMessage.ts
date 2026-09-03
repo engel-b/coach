@@ -174,8 +174,22 @@ function isBikeTelemetryPayload(
 function isOptionalFiniteNumber(
   value: unknown,
 ): boolean {
+  /*
+   * Optionale Messwerte können über die JSON-Grenze
+   * auf zwei Arten fehlen:
+   *
+   *   undefined
+   *     Das Feld ist gar nicht vorhanden.
+   *
+   *   null
+   *     Das Feld ist vorhanden, aber der Device Agent
+   *     hat für diesen Messwert keinen Wert geliefert.
+   *
+   * Beides ist für partielle Bike-Telemetrie gültig.
+   */
   return (
     value === undefined ||
+    value === null ||
     (
       typeof value === 'number' &&
       Number.isFinite(value)
