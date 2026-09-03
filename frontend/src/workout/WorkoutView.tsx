@@ -4,6 +4,7 @@ import { abortWorkout, completeWorkout } from '../api/workouts'
 import type { DeviceState } from '../devices/types'
 import type { Person } from '../persons/types'
 import type { Workout, WorkoutPhase } from './types'
+import { calculateVideoPlaybackRate, shouldPauseVideoForBike } from './videoPlayback'
 import { WorkoutVideo } from './WorkoutVideo'
 
 interface WorkoutViewProps {
@@ -267,6 +268,21 @@ export function WorkoutView({
   
   const powerW =
     bikeDevice?.powerW ?? null
+    
+  /*
+   * Bike-Stillstand pausiert nur das Video.
+   *
+   * Die Trainingszeit selbst läuft weiter. Eine echte
+   * Workout-Pause wird weiterhin ausschließlich über
+   * `paused` gesteuert.
+   */
+  const videoPausedByBike = shouldPauseVideoForBike(speedKmh)
+
+  /*
+   * Während der Fahrt folgt die Geschwindigkeit des
+   * Trainingsvideos der gemessenen Bike-Geschwindigkeit.
+   */
+  const videoPlaybackRate = calculateVideoPlaybackRate(speedKmh)
 
   async function completeCurrentWorkout(): Promise<void> {
     if (finishing) {
@@ -419,8 +435,10 @@ export function WorkoutView({
           paused={
             paused ||
             finishConfirmation ||
-            workoutFinished
+            workoutFinished ||
+            videoPausedByBike
           }
+          playbackRate={videoPlaybackRate}
         />
         <div className="workout-stage-shade" />
 
@@ -608,7 +626,7 @@ export function WorkoutView({
               </div>
 
               <div className="telemetry-caption">
-                Bike noch nicht verbunden
+                {speedKmh !== null ? '' : 'Bike noch nicht verbunden'}
               </div>
             </div>
 
@@ -623,7 +641,7 @@ export function WorkoutView({
               </div>
 
               <div className="telemetry-caption">
-                Bike noch nicht verbunden
+                {powerW !== null ? '' : 'Bike noch nicht verbunden'}
               </div>
             </div>
 
@@ -638,7 +656,7 @@ export function WorkoutView({
               </div>
 
               <div className="telemetry-caption">
-                Bike noch nicht verbunden
+                {cadenceRpm !== null ? '' : 'Bike noch nicht verbunden'}
               </div>
             </div>
           </div>

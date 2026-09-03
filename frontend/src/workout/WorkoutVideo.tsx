@@ -1,37 +1,54 @@
-import { useState } from 'react'
+import {
+  useEffect,
+  useRef,
+} from 'react'
 
 
 interface WorkoutVideoProps {
   src: string
   paused: boolean
+  playbackRate: number
 }
 
 
 export function WorkoutVideo({
   src,
   paused,
+  playbackRate,
 }: WorkoutVideoProps) {
-  const [videoElement, setVideoElement] =
-    useState<HTMLVideoElement | null>(null)
+  const videoRef =
+    useRef<HTMLVideoElement | null>(null)
+
 
   /*
-   * Das Workout entscheidet, ob pausiert ist.
+   * WorkoutView bleibt die Source of Truth.
    *
-   * Das Video besitzt bewusst keinen eigenen Pause-State.
-   * Damit haben wir nur eine "Source of Truth":
+   * Diese Komponente setzt lediglich den gewünschten
+   * Zustand auf dem echten HTMLVideoElement um.
    *
-   * WorkoutView.paused
-   *
-   * Java-Vergleich:
-   * WorkoutVideo ist hier eher eine View/Presentation-Komponente
-   * und kein eigener fachlicher Service.
+   * Das ist ein Seiteneffekt auf ein Browser-Objekt und
+   * gehört deshalb in useEffect(), nicht in den Render.
    */
-  if (videoElement !== null) {
-    if (paused && !videoElement.paused) {
-      videoElement.pause()
+  useEffect(() => {
+    const videoElement =
+      videoRef.current
+
+    if (videoElement === null) {
+      return
     }
 
-    if (!paused && videoElement.paused) {
+    videoElement.playbackRate =
+      playbackRate
+
+    if (paused) {
+      if (!videoElement.paused) {
+        videoElement.pause()
+      }
+
+      return
+    }
+
+    if (videoElement.paused) {
       /*
        * play() liefert ein Promise.
        *
@@ -48,11 +65,15 @@ export function WorkoutVideo({
          */
       })
     }
-  }
+  }, [
+    paused,
+    playbackRate,
+  ])
+
 
   return (
     <video
-      ref={setVideoElement}
+      ref={videoRef}
       className="workout-video"
       src={src}
       autoPlay
