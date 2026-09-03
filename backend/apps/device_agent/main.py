@@ -2,8 +2,9 @@ import asyncio
 import logging
 import signal
 
-from adapters.bluetooth.ftms.bike_adapter import FtmsBikeAdapter
-from adapters.bluetooth.heart_rate.heart_rate_adapter import BleHeartRateAdapter
+from adapters.bluetooth.discovery import BleDiscoveryCoordinator
+from adapters.bluetooth.ftms.adapter import FtmsBikeAdapter
+from adapters.bluetooth.heart_rate.adapter import BleHeartRateAdapter
 from adapters.websocket.backend_client import BackendWebSocketClient
 from apps.device_agent.lifecycle import run_device_worker
 from contracts.telemetry import TelemetryMessage
@@ -137,6 +138,7 @@ async def run() -> None:
     kontrollierten Shutdown-Pfad.
     """
 
+    discovery = BleDiscoveryCoordinator()
     backend_client = BackendWebSocketClient(
         uri=BACKEND_WEBSOCKET_URI,
     )
@@ -203,11 +205,13 @@ async def run() -> None:
 
     heart_rate_source = BleHeartRateAdapter(
         status_handler=on_device_status,
+        discovery=discovery,
     )
 
     bike_source = FtmsBikeAdapter(
         device_id=BIKE_ADDRESS,
         device_name=BIKE_NAME,
+        discovery=discovery,
     )
 
     # Beide langlebigen Komponenten laufen als eigene Tasks:

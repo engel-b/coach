@@ -3,7 +3,6 @@ from dataclasses import replace
 from application.telemetry.models import DeviceState
 from contracts.telemetry import TelemetryMessage
 from domains.health.device import DeviceStatus, DeviceType
-from domains.telemetry.bike import BikeTelemetry
 
 
 class TelemetryService:
@@ -22,15 +21,6 @@ class TelemetryService:
     - Bluetooth
     - Datenbank
     - UI
-
-    Java-/Spring-Vergleich:
-
-        @Service
-        public class TelemetryService {
-            ...
-        }
-
-    Nur ohne Framework-Annotation.
     """
 
     def __init__(self) -> None:
@@ -39,10 +29,6 @@ class TelemetryService:
         # Der Dictionary-Zugriff ist für unseren kleinen lokalen
         # Mehrgerätebetrieb völlig ausreichend.
         self._devices: dict[str, DeviceState] = {}
-        self._bike_telemetry: dict[
-            str,
-            BikeTelemetry,
-        ] = {}
 
     def handle(self, message: TelemetryMessage) -> None:
         """
@@ -79,53 +65,35 @@ class TelemetryService:
         message: TelemetryMessage,
     ) -> None:
         """
-        Verarbeitet beispielsweise:
+        Aktualisiert Status-Metadaten eines Geräts.
 
-        {
-            "type": "device.status_changed",
-            "deviceId": "...",
-            "payload": {
-                "deviceType": "heart_rate",
-                "deviceName": "808S",
-                "status": "connected"
-            }
-        }
+        Bereits bekannte Telemetrie-Werte bleiben erhalten. Ein Status-Event
+        beschreibt nur den Verbindungs-/Gerätezustand und darf Messwerte
+        deshalb nicht überschreiben.
         """
 
-        device_type_value = message.payload.get("deviceType")
-        device_name_value = message.payload.get("deviceName")
-        status_value = message.payload.get("status")
-
-        # Payload kommt von einer Prozessgrenze.
-        #
-        # Wir verlassen uns deshalb nicht blind darauf,
-        # dass die Typen korrekt sind.
-        if not isinstance(device_type_value, str):
-            return
-
-        if not isinstance(device_name_value, str):
-            return
-
-        if not isinstance(status_value, str):
-            return
-
-        try:
-            device_type = DeviceType(device_type_value)
-            status = DeviceStatus(status_value)
-        except ValueError:
-            # Unbekannter Enum-Wert.
-            return
+        device_type = DeviceType(str(message.payload["deviceType"]))
+        device_name = str(message.payload["deviceName"])
+        status = DeviceStatus(str(message.payload["status"]))
 
         previous = self._devices.get(message.device_id)
 
-        state = DeviceState(
-            device_id=message.device_id,
-            device_type=device_type,
-            device_name=device_name_value,
-            status=status,
-            last_seen=message.timestamp,
-            heart_rate_bpm=(previous.heart_rate_bpm if previous is not None else None),
-        )
+        if previous is None:
+            state = DeviceState(
+                device_id=message.device_id,
+                device_type=device_type,
+                device_name=device_name,
+                status=status,
+                last_seen=message.timestamp,
+            )
+        else:
+            state = replace(
+                previous,
+                device_type=device_type,
+                device_name=device_name,
+                status=status,
+                last_seen=message.timestamp,
+            )
 
         self._devices[message.device_id] = state
 
@@ -177,52 +145,75 @@ class TelemetryService:
         message: TelemetryMessage,
     ) -> None:
         """
-        Aktualisiert den letzten bekannten Telemetrie-Snapshot
-        eines Fahrrads.
+        Aktualisiert den Device-State eines FTMS-Bikes.
 
-        Fehlende Werte bleiben None. Dadurch unterscheiden wir
-        sauber zwischen "nicht geliefert" und einem echten Wert 0.
+        FTMS-Telemetrie kann unvollständig sein. Deshalb übernehmen wir
+        bereits bekannte Werte, wenn ein Feld in der neuen Nachricht fehlt.
         """
 
-        power_w = message.payload.get("powerW")
-        cadence_rpm = message.payload.get("cadenceRpm")
-        speed_kmh = message.payload.get("speedKmh")
-        resistance = message.payload.get("resistance")
+        speed_value = message.payload.get("speedKmh")
+        cadence_value = message.payload.get("cadenceRpm")
+        power_value = message.payload.get("powerW")
+        resistance_value = message.payload.get("resistance")
 
-        if power_w is not None and not isinstance(
-            power_w,
-            int,
-        ):
-            return
+        previous = self._devices.get(message.device_id)
 
-        if cadence_rpm is not None and not isinstance(
-            cadence_rpm,
-            (int, float),
-        ):
-            return
-
-        if speed_kmh is not None and not isinstance(
-            speed_kmh,
-            (int, float),
-        ):
-            return
-
-        if resistance is not None and not isinstance(
-            resistance,
-            int,
-        ):
-            return
-
-        telemetry = BikeTelemetry(
-            device_id=message.device_id,
-            timestamp=message.timestamp,
-            power_w=power_w,
-            cadence_rpm=(float(cadence_rpm) if cadence_rpm is not None else None),
-            speed_kmh=(float(speed_kmh) if speed_kmh is not None else None),
-            resistance=resistance,
+        speed_kmh = (
+            float(speed_value)
+            if isinstance(speed_value, int | float)
+            else previous.speed_kmh
+            if previous is not None
+            else None
         )
 
-        self._bike_telemetry[message.device_id] = telemetry
+        cadence_rpm = (
+            float(cadence_value)
+            if isinstance(cadence_value, int | float)
+            else previous.cadence_rpm
+            if previous is not None
+            else None
+        )
+
+        power_w = (
+            power_value
+            if isinstance(power_value, int)
+            else previous.power_w
+            if previous is not None
+            else None
+        )
+
+        resistance = (
+            resistance_value
+            if isinstance(resistance_value, int)
+            else previous.resistance
+            if previous is not None
+            else None
+        )
+
+        if previous is None:
+            state = DeviceState(
+                device_id=message.device_id,
+                device_type=DeviceType.BIKE,
+                device_name="unknown",
+                status=DeviceStatus.CONNECTED,
+                last_seen=message.timestamp,
+                speed_kmh=speed_kmh,
+                cadence_rpm=cadence_rpm,
+                power_w=power_w,
+                resistance=resistance,
+            )
+        else:
+            state = replace(
+                previous,
+                status=DeviceStatus.CONNECTED,
+                last_seen=message.timestamp,
+                speed_kmh=speed_kmh,
+                cadence_rpm=cadence_rpm,
+                power_w=power_w,
+                resistance=resistance,
+            )
+
+        self._devices[message.device_id] = state
 
     def get_devices(self) -> list[DeviceState]:
         """
@@ -239,13 +230,3 @@ class TelemetryService:
         device_id: str,
     ) -> DeviceState | None:
         return self._devices.get(device_id)
-
-    def get_bike_telemetry(
-        self,
-    ) -> list[BikeTelemetry]:
-        """
-        Liefert den letzten bekannten Snapshot
-        aller Fahrräder.
-        """
-
-        return list(self._bike_telemetry.values())

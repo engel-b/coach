@@ -7,6 +7,7 @@ from bleak import BleakClient, BleakScanner
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 
+from adapters.bluetooth.discovery import BleDiscoveryCoordinator
 from adapters.bluetooth.heart_rate.constants import (
     HEART_RATE_MEASUREMENT_UUID,
     HEART_RATE_SERVICE_UUID,
@@ -35,11 +36,13 @@ class BleHeartRateAdapter:
     def __init__(
         self,
         status_handler: DeviceStatusHandler,
+        discovery: BleDiscoveryCoordinator,
         scan_interval_seconds: float = 5.0,
     ) -> None:
         self._queue: asyncio.Queue[HeartRateSample] = asyncio.Queue()
         self._scan_interval_seconds = scan_interval_seconds
         self._status_handler = status_handler
+        self._discovery = discovery
 
     async def samples(self) -> AsyncIterator[HeartRateSample]:
         """
@@ -156,33 +159,28 @@ class BleHeartRateAdapter:
             )
 
     async def _find_device(self) -> BLEDevice | None:
-        """
-        Führt genau einen BLE-Scan durch.
-
-        Ein temporärer BlueZ-/Bleak-Fehler wird nicht hier in einer
-        Retry-Schleife versteckt. Er wird an den Device-Worker
-        weitergereicht.
-        """
-
-        try:
+        async def discover() -> BLEDevice | None:
             discovered_devices = await BleakScanner.discover(
                 timeout=10.0,
                 return_adv=True,
             )
+
+            for device, advertisement in discovered_devices.values():
+                service_uuids = advertisement.service_uuids or []
+
+                if HEART_RATE_SERVICE_UUID in [uuid.lower() for uuid in service_uuids]:
+                    return device
+
+            return None
+
+        try:
+            return await self._discovery.run(discover)
 
         except BleakError:
             logger.debug(
                 "BLE scan for heart rate sensor currently unavailable",
             )
             raise
-
-        for device, advertisement in discovered_devices.values():
-            service_uuids = advertisement.service_uuids or []
-
-            if HEART_RATE_SERVICE_UUID in [uuid.lower() for uuid in service_uuids]:
-                return device
-
-        return None
 
     def _publish_status(
         self,

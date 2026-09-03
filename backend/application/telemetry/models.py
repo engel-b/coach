@@ -35,4 +35,10 @@ class DeviceState:
     device_name: str
     status: DeviceStatus
     last_seen: datetime
+
     heart_rate_bpm: int | None = None
+
+    speed_kmh: float | None = None
+    cadence_rpm: float | None = None
+    power_w: int | None = None
+    resistance: int | None = None

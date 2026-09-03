@@ -1,6 +1,6 @@
 import pytest
 
-from adapters.bluetooth.ftms.indoor_bike_parser import (
+from adapters.bluetooth.ftms.parser import (
     FtmsParseError,
     parse_indoor_bike_data,
 )
