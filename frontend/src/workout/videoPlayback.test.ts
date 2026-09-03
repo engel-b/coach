@@ -4,7 +4,10 @@ import {
   it,
 } from 'vitest'
 
-import { shouldPauseVideoForBike } from './videoPlayback'
+import {
+  calculateVideoPlaybackRate,
+  shouldPauseVideoForBike,
+} from './videoPlayback'
 
 
 describe('shouldPauseVideoForBike', () => {
@@ -34,13 +37,60 @@ describe('shouldPauseVideoForBike', () => {
 
 
   it('treats negative speed as stopped', () => {
-    /*
-     * Eine negative Geschwindigkeit wäre zwar keine
-     * sinnvolle FTMS-Messung, soll aber keinesfalls dazu
-     * führen, dass das Video weiterläuft.
-     */
     expect(
       shouldPauseVideoForBike(-1),
     ).toBe(true)
+  })
+})
+
+
+describe('calculateVideoPlaybackRate', () => {
+  it('uses normal playback while no bike speed is known', () => {
+    expect(
+      calculateVideoPlaybackRate(null),
+    ).toBe(1)
+  })
+
+
+  it('uses normal playback at the reference speed', () => {
+    expect(
+      calculateVideoPlaybackRate(20),
+    ).toBe(1)
+  })
+
+
+  it('slows the video down below the reference speed', () => {
+    expect(
+      calculateVideoPlaybackRate(15),
+    ).toBe(0.75)
+  })
+
+
+  it('speeds the video up above the reference speed', () => {
+    expect(
+      calculateVideoPlaybackRate(30),
+    ).toBe(1.5)
+  })
+
+
+  it('does not go below the minimum playback rate', () => {
+    expect(
+      calculateVideoPlaybackRate(5),
+    ).toBe(0.5)
+
+    expect(
+      calculateVideoPlaybackRate(0),
+    ).toBe(0.5)
+  })
+
+
+  it('does not exceed the maximum playback rate', () => {
+    expect(
+      calculateVideoPlaybackRate(40),
+    ).toBe(2)
+
+    expect(
+      calculateVideoPlaybackRate(60),
+    ).toBe(2)
   })
 })

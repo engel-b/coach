@@ -4,7 +4,7 @@ import { abortWorkout, completeWorkout } from '../api/workouts'
 import type { DeviceState } from '../devices/types'
 import type { Person } from '../persons/types'
 import type { Workout, WorkoutPhase } from './types'
-import { shouldPauseVideoForBike } from './videoPlayback'
+import { calculateVideoPlaybackRate, shouldPauseVideoForBike } from './videoPlayback'
 import { WorkoutVideo } from './WorkoutVideo'
 
 interface WorkoutViewProps {
@@ -276,8 +276,13 @@ export function WorkoutView({
    * Workout-Pause wird weiterhin ausschließlich über
    * `paused` gesteuert.
    */
-  const videoPausedByBike =
-    shouldPauseVideoForBike(speedKmh)
+  const videoPausedByBike = shouldPauseVideoForBike(speedKmh)
+
+  /*
+   * Während der Fahrt folgt die Geschwindigkeit des
+   * Trainingsvideos der gemessenen Bike-Geschwindigkeit.
+   */
+  const videoPlaybackRate = calculateVideoPlaybackRate(speedKmh)
 
   async function completeCurrentWorkout(): Promise<void> {
     if (finishing) {
@@ -433,6 +438,7 @@ export function WorkoutView({
             workoutFinished ||
             videoPausedByBike
           }
+          playbackRate={videoPlaybackRate}
         />
         <div className="workout-stage-shade" />
 
