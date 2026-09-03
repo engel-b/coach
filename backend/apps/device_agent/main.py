@@ -49,7 +49,7 @@ async def consume_heart_rate(
             message = TelemetryMessage(
                 type="heart_rate.sample",
                 timestamp=sample.timestamp,
-                device_id="heart-rate",
+                device_id=sample.device_id,
                 payload={
                     "bpm": sample.bpm,
                 },
