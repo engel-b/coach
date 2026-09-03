@@ -1,5 +1,4 @@
 import logging
-from dataclasses import asdict
 from datetime import UTC, datetime
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -26,6 +25,7 @@ from application.workout.service import (
     WorkoutService,
 )
 from contracts.check_in import CheckInRequest, CheckInResponse
+from contracts.device import DeviceResponse
 from contracts.person import PersonResponse
 from contracts.telemetry import TelemetryMessage
 from contracts.training import (
@@ -78,18 +78,34 @@ async def health() -> dict[str, str]:
     }
 
 
-@app.get("/api/devices")
-async def devices() -> list[dict[str, object]]:
+@app.get(
+    "/api/devices",
+    response_model=list[DeviceResponse],
+    response_model_by_alias=True,
+)
+async def devices() -> list[DeviceResponse]:
     """
     Liefert den aktuellen Zustand aller bekannten Geräte.
 
-    Diesen Endpoint können wir schon jetzt im Browser testen.
-
-    Später bekommt das Frontend Live-Updates zusätzlich
-    über einen eigenen WebSocket.
+    Der interne DeviceState verwendet Python-konformes snake_case.
+    An der HTTP-Grenze serialisieren wir die Felder als camelCase.
     """
 
-    return [asdict(device) for device in telemetry_service.get_devices()]
+    return [
+        DeviceResponse(
+            device_id=device.device_id,
+            device_type=device.device_type,
+            device_name=device.device_name,
+            status=device.status,
+            last_seen=device.last_seen,
+            heart_rate_bpm=device.heart_rate_bpm,
+            speed_kmh=device.speed_kmh,
+            cadence_rpm=device.cadence_rpm,
+            power_w=device.power_w,
+            resistance=device.resistance,
+        )
+        for device in telemetry_service.get_devices()
+    ]
 
 
 @app.websocket("/ws/device-agent")
