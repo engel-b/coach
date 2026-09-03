@@ -63,7 +63,9 @@ check-backend:
 check-frontend:
 	cd frontend && \
 	npm run lint && \
-	npx tsc --noEmit
+	npx tsc --noEmit && \
+  npm run build && \
+  npm test
 
 format:
 	cd backend && \

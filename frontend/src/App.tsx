@@ -12,12 +12,13 @@ import './App.css'
 import { CheckInWizard } from './check-in/CheckInWizard'
 import type { CheckIn } from './check-in/types'
 import { DeviceCard } from './devices/DeviceCard'
+import { mergeDeviceSnapshot } from './devices/mergeDeviceSnapshot'
 import type { DeviceState } from './devices/types'
 import { PersonDashboard } from './persons/PersonDashboard'
 import { PersonSelection } from './persons/PersonSelection'
 import type { Person } from './persons/types'
+import { applyTelemetryMessage } from './telemetry/applyTelemetryMessage'
 import { useTelemetry } from './telemetry/useTelemetry'
-import type { TelemetryMessage } from './telemetry/types'
 import { TrainingRecommendationView } from './training/TrainingRecommendationView'
 import type { TrainingRecommendation } from './training/types'
 import { WorkoutSummaryView } from './workout/WorkoutSummaryView'
@@ -69,225 +70,102 @@ function App() {
     useState<string | null>(null)
 
 
-  /*
-   * Eingehende Live-Telemetrie aus dem WebSocket.
-   *
-   * Wichtig:
-   * Dieser Callback wird nicht synchron aus einem React-Effect
-   * heraus ausgeführt, sondern vom WebSocket-Event ausgelöst.
-   *
-   * Deshalb ist setDevices() hier der korrekte React-Weg.
-   *
-   * Vergleich zur Java-Welt:
-   * ungefähr ein EventListener, der eingehende Events auf
-   * unseren aktuellen UI-State anwendet.
-   */
-  const handleTelemetryMessage =
-    useCallback(
-      (message: TelemetryMessage) => {
-        /*
-         * Ein Gerät hat seinen Status geändert.
-         *
-         * Beispiel:
-         * Pulsgurt wurde verbunden oder getrennt.
-         */
-        if (
-          message.type ===
-          'device.status_changed'
-        ) {
-          const deviceType =
-            message.payload.deviceType
+/*
+ * Eingehende Live-Telemetrie wird durch eine pure Funktion
+ * auf unseren aktuellen Device-State angewendet.
+ *
+ * React ist damit nur noch für die State-Verwaltung zuständig.
+ * Die fachliche Merge-/Upsert-Logik liegt in
+ * applyTelemetryMessage().
+ */
+const handleTelemetryMessage =
+  useCallback(
+    (
+      message: Parameters<
+        typeof applyTelemetryMessage
+      >[1],
+    ) => {
+      setDevices((currentDevices) =>
+        applyTelemetryMessage(
+          currentDevices,
+          message,
+        ),
+      )
+    },
+    [],
+  )
 
-          const deviceName =
-            message.payload.deviceName
 
-          const status =
-            message.payload.status
+/*
+ * Lädt den aktuellen Gerätezustand als REST-Snapshot.
+ *
+ * Der Snapshot ersetzt den lokalen Zustand nicht blind.
+ * mergeDeviceSnapshot() sorgt dafür, dass neuere
+ * WebSocket-Daten erhalten bleiben.
+ *
+ * Diese Funktion wird sowohl beim Start als auch nach
+ * einem WebSocket-Reconnect verwendet.
+ */
+const loadDeviceSnapshot =
+  useCallback(async (): Promise<void> => {
+    try {
+      const result =
+        await getDevices()
 
-          /*
-           * WebSocket-Daten kommen über eine Prozessgrenze.
-           * Deshalb prüfen wir die Payload defensiv,
-           * bevor wir sie in unseren UI-State übernehmen.
-           */
-          if (
-            typeof deviceType !== 'string' ||
-            typeof deviceName !== 'string' ||
-            typeof status !== 'string'
-          ) {
-            return
-          }
+      setDevices((currentDevices) =>
+        mergeDeviceSnapshot(
+          currentDevices,
+          result,
+        ),
+      )
+    } catch {
+      /*
+       * Der Device-Snapshot ist optional.
+       *
+       * Falls dieser Request fehlschlägt, kann die
+       * WebSocket-Telemetrie trotzdem weiterlaufen.
+       */
+    }
+  }, [])
 
-          setDevices((currentDevices) => {
-            const existingDevice =
-              currentDevices.find(
-                (device) =>
-                  device.device_id ===
-                  message.deviceId,
-              )
 
-            const updatedDevice: DeviceState = {
-              device_id: message.deviceId,
-              device_type:
-                deviceType as DeviceState['device_type'],
-              device_name: deviceName,
-              status:
-                status as DeviceState['status'],
-              last_seen: message.timestamp,
-            
-              /*
-               * Ein Status-Event enthält keine Herzfrequenz.
-               * Falls wir schon einen Messwert kennen,
-               * behalten wir ihn deshalb bei.
-               */
-              heart_rate_bpm:
-                existingDevice?.heart_rate_bpm ??
-                null,
-            
-              /*
-               * Falls wir schon einen Messwert kennen,
-               * behalten wir ihn deshalb bei.
-               */
-              speed_kmh:
-                existingDevice?.speed_kmh ??
-                null,
-            
-              cadence_rpm:
-                existingDevice?.cadence_rpm ??
-                null,
-            
-              power_w:
-                existingDevice?.power_w ??
-                null,
-            
-              resistance:
-                existingDevice?.resistance ??
-                null,
-            }
+/*
+ * WebSocket-Verbindung zum Backend aktivieren.
+ *
+ * Nach einer tatsächlich wiederhergestellten Verbindung
+ * synchronisieren wir zusätzlich den aktuellen REST-Snapshot.
+ * Dadurch holen wir Zustandsänderungen nach, die während
+ * des WebSocket-Ausfalls möglicherweise verpasst wurden.
+ */
+useTelemetry({
+  onMessage: handleTelemetryMessage,
+  onConnected: loadDeviceSnapshot,
+})
 
-            /*
-             * Upsert:
-             *
-             * vorhandenes Gerät entfernen und anschließend
-             * die aktualisierte Version einfügen.
-             */
-            return [
-              ...currentDevices.filter(
-                (device) =>
-                  device.device_id !==
-                  message.deviceId,
-              ),
-              updatedDevice,
-            ]
-          })
 
-          return
-        }
+/*
+ * Personen einmal beim Start laden.
+ */
+useEffect(() => {
+  async function loadPersons(): Promise<void> {
+    try {
+      const result =
+        await getPersons()
 
-        /*
-         * Live-Herzfrequenz.
-         */
-        if (
-          message.type ===
-          'heart_rate.sample'
-        ) {
-          const bpm =
-            message.payload.bpm
+      setPersons(result)
+      setError(null)
+    } catch (loadError) {
+      const message =
+        loadError instanceof Error
+          ? loadError.message
+          : 'Unknown error'
 
-          if (typeof bpm !== 'number') {
-            return
-          }
+      setError(message)
+    }
+  }
 
-          setDevices((currentDevices) =>
-            currentDevices.map(
-              (device) => {
-                if (
-                  device.device_id !==
-                  message.deviceId
-                ) {
-                  return device
-                }
-
-                return {
-                  ...device,
-                  last_seen:
-                    message.timestamp,
-                  heart_rate_bpm: bpm,
-                }
-              },
-            ),
-          )
-        }
-
-        if (message.type === 'bike.telemetry') {
-          const speedKmh = message.payload.speedKmh
-          const cadenceRpm = message.payload.cadenceRpm
-          const powerW = message.payload.powerW
-          const resistance = message.payload.resistance
-        
-          setDevices((currentDevices) => {
-            const existingDevice =
-              currentDevices.find(
-                (device) =>
-                  device.device_id === message.deviceId,
-              )
-        
-            /*
-             * Normalerweise kam vorher bereits
-             * device.status_changed.
-             *
-             * Wir verlassen uns aber nicht darauf.
-             * Das macht den WebSocket robust gegen
-             * Reconnects und Message-Reihenfolgen.
-             */
-            const bikeDevice: DeviceState = {
-              device_id: message.deviceId,
-              device_type: 'bike',
-              device_name:
-                existingDevice?.device_name ??
-                'FTMS Bike',
-              status: 'connected',
-              last_seen: message.timestamp,
-        
-              heart_rate_bpm:
-                existingDevice?.heart_rate_bpm ??
-                null,
-        
-              speed_kmh:
-                typeof speedKmh === 'number'
-                  ? speedKmh
-                  : existingDevice?.speed_kmh ?? null,
-        
-              cadence_rpm:
-                typeof cadenceRpm === 'number'
-                  ? cadenceRpm
-                  : existingDevice?.cadence_rpm ?? null,
-        
-              power_w:
-                typeof powerW === 'number'
-                  ? powerW
-                  : existingDevice?.power_w ?? null,
-        
-              resistance:
-                typeof resistance === 'number'
-                  ? resistance
-                  : existingDevice?.resistance ?? null,
-            }
-        
-            return [
-              ...currentDevices.filter(
-                (device) =>
-                  device.device_id !==
-                  message.deviceId,
-              ),
-              bikeDevice,
-            ]
-          })
-        
-          return
-        }        
-      },
-      [],
-    )
+  void loadPersons()
+}, [])
 
 
   /*
@@ -297,10 +175,10 @@ function App() {
    * Verbindung und das Einlesen der Nachrichten.
    * Die fachliche Verarbeitung erfolgt oben im Callback.
    */
-  useTelemetry({
-    onMessage: handleTelemetryMessage,
-  })
-
+useTelemetry({
+  onMessage: handleTelemetryMessage,
+  onConnected: loadDeviceSnapshot,
+})
 
   /*
    * Personen einmal beim Start laden.
@@ -341,10 +219,9 @@ function App() {
   useEffect(() => {
     async function loadDevices(): Promise<void> {
       try {
-        const result =
-          await getDevices()
+        const result = await getDevices()
 
-        setDevices(result)
+        setDevices((currentDevices) => mergeDeviceSnapshot(currentDevices, result))
       } catch {
         /*
          * Der Device-Snapshot ist optional.
@@ -606,7 +483,7 @@ function App() {
   const heartRateDevices =
     devices.filter(
       (device) =>
-        device.device_type ===
+        device.deviceType ===
         'heart_rate',
     )
 
@@ -643,7 +520,7 @@ function App() {
         {heartRateDevices.map(
           (device) => (
             <DeviceCard
-              key={device.device_id}
+              key={device.deviceId}
               device={device}
             />
           ),

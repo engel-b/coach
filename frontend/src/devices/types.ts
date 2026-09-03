@@ -34,16 +34,16 @@ export type DeviceStatus =
  * exakt so, wie FastAPI ihn aktuell liefert.
  */
 export interface DeviceState {
-  device_id: string
-  device_type: DeviceType
-  device_name: string
+  deviceId: string
+  deviceType: DeviceType
+  deviceName: string
   status: DeviceStatus
-  last_seen: string
+  lastSeen: string
 
-  heart_rate_bpm: number | null
+  heartRateBpm: number | null
 
-  speed_kmh?: number | null
-  cadence_rpm?: number | null
-  power_w?: number | null
-  resistance?: number | null
+  speedKmh: number | null
+  cadenceRpm: number | null
+  powerW: number | null
+  resistance: number | null
 }

@@ -5,8 +5,9 @@ from typing import Self
 import pytest
 from bleak.exc import BleakError
 
-from adapters.bluetooth.ftms import bike_adapter
-from adapters.bluetooth.ftms.bike_adapter import (
+from adapters.bluetooth.discovery import BleDiscoveryCoordinator
+from adapters.bluetooth.ftms import adapter
+from adapters.bluetooth.ftms.adapter import (
     FTMS_INDOOR_BIKE_DATA_UUID,
     FtmsBikeAdapter,
 )
@@ -72,8 +73,9 @@ async def test_telemetry_raises_when_connected_bike_stays_silent(
     anschließend einen Reconnect durchführen.
     """
 
-    adapter = FtmsBikeAdapter(
+    bike_adapter = FtmsBikeAdapter(
         device_id="24:00:0C:A0:9A:95",
+        discovery=BleDiscoveryCoordinator(),
         telemetry_timeout_seconds=0.01,
     )
 
@@ -81,18 +83,18 @@ async def test_telemetry_raises_when_connected_bike_stays_silent(
         return object()
 
     monkeypatch.setattr(
-        adapter,
+        bike_adapter,
         "_find_device",
         fake_find_device,
     )
 
     monkeypatch.setattr(
-        bike_adapter,
+        adapter,
         "BleakClient",
         FakeBleakClient,
     )
 
-    telemetry = adapter.telemetry()
+    telemetry = bike_adapter.telemetry()
 
     with pytest.raises(
         BleakError,
@@ -118,8 +120,9 @@ async def test_telemetry_raises_when_bike_becomes_silent_after_first_sample(
     aktiv sein.
     """
 
-    adapter = FtmsBikeAdapter(
+    bike_adapter = FtmsBikeAdapter(
         device_id="24:00:0C:A0:9A:95",
+        discovery=BleDiscoveryCoordinator(),
         telemetry_timeout_seconds=0.01,
     )
 
@@ -127,18 +130,18 @@ async def test_telemetry_raises_when_bike_becomes_silent_after_first_sample(
         return object()
 
     monkeypatch.setattr(
-        adapter,
+        bike_adapter,
         "_find_device",
         fake_find_device,
     )
 
     monkeypatch.setattr(
-        bike_adapter,
+        adapter,
         "BleakClient",
         FakeBleakClient,
     )
 
-    telemetry = adapter.telemetry()
+    telemetry = bike_adapter.telemetry()
 
     first_sample_task = asyncio.create_task(
         anext(telemetry),

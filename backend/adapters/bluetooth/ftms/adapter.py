@@ -8,7 +8,8 @@ from bleak import BleakClient, BleakScanner
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakDBusError, BleakError
 
-from adapters.bluetooth.ftms.indoor_bike_parser import (
+from adapters.bluetooth.discovery import BleDiscoveryCoordinator
+from adapters.bluetooth.ftms.parser import (
     FtmsIndoorBikeData,
     FtmsParseError,
     parse_indoor_bike_data,
@@ -45,12 +46,14 @@ class FtmsBikeAdapter:
         self,
         *,
         device_id: str,
+        discovery: BleDiscoveryCoordinator,
         device_name: str | None = None,
         telemetry_timeout_seconds: float = 15.0,
     ) -> None:
         self._device_id = device_id
         self._device_name = device_name
         self._telemetry_timeout_seconds = telemetry_timeout_seconds
+        self._discovery = discovery
 
     async def telemetry(self) -> AsyncIterator[BikeTelemetry]:
         """
@@ -161,11 +164,14 @@ class FtmsBikeAdapter:
         )
 
     async def _find_device(self) -> BLEDevice | None:
-        try:
+        async def discover() -> BLEDevice | None:
             return await BleakScanner.find_device_by_address(
                 self._device_id,
                 timeout=10.0,
             )
+
+        try:
+            return await self._discovery.run(discover)
 
         except BleakDBusError as exc:
             # BlueZ kann einen zweiten parallelen aktiven Scan ablehnen.
@@ -174,13 +180,13 @@ class FtmsBikeAdapter:
             # nahezu gleichzeitig nach ihren Geräten suchen.
             if exc.dbus_error == "org.bluez.Error.InProgress":
                 logger.debug(
-                    "BLE scan already in progress while looking for FTMS bike %s",
+                    "FTMS discovery already in progress for %s",
                     self._device_id,
                 )
                 return None
 
             logger.warning(
-                "BLE discovery failed for FTMS bike %s: %s",
+                "FTMS discovery failed for %s: %s",
                 self._device_id,
                 exc,
             )
@@ -188,7 +194,7 @@ class FtmsBikeAdapter:
 
         except BleakError as exc:
             logger.warning(
-                "BLE discovery failed for FTMS bike %s: %s",
+                "FTMS discovery failed for %s: %s",
                 self._device_id,
                 exc,
             )

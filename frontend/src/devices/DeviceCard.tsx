@@ -32,7 +32,7 @@ export function DeviceCard({
           </div>
 
           <div className="device-name">
-            {device.device_name}
+            {device.deviceName}
           </div>
         </div>
 
@@ -48,7 +48,7 @@ export function DeviceCard({
       </div>
 
       <div className="heart-rate">
-        {device.heart_rate_bpm ?? '–'}
+        {device.heartRateBpm ?? '–'}
         <span>bpm</span>
       </div>
     </article>
