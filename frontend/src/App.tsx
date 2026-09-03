@@ -12,6 +12,7 @@ import './App.css'
 import { CheckInWizard } from './check-in/CheckInWizard'
 import type { CheckIn } from './check-in/types'
 import { DeviceCard } from './devices/DeviceCard'
+import { mergeDeviceSnapshot } from './devices/mergeDeviceSnapshot'
 import type { DeviceState } from './devices/types'
 import { PersonDashboard } from './persons/PersonDashboard'
 import { PersonSelection } from './persons/PersonSelection'
@@ -69,30 +70,102 @@ function App() {
     useState<string | null>(null)
 
 
-  /*
-  * Eingehende Live-Telemetrie wird durch eine pure Funktion
-  * auf unseren aktuellen Device-State angewendet.
-  *
-  * React ist damit nur noch für die State-Verwaltung zuständig.
-  * Die fachliche Merge-/Upsert-Logik liegt in
-  * applyTelemetryMessage().
-  */
-  const handleTelemetryMessage =
-    useCallback(
-      (
-        message: Parameters<
-          typeof applyTelemetryMessage
-        >[1],
-      ) => {
-        setDevices((currentDevices) =>
-          applyTelemetryMessage(
-            currentDevices,
-            message,
-          ),
-        )
-      },
-      [],
-    )
+/*
+ * Eingehende Live-Telemetrie wird durch eine pure Funktion
+ * auf unseren aktuellen Device-State angewendet.
+ *
+ * React ist damit nur noch für die State-Verwaltung zuständig.
+ * Die fachliche Merge-/Upsert-Logik liegt in
+ * applyTelemetryMessage().
+ */
+const handleTelemetryMessage =
+  useCallback(
+    (
+      message: Parameters<
+        typeof applyTelemetryMessage
+      >[1],
+    ) => {
+      setDevices((currentDevices) =>
+        applyTelemetryMessage(
+          currentDevices,
+          message,
+        ),
+      )
+    },
+    [],
+  )
+
+
+/*
+ * Lädt den aktuellen Gerätezustand als REST-Snapshot.
+ *
+ * Der Snapshot ersetzt den lokalen Zustand nicht blind.
+ * mergeDeviceSnapshot() sorgt dafür, dass neuere
+ * WebSocket-Daten erhalten bleiben.
+ *
+ * Diese Funktion wird sowohl beim Start als auch nach
+ * einem WebSocket-Reconnect verwendet.
+ */
+const loadDeviceSnapshot =
+  useCallback(async (): Promise<void> => {
+    try {
+      const result =
+        await getDevices()
+
+      setDevices((currentDevices) =>
+        mergeDeviceSnapshot(
+          currentDevices,
+          result,
+        ),
+      )
+    } catch {
+      /*
+       * Der Device-Snapshot ist optional.
+       *
+       * Falls dieser Request fehlschlägt, kann die
+       * WebSocket-Telemetrie trotzdem weiterlaufen.
+       */
+    }
+  }, [])
+
+
+/*
+ * WebSocket-Verbindung zum Backend aktivieren.
+ *
+ * Nach einer tatsächlich wiederhergestellten Verbindung
+ * synchronisieren wir zusätzlich den aktuellen REST-Snapshot.
+ * Dadurch holen wir Zustandsänderungen nach, die während
+ * des WebSocket-Ausfalls möglicherweise verpasst wurden.
+ */
+useTelemetry({
+  onMessage: handleTelemetryMessage,
+  onConnected: loadDeviceSnapshot,
+})
+
+
+/*
+ * Personen einmal beim Start laden.
+ */
+useEffect(() => {
+  async function loadPersons(): Promise<void> {
+    try {
+      const result =
+        await getPersons()
+
+      setPersons(result)
+      setError(null)
+    } catch (loadError) {
+      const message =
+        loadError instanceof Error
+          ? loadError.message
+          : 'Unknown error'
+
+      setError(message)
+    }
+  }
+
+  void loadPersons()
+}, [])
 
 
   /*
@@ -102,10 +175,10 @@ function App() {
    * Verbindung und das Einlesen der Nachrichten.
    * Die fachliche Verarbeitung erfolgt oben im Callback.
    */
-  useTelemetry({
-    onMessage: handleTelemetryMessage,
-  })
-
+useTelemetry({
+  onMessage: handleTelemetryMessage,
+  onConnected: loadDeviceSnapshot,
+})
 
   /*
    * Personen einmal beim Start laden.
@@ -146,10 +219,9 @@ function App() {
   useEffect(() => {
     async function loadDevices(): Promise<void> {
       try {
-        const result =
-          await getDevices()
+        const result = await getDevices()
 
-        setDevices(result)
+        setDevices((currentDevices) => mergeDeviceSnapshot(currentDevices, result))
       } catch {
         /*
          * Der Device-Snapshot ist optional.

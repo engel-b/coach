@@ -7,21 +7,17 @@ interface UseTelemetryOptions {
   onMessage: (
     message: TelemetryMessage,
   ) => void
+
+  onConnected?: () => void
 }
 
 
-/*
- * Wartezeit nach einem Verbindungsabbruch.
- *
- * Für unseren lokalen Kiosk ist ein kurzer konstanter Retry sinnvoll:
- * Das Backend läuft auf derselben Maschine und sollte normalerweise
- * innerhalb weniger Sekunden wieder erreichbar sein.
- */
 const RECONNECT_DELAY_MS = 2_000
 
 
 export function useTelemetry({
   onMessage,
+  onConnected,
 }: UseTelemetryOptions): boolean {
   const [connected, setConnected] =
     useState(false)
@@ -31,10 +27,6 @@ export function useTelemetry({
     let reconnectTimer:
       ReturnType<typeof setTimeout> | null = null
 
-    /*
-     * Verhindert, dass nach dem Unmount des React-Components
-     * noch ein Reconnect gestartet wird.
-     */
     let stopped = false
 
 
@@ -76,9 +68,6 @@ export function useTelemetry({
       websocket = socket
 
       socket.onopen = () => {
-        /*
-         * Nur der aktuell gültige Socket darf den State verändern.
-         */
         if (
           stopped ||
           websocket !== socket
@@ -87,6 +76,15 @@ export function useTelemetry({
         }
 
         setConnected(true)
+
+        /*
+         * Bei jeder erfolgreich hergestellten Verbindung
+         * darf der Aufrufer seinen Zustand synchronisieren.
+         *
+         * Das gilt sowohl für den ersten Connect als auch
+         * für spätere Reconnects.
+         */
+        onConnected?.()
       }
 
       socket.onmessage = (event) => {
@@ -120,11 +118,8 @@ export function useTelemetry({
         setConnected(false)
 
         /*
-         * close() sorgt dafür, dass der normale onclose-Pfad
-         * den Reconnect plant.
-         *
-         * Dadurch haben wir nur eine Stelle, die tatsächlich
-         * einen Retry-Timer erzeugt.
+         * onclose ist der einzige Pfad, der einen
+         * Reconnect plant.
          */
         socket.close()
       }
@@ -156,20 +151,13 @@ export function useTelemetry({
       }
 
       if (websocket !== null) {
-        /*
-         * Referenz zuerst entfernen.
-         *
-         * Falls close() anschließend synchron/asynchron onclose
-         * auslöst, erkennt der Handler den Socket als veraltet
-         * und plant keinen neuen Reconnect.
-         */
         const socket = websocket
         websocket = null
 
         socket.close()
       }
     }
-  }, [onMessage])
+  }, [onConnected, onMessage])
 
   return connected
 }
