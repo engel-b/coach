@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-
+import { parseTelemetryMessage } from './parseTelemetryMessage'
 import type { TelemetryMessage } from './types'
 
 
@@ -97,13 +97,27 @@ export function useTelemetry({
         }
 
         try {
-          const message = JSON.parse(
-            event.data,
-          ) as TelemetryMessage
-
-          onMessage(message)
+          /*
+           * JSON.parse() beweist noch keinen fachlichen Typ.
+           *
+           * Die externe Nachricht bleibt deshalb zunächst unknown
+           * und darf erst nach erfolgreicher Runtime-Validierung
+           * in die Anwendung gelangen.
+           */
+          const parsed: unknown =
+            JSON.parse(event.data)
+        
+          const message =
+            parseTelemetryMessage(parsed)
+        
+          if (message !== null) {
+            onMessage(message)
+          }
         } catch {
-          // Ungültige Telemetrie-Nachrichten ignorieren.
+          /*
+           * Auch syntaktisch ungültiges JSON wird an der
+           * WebSocket-Grenze verworfen.
+           */
         }
       }
 

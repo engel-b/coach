@@ -70,15 +70,19 @@ interface TestComponentProps {
   onMessage: (
     message: TelemetryMessage,
   ) => void
+
+  onConnected?: () => void
 }
 
 
 function TestComponent({
   onMessage,
+  onConnected,
 }: TestComponentProps) {
   const connected =
     useTelemetry({
       onMessage,
+      onConnected,
     })
 
   return (
@@ -127,6 +131,40 @@ describe('useTelemetry', () => {
     expect(
       FakeWebSocket.instances[0]?.url,
     ).toContain('/ws/telemetry')
+  })
+
+
+  it('calls onConnected after the websocket opens', () => {
+    const onMessage = vi.fn()
+    const onConnected = vi.fn()
+
+    render(
+      <TestComponent
+        onMessage={onMessage}
+        onConnected={onConnected}
+      />,
+    )
+
+    const socket =
+      FakeWebSocket.instances[0]
+
+    expect(socket).toBeDefined()
+
+    /*
+     * Das bloße Erzeugen des WebSockets bedeutet noch
+     * keine erfolgreich hergestellte Verbindung.
+     */
+    expect(
+      onConnected,
+    ).not.toHaveBeenCalled()
+
+    act(() => {
+      socket?.open()
+    })
+
+    expect(
+      onConnected,
+    ).toHaveBeenCalledOnce()
   })
 
 
@@ -179,6 +217,73 @@ describe('useTelemetry', () => {
     expect(
       FakeWebSocket.instances,
     ).toHaveLength(2)
+  })
+
+
+  it('calls onConnected again after a successful reconnect', () => {
+    const onMessage = vi.fn()
+    const onConnected = vi.fn()
+
+    render(
+      <TestComponent
+        onMessage={onMessage}
+        onConnected={onConnected}
+      />,
+    )
+
+    const firstSocket =
+      FakeWebSocket.instances[0]
+
+    expect(firstSocket).toBeDefined()
+
+    act(() => {
+      firstSocket?.open()
+    })
+
+    expect(
+      onConnected,
+    ).toHaveBeenCalledOnce()
+
+    act(() => {
+      firstSocket?.disconnect()
+    })
+
+    /*
+     * Ein Disconnect allein ist noch kein erfolgreicher
+     * Reconnect.
+     */
+    expect(
+      onConnected,
+    ).toHaveBeenCalledOnce()
+
+    act(() => {
+      vi.advanceTimersByTime(2_000)
+    })
+
+    expect(
+      FakeWebSocket.instances,
+    ).toHaveLength(2)
+
+    const secondSocket =
+      FakeWebSocket.instances[1]
+
+    expect(secondSocket).toBeDefined()
+
+    /*
+     * Auch der neue WebSocket zählt erst als verbunden,
+     * wenn sein open-Event eintrifft.
+     */
+    expect(
+      onConnected,
+    ).toHaveBeenCalledOnce()
+
+    act(() => {
+      secondSocket?.open()
+    })
+
+    expect(
+      onConnected,
+    ).toHaveBeenCalledTimes(2)
   })
 
 
@@ -245,5 +350,79 @@ describe('useTelemetry', () => {
     expect(onMessage).toHaveBeenCalledWith(
       message,
     )
+  })
+  
+  it('does not forward invalid telemetry messages', () => {
+    const onMessage = vi.fn()
+  
+    render(
+      <TestComponent
+        onMessage={onMessage}
+      />,
+    )
+  
+    const socket =
+      FakeWebSocket.instances[0]
+  
+    /*
+     * Syntaktisch korrektes JSON, aber fachlich ungültig:
+     * bpm muss eine Zahl sein.
+     */
+    act(() => {
+      socket?.onmessage?.(
+        new MessageEvent(
+          'message',
+          {
+            data: JSON.stringify({
+              type: 'heart_rate.sample',
+              timestamp:
+                '2026-09-03T09:00:00Z',
+              deviceId: 'test-heart-rate',
+              payload: {
+                bpm: 'invalid',
+              },
+            }),
+          },
+        ),
+      )
+    })
+  
+    expect(
+      onMessage,
+    ).not.toHaveBeenCalled()
+  })
+  
+  
+  it('does not forward malformed JSON', () => {
+    const onMessage = vi.fn()
+  
+    render(
+      <TestComponent
+        onMessage={onMessage}
+      />,
+    )
+  
+    const socket =
+      FakeWebSocket.instances[0]
+  
+    /*
+     * Hier scheitert bereits JSON.parse().
+     * Auch das darf den WebSocket-Handler nicht nach außen
+     * durchbrechen lassen.
+     */
+    act(() => {
+      socket?.onmessage?.(
+        new MessageEvent(
+          'message',
+          {
+            data: '{not-valid-json',
+          },
+        ),
+      )
+    })
+  
+    expect(
+      onMessage,
+    ).not.toHaveBeenCalled()
   })
 })
