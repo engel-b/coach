@@ -197,25 +197,68 @@ function App() {
             return
           }
 
-          setDevices((currentDevices) =>
-            currentDevices.map(
-              (device) => {
-                if (
-                  device.device_id !==
-                  message.deviceId
-                ) {
-                  return device
-                }
+          setDevices((currentDevices) => {
+            const existingDevice =
+              currentDevices.find(
+                (device) =>
+                  device.device_id ===
+                  message.deviceId,
+              )
 
-                return {
-                  ...device,
-                  last_seen:
-                    message.timestamp,
-                  heart_rate_bpm: bpm,
-                }
-              },
-            ),
-          )
+            /*
+            * Ein Heart-Rate-Sample kann vor einem
+            * device.status_changed eintreffen.
+            *
+            * Deshalb führen wir wie beim Bike einen Upsert
+            * durch und setzen nicht voraus, dass das Gerät
+            * bereits im UI-State existiert.
+            */
+            const heartRateDevice: DeviceState = {
+              device_id: message.deviceId,
+              device_type: 'heart_rate',
+              device_name:
+                existingDevice?.device_name ??
+                'Heart Rate Sensor',
+              status: 'connected',
+              last_seen: message.timestamp,
+
+              heart_rate_bpm: bpm,
+
+              /*
+              * Bereits bekannte Werte bleiben erhalten.
+              *
+              * Für einen normalen Pulsgurt sind die Bike-Werte
+              * zwar nicht relevant. Der DeviceState bleibt damit
+              * aber bei einem Update vollständig erhalten.
+              */
+              speed_kmh:
+                existingDevice?.speed_kmh ??
+                null,
+
+              cadence_rpm:
+                existingDevice?.cadence_rpm ??
+                null,
+
+              power_w:
+                existingDevice?.power_w ??
+                null,
+
+              resistance:
+                existingDevice?.resistance ??
+                null,
+            }
+
+            return [
+              ...currentDevices.filter(
+                (device) =>
+                  device.device_id !==
+                  message.deviceId,
+              ),
+              heartRateDevice,
+            ]
+          })
+
+          return
         }
 
         if (message.type === 'bike.telemetry') {
