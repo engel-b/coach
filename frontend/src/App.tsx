@@ -411,7 +411,7 @@ function App() {
   const heartRateDevices =
     devices.filter(
       (device) =>
-        device.device_type ===
+        device.deviceType ===
         'heart_rate',
     )
 
@@ -448,7 +448,7 @@ function App() {
         {heartRateDevices.map(
           (device) => (
             <DeviceCard
-              key={device.device_id}
+              key={device.deviceId}
               device={device}
             />
           ),

@@ -24,15 +24,15 @@ describe('applyTelemetryMessage', () => {
 
     expect(result).toEqual([
       {
-        device_id: 'test-heart-rate',
-        device_type: 'heart_rate',
-        device_name: 'Heart Rate Sensor',
+        deviceId: 'test-heart-rate',
+        deviceType: 'heart_rate',
+        deviceName: 'Heart Rate Sensor',
         status: 'connected',
-        last_seen: '2026-09-03T08:00:00Z',
-        heart_rate_bpm: 142,
-        speed_kmh: null,
-        cadence_rpm: null,
-        power_w: null,
+        lastSeen: '2026-09-03T08:00:00Z',
+        heartRateBpm: 142,
+        speedKmh: null,
+        cadenceRpm: null,
+        powerW: null,
         resistance: null,
       },
     ])
@@ -60,15 +60,15 @@ describe('applyTelemetryMessage', () => {
 
     expect(result).toEqual([
       {
-        device_id: 'test-bike',
-        device_type: 'bike',
-        device_name: 'FTMS Bike',
+        deviceId: 'test-bike',
+        deviceType: 'bike',
+        deviceName: 'FTMS Bike',
         status: 'connected',
-        last_seen: '2026-09-03T08:00:00Z',
-        heart_rate_bpm: null,
-        speed_kmh: 28.4,
-        cadence_rpm: 82.5,
-        power_w: 175,
+        lastSeen: '2026-09-03T08:00:00Z',
+        heartRateBpm: null,
+        speedKmh: 28.4,
+        cadenceRpm: 82.5,
+        powerW: 175,
         resistance: 12,
       },
     ])
@@ -78,15 +78,15 @@ describe('applyTelemetryMessage', () => {
   it('preserves previous bike values for partial telemetry', () => {
     const currentDevices: DeviceState[] = [
       {
-        device_id: 'test-bike',
-        device_type: 'bike',
-        device_name: 'MERACH',
+        deviceId: 'test-bike',
+        deviceType: 'bike',
+        deviceName: 'MERACH',
         status: 'connected',
-        last_seen: '2026-09-03T08:00:00Z',
-        heart_rate_bpm: null,
-        speed_kmh: 28.4,
-        cadence_rpm: 82.5,
-        power_w: 175,
+        lastSeen: '2026-09-03T08:00:00Z',
+        heartRateBpm: null,
+        speedKmh: 28.4,
+        cadenceRpm: 82.5,
+        powerW: 175,
         resistance: 12,
       },
     ]
@@ -108,15 +108,15 @@ describe('applyTelemetryMessage', () => {
 
     expect(result).toEqual([
       {
-        device_id: 'test-bike',
-        device_type: 'bike',
-        device_name: 'MERACH',
+        deviceId: 'test-bike',
+        deviceType: 'bike',
+        deviceName: 'MERACH',
         status: 'connected',
-        last_seen: '2026-09-03T08:00:01Z',
-        heart_rate_bpm: null,
-        speed_kmh: 28.4,
-        cadence_rpm: 82.5,
-        power_w: 190,
+        lastSeen: '2026-09-03T08:00:01Z',
+        heartRateBpm: null,
+        speedKmh: 28.4,
+        cadenceRpm: 82.5,
+        powerW: 190,
         resistance: 12,
       },
     ])
@@ -126,15 +126,15 @@ describe('applyTelemetryMessage', () => {
   it('preserves telemetry when a status event arrives later', () => {
     const currentDevices: DeviceState[] = [
       {
-        device_id: 'test-bike',
-        device_type: 'bike',
-        device_name: 'FTMS Bike',
+        deviceId: 'test-bike',
+        deviceType: 'bike',
+        deviceName: 'FTMS Bike',
         status: 'connected',
-        last_seen: '2026-09-03T08:00:00Z',
-        heart_rate_bpm: null,
-        speed_kmh: 28.4,
-        cadence_rpm: 82.5,
-        power_w: 175,
+        lastSeen: '2026-09-03T08:00:00Z',
+        heartRateBpm: null,
+        speedKmh: 28.4,
+        cadenceRpm: 82.5,
+        powerW: 175,
         resistance: 12,
       },
     ]
@@ -158,15 +158,15 @@ describe('applyTelemetryMessage', () => {
 
     expect(result).toEqual([
       {
-        device_id: 'test-bike',
-        device_type: 'bike',
-        device_name: 'MERACH',
+        deviceId: 'test-bike',
+        deviceType: 'bike',
+        deviceName: 'MERACH',
         status: 'connected',
-        last_seen: '2026-09-03T08:00:01Z',
-        heart_rate_bpm: null,
-        speed_kmh: 28.4,
-        cadence_rpm: 82.5,
-        power_w: 175,
+        lastSeen: '2026-09-03T08:00:01Z',
+        heartRateBpm: null,
+        speedKmh: 28.4,
+        cadenceRpm: 82.5,
+        powerW: 175,
         resistance: 12,
       },
     ])

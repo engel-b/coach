@@ -2,27 +2,6 @@ import type { DeviceState } from '../devices/types'
 import type { TelemetryMessage } from './types'
 
 
-/*
- * Wendet genau eine Telemetrie-Nachricht auf den aktuellen
- * Device-State an.
- *
- * Die Funktion ist absichtlich "pure":
- *
- * - kein React
- * - kein WebSocket
- * - kein setState()
- * - keine Seiteneffekte
- *
- * Java-Vergleich:
- *
- *   List<DeviceState> apply(
- *       List<DeviceState> current,
- *       TelemetryMessage message
- *   )
- *
- * Dadurch können wir die fachliche Merge-/Upsert-Logik später
- * unabhängig von React testen.
- */
 export function applyTelemetryMessage(
   currentDevices: DeviceState[],
   message: TelemetryMessage,
@@ -48,9 +27,6 @@ export function applyTelemetryMessage(
     )
   }
 
-  /*
-   * Unbekannte Eventtypen verändern den aktuellen State nicht.
-   */
   return currentDevices
 }
 
@@ -59,19 +35,10 @@ function applyDeviceStatusChanged(
   currentDevices: DeviceState[],
   message: TelemetryMessage,
 ): DeviceState[] {
-  const deviceType =
-    message.payload.deviceType
+  const deviceType = message.payload.deviceType
+  const deviceName = message.payload.deviceName
+  const status = message.payload.status
 
-  const deviceName =
-    message.payload.deviceName
-
-  const status =
-    message.payload.status
-
-  /*
-   * WebSocket-Nachrichten überschreiten eine Prozessgrenze.
-   * Deshalb übernehmen wir die Payload nicht ungeprüft.
-   */
   if (
     typeof deviceType !== 'string' ||
     typeof deviceName !== 'string' ||
@@ -81,43 +48,26 @@ function applyDeviceStatusChanged(
   }
 
   const existingDevice =
-    findDevice(
-      currentDevices,
-      message.deviceId,
-    )
+    findDevice(currentDevices, message.deviceId)
 
   const updatedDevice: DeviceState = {
-    device_id: message.deviceId,
-    device_type:
-      deviceType as DeviceState['device_type'],
-    device_name: deviceName,
+    deviceId: message.deviceId,
+    deviceType:
+      deviceType as DeviceState['deviceType'],
+    deviceName,
     status:
       status as DeviceState['status'],
-    last_seen: message.timestamp,
-
-    /*
-     * Ein Status-Event enthält keine Messwerte.
-     * Bereits bekannte Telemetrie bleibt deshalb erhalten.
-     */
-    heart_rate_bpm:
-      existingDevice?.heart_rate_bpm ??
-      null,
-
-    speed_kmh:
-      existingDevice?.speed_kmh ??
-      null,
-
-    cadence_rpm:
-      existingDevice?.cadence_rpm ??
-      null,
-
-    power_w:
-      existingDevice?.power_w ??
-      null,
-
+    lastSeen: message.timestamp,
+    heartRateBpm:
+      existingDevice?.heartRateBpm ?? null,
+    speedKmh:
+      existingDevice?.speedKmh ?? null,
+    cadenceRpm:
+      existingDevice?.cadenceRpm ?? null,
+    powerW:
+      existingDevice?.powerW ?? null,
     resistance:
-      existingDevice?.resistance ??
-      null,
+      existingDevice?.resistance ?? null,
   }
 
   return upsertDevice(
@@ -131,49 +81,32 @@ function applyHeartRateSample(
   currentDevices: DeviceState[],
   message: TelemetryMessage,
 ): DeviceState[] {
-  const bpm =
-    message.payload.bpm
+  const bpm = message.payload.bpm
 
   if (typeof bpm !== 'number') {
     return currentDevices
   }
 
   const existingDevice =
-    findDevice(
-      currentDevices,
-      message.deviceId,
-    )
+    findDevice(currentDevices, message.deviceId)
 
-  /*
-   * Ein Heart-Rate-Sample kann vor dem Status-Event eintreffen.
-   * Deshalb erzeugen wir bei Bedarf direkt einen Device-State.
-   */
   const heartRateDevice: DeviceState = {
-    device_id: message.deviceId,
-    device_type: 'heart_rate',
-    device_name:
-      existingDevice?.device_name ??
+    deviceId: message.deviceId,
+    deviceType: 'heart_rate',
+    deviceName:
+      existingDevice?.deviceName ??
       'Heart Rate Sensor',
     status: 'connected',
-    last_seen: message.timestamp,
-
-    heart_rate_bpm: bpm,
-
-    speed_kmh:
-      existingDevice?.speed_kmh ??
-      null,
-
-    cadence_rpm:
-      existingDevice?.cadence_rpm ??
-      null,
-
-    power_w:
-      existingDevice?.power_w ??
-      null,
-
+    lastSeen: message.timestamp,
+    heartRateBpm: bpm,
+    speedKmh:
+      existingDevice?.speedKmh ?? null,
+    cadenceRpm:
+      existingDevice?.cadenceRpm ?? null,
+    powerW:
+      existingDevice?.powerW ?? null,
     resistance:
-      existingDevice?.resistance ??
-      null,
+      existingDevice?.resistance ?? null,
   }
 
   return upsertDevice(
@@ -187,60 +120,36 @@ function applyBikeTelemetry(
   currentDevices: DeviceState[],
   message: TelemetryMessage,
 ): DeviceState[] {
-  const speedKmh =
-    message.payload.speedKmh
-
-  const cadenceRpm =
-    message.payload.cadenceRpm
-
-  const powerW =
-    message.payload.powerW
-
-  const resistance =
-    message.payload.resistance
+  const speedKmh = message.payload.speedKmh
+  const cadenceRpm = message.payload.cadenceRpm
+  const powerW = message.payload.powerW
+  const resistance = message.payload.resistance
 
   const existingDevice =
-    findDevice(
-      currentDevices,
-      message.deviceId,
-    )
+    findDevice(currentDevices, message.deviceId)
 
-  /*
-   * Auch Bike-Telemetrie darf vor einem Status-Event eintreffen.
-   */
   const bikeDevice: DeviceState = {
-    device_id: message.deviceId,
-    device_type: 'bike',
-    device_name:
-      existingDevice?.device_name ??
+    deviceId: message.deviceId,
+    deviceType: 'bike',
+    deviceName:
+      existingDevice?.deviceName ??
       'FTMS Bike',
     status: 'connected',
-    last_seen: message.timestamp,
-
-    heart_rate_bpm:
-      existingDevice?.heart_rate_bpm ??
-      null,
-
-    /*
-     * FTMS-Nachrichten können partiell sein.
-     * Ein fehlender Wert darf einen bereits bekannten Wert
-     * deshalb nicht auf null zurücksetzen.
-     */
-    speed_kmh:
+    lastSeen: message.timestamp,
+    heartRateBpm:
+      existingDevice?.heartRateBpm ?? null,
+    speedKmh:
       typeof speedKmh === 'number'
         ? speedKmh
-        : existingDevice?.speed_kmh ?? null,
-
-    cadence_rpm:
+        : existingDevice?.speedKmh ?? null,
+    cadenceRpm:
       typeof cadenceRpm === 'number'
         ? cadenceRpm
-        : existingDevice?.cadence_rpm ?? null,
-
-    power_w:
+        : existingDevice?.cadenceRpm ?? null,
+    powerW:
       typeof powerW === 'number'
         ? powerW
-        : existingDevice?.power_w ?? null,
-
+        : existingDevice?.powerW ?? null,
     resistance:
       typeof resistance === 'number'
         ? resistance
@@ -259,8 +168,7 @@ function findDevice(
   deviceId: string,
 ): DeviceState | undefined {
   return devices.find(
-    (device) =>
-      device.device_id === deviceId,
+    (device) => device.deviceId === deviceId,
   )
 }
 
@@ -272,8 +180,7 @@ function upsertDevice(
   return [
     ...devices.filter(
       (device) =>
-        device.device_id !==
-        updatedDevice.device_id,
+        device.deviceId !== updatedDevice.deviceId,
     ),
     updatedDevice,
   ]

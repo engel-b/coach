@@ -214,14 +214,14 @@ export function WorkoutView({
     () =>
       devices.find(
         (device) =>
-          device.device_type === 'heart_rate' &&
+          device.deviceType === 'heart_rate' &&
           device.status === 'connected',
       ),
     [devices],
   )
 
   const heartRate =
-    heartRateDevice?.heart_rate_bpm ?? null
+    heartRateDevice?.heartRateBpm ?? null
 
   const targetMin =
     current.phase?.targetHeartRateMin ?? null
@@ -253,20 +253,20 @@ export function WorkoutView({
     () =>
       devices.find(
         (device) =>
-          device.device_type === 'bike' &&
+          device.deviceType === 'bike' &&
           device.status === 'connected',
       ),
     [devices],
   )
   
   const speedKmh =
-    bikeDevice?.speed_kmh ?? null
+    bikeDevice?.speedKmh ?? null
   
   const cadenceRpm =
-    bikeDevice?.cadence_rpm ?? null
+    bikeDevice?.cadenceRpm ?? null
   
   const powerW =
-    bikeDevice?.power_w ?? null
+    bikeDevice?.powerW ?? null
 
   async function completeCurrentWorkout(): Promise<void> {
     if (finishing) {
@@ -408,7 +408,7 @@ export function WorkoutView({
           />
 
           {heartRateDevice !== undefined
-            ? heartRateDevice.device_name
+            ? heartRateDevice.deviceName
             : 'Pulsgurt nicht verbunden'}
         </div>
       </header>
