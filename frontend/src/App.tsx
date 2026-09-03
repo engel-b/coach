@@ -16,8 +16,8 @@ import type { DeviceState } from './devices/types'
 import { PersonDashboard } from './persons/PersonDashboard'
 import { PersonSelection } from './persons/PersonSelection'
 import type { Person } from './persons/types'
+import { applyTelemetryMessage } from './telemetry/applyTelemetryMessage'
 import { useTelemetry } from './telemetry/useTelemetry'
-import type { TelemetryMessage } from './telemetry/types'
 import { TrainingRecommendationView } from './training/TrainingRecommendationView'
 import type { TrainingRecommendation } from './training/types'
 import { WorkoutSummaryView } from './workout/WorkoutSummaryView'
@@ -70,264 +70,26 @@ function App() {
 
 
   /*
-   * Eingehende Live-Telemetrie aus dem WebSocket.
-   *
-   * Wichtig:
-   * Dieser Callback wird nicht synchron aus einem React-Effect
-   * heraus ausgeführt, sondern vom WebSocket-Event ausgelöst.
-   *
-   * Deshalb ist setDevices() hier der korrekte React-Weg.
-   *
-   * Vergleich zur Java-Welt:
-   * ungefähr ein EventListener, der eingehende Events auf
-   * unseren aktuellen UI-State anwendet.
-   */
+  * Eingehende Live-Telemetrie wird durch eine pure Funktion
+  * auf unseren aktuellen Device-State angewendet.
+  *
+  * React ist damit nur noch für die State-Verwaltung zuständig.
+  * Die fachliche Merge-/Upsert-Logik liegt in
+  * applyTelemetryMessage().
+  */
   const handleTelemetryMessage =
     useCallback(
-      (message: TelemetryMessage) => {
-        /*
-         * Ein Gerät hat seinen Status geändert.
-         *
-         * Beispiel:
-         * Pulsgurt wurde verbunden oder getrennt.
-         */
-        if (
-          message.type ===
-          'device.status_changed'
-        ) {
-          const deviceType =
-            message.payload.deviceType
-
-          const deviceName =
-            message.payload.deviceName
-
-          const status =
-            message.payload.status
-
-          /*
-           * WebSocket-Daten kommen über eine Prozessgrenze.
-           * Deshalb prüfen wir die Payload defensiv,
-           * bevor wir sie in unseren UI-State übernehmen.
-           */
-          if (
-            typeof deviceType !== 'string' ||
-            typeof deviceName !== 'string' ||
-            typeof status !== 'string'
-          ) {
-            return
-          }
-
-          setDevices((currentDevices) => {
-            const existingDevice =
-              currentDevices.find(
-                (device) =>
-                  device.device_id ===
-                  message.deviceId,
-              )
-
-            const updatedDevice: DeviceState = {
-              device_id: message.deviceId,
-              device_type:
-                deviceType as DeviceState['device_type'],
-              device_name: deviceName,
-              status:
-                status as DeviceState['status'],
-              last_seen: message.timestamp,
-            
-              /*
-               * Ein Status-Event enthält keine Herzfrequenz.
-               * Falls wir schon einen Messwert kennen,
-               * behalten wir ihn deshalb bei.
-               */
-              heart_rate_bpm:
-                existingDevice?.heart_rate_bpm ??
-                null,
-            
-              /*
-               * Falls wir schon einen Messwert kennen,
-               * behalten wir ihn deshalb bei.
-               */
-              speed_kmh:
-                existingDevice?.speed_kmh ??
-                null,
-            
-              cadence_rpm:
-                existingDevice?.cadence_rpm ??
-                null,
-            
-              power_w:
-                existingDevice?.power_w ??
-                null,
-            
-              resistance:
-                existingDevice?.resistance ??
-                null,
-            }
-
-            /*
-             * Upsert:
-             *
-             * vorhandenes Gerät entfernen und anschließend
-             * die aktualisierte Version einfügen.
-             */
-            return [
-              ...currentDevices.filter(
-                (device) =>
-                  device.device_id !==
-                  message.deviceId,
-              ),
-              updatedDevice,
-            ]
-          })
-
-          return
-        }
-
-        /*
-         * Live-Herzfrequenz.
-         */
-        if (
-          message.type ===
-          'heart_rate.sample'
-        ) {
-          const bpm =
-            message.payload.bpm
-
-          if (typeof bpm !== 'number') {
-            return
-          }
-
-          setDevices((currentDevices) => {
-            const existingDevice =
-              currentDevices.find(
-                (device) =>
-                  device.device_id ===
-                  message.deviceId,
-              )
-
-            /*
-            * Ein Heart-Rate-Sample kann vor einem
-            * device.status_changed eintreffen.
-            *
-            * Deshalb führen wir wie beim Bike einen Upsert
-            * durch und setzen nicht voraus, dass das Gerät
-            * bereits im UI-State existiert.
-            */
-            const heartRateDevice: DeviceState = {
-              device_id: message.deviceId,
-              device_type: 'heart_rate',
-              device_name:
-                existingDevice?.device_name ??
-                'Heart Rate Sensor',
-              status: 'connected',
-              last_seen: message.timestamp,
-
-              heart_rate_bpm: bpm,
-
-              /*
-              * Bereits bekannte Werte bleiben erhalten.
-              *
-              * Für einen normalen Pulsgurt sind die Bike-Werte
-              * zwar nicht relevant. Der DeviceState bleibt damit
-              * aber bei einem Update vollständig erhalten.
-              */
-              speed_kmh:
-                existingDevice?.speed_kmh ??
-                null,
-
-              cadence_rpm:
-                existingDevice?.cadence_rpm ??
-                null,
-
-              power_w:
-                existingDevice?.power_w ??
-                null,
-
-              resistance:
-                existingDevice?.resistance ??
-                null,
-            }
-
-            return [
-              ...currentDevices.filter(
-                (device) =>
-                  device.device_id !==
-                  message.deviceId,
-              ),
-              heartRateDevice,
-            ]
-          })
-
-          return
-        }
-
-        if (message.type === 'bike.telemetry') {
-          const speedKmh = message.payload.speedKmh
-          const cadenceRpm = message.payload.cadenceRpm
-          const powerW = message.payload.powerW
-          const resistance = message.payload.resistance
-        
-          setDevices((currentDevices) => {
-            const existingDevice =
-              currentDevices.find(
-                (device) =>
-                  device.device_id === message.deviceId,
-              )
-        
-            /*
-             * Normalerweise kam vorher bereits
-             * device.status_changed.
-             *
-             * Wir verlassen uns aber nicht darauf.
-             * Das macht den WebSocket robust gegen
-             * Reconnects und Message-Reihenfolgen.
-             */
-            const bikeDevice: DeviceState = {
-              device_id: message.deviceId,
-              device_type: 'bike',
-              device_name:
-                existingDevice?.device_name ??
-                'FTMS Bike',
-              status: 'connected',
-              last_seen: message.timestamp,
-        
-              heart_rate_bpm:
-                existingDevice?.heart_rate_bpm ??
-                null,
-        
-              speed_kmh:
-                typeof speedKmh === 'number'
-                  ? speedKmh
-                  : existingDevice?.speed_kmh ?? null,
-        
-              cadence_rpm:
-                typeof cadenceRpm === 'number'
-                  ? cadenceRpm
-                  : existingDevice?.cadence_rpm ?? null,
-        
-              power_w:
-                typeof powerW === 'number'
-                  ? powerW
-                  : existingDevice?.power_w ?? null,
-        
-              resistance:
-                typeof resistance === 'number'
-                  ? resistance
-                  : existingDevice?.resistance ?? null,
-            }
-        
-            return [
-              ...currentDevices.filter(
-                (device) =>
-                  device.device_id !==
-                  message.deviceId,
-              ),
-              bikeDevice,
-            ]
-          })
-        
-          return
-        }        
+      (
+        message: Parameters<
+          typeof applyTelemetryMessage
+        >[1],
+      ) => {
+        setDevices((currentDevices) =>
+          applyTelemetryMessage(
+            currentDevices,
+            message,
+          ),
+        )
       },
       [],
     )
