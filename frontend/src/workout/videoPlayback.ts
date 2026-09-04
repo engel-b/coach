@@ -5,23 +5,36 @@ const MAX_PLAYBACK_RATE = 2.0
 
 
 /*
- * Entscheidet, ob das Trainingsvideo wegen eines
- * stillstehenden Bikes pausieren soll.
+ * Entscheidet, ob das Bike aktuell als aktiv gefahren
+ * betrachtet wird.
  *
- * null bedeutet:
- * Es liegt noch keine Geschwindigkeit vor.
- * In diesem Fall greifen wir nicht automatisch ein.
+ * Die Trittfrequenz ist dafür die beste Information:
  *
- * Erst eine tatsächlich gemessene Geschwindigkeit von
- * 0 km/h oder weniger bedeutet "Bike steht".
+ *   cadence > 0  -> Fahrer tritt
+ *   cadence <= 0 -> Fahrer tritt nicht
+ *
+ * Falls das Bike keine Trittfrequenz liefert, verwenden
+ * wir die Geschwindigkeit als Fallback.
+ *
+ * Sind noch überhaupt keine Bike-Daten vorhanden, greifen
+ * wir nicht automatisch in das Workout ein.
+ *
+ * Diese Funktion enthält bewusst keine React-Logik.
+ * Sie kann später unverändert Teil der WorkoutEngine werden.
  */
-export function shouldPauseVideoForBike(
+export function isBikeMoving(
+  cadenceRpm: number | null,
   speedKmh: number | null,
-): boolean {
-  return (
-    speedKmh !== null &&
-    speedKmh <= 0
-  )
+): boolean | null {
+  if (cadenceRpm !== null) {
+    return cadenceRpm > 0
+  }
+
+  if (speedKmh !== null) {
+    return speedKmh > 0
+  }
+
+  return null
 }
 
 
@@ -41,9 +54,6 @@ export function shouldPauseVideoForBike(
  *
  * Falls noch keine Bike-Geschwindigkeit bekannt ist,
  * läuft das Video mit normaler Geschwindigkeit.
- *
- * Stillstand wird separat über
- * shouldPauseVideoForBike() behandelt.
  */
 export function calculateVideoPlaybackRate(
   speedKmh: number | null,
@@ -63,4 +73,3 @@ export function calculateVideoPlaybackRate(
     ),
   )
 }
-

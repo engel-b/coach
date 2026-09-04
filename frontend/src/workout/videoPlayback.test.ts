@@ -6,40 +6,48 @@ import {
 
 import {
   calculateVideoPlaybackRate,
-  shouldPauseVideoForBike,
+  isBikeMoving,
 } from './videoPlayback'
 
 
-describe('shouldPauseVideoForBike', () => {
-  it('does not pause while no bike speed is known', () => {
+describe('isBikeMoving', () => {
+  it('returns unknown while no bike telemetry is known', () => {
     expect(
-      shouldPauseVideoForBike(null),
-    ).toBe(false)
+      isBikeMoving(null, null),
+    ).toBeNull()
   })
 
 
-  it('pauses when the bike stands still', () => {
+  it('uses cadence when cadence is available', () => {
     expect(
-      shouldPauseVideoForBike(0),
+      isBikeMoving(82, 25),
     ).toBe(true)
-  })
-
-
-  it('does not pause while the bike is moving', () => {
-    expect(
-      shouldPauseVideoForBike(0.1),
-    ).toBe(false)
 
     expect(
-      shouldPauseVideoForBike(25),
+      isBikeMoving(0, 25),
     ).toBe(false)
   })
 
 
-  it('treats negative speed as stopped', () => {
+  it('uses speed as fallback when cadence is unavailable', () => {
     expect(
-      shouldPauseVideoForBike(-1),
+      isBikeMoving(null, 25),
     ).toBe(true)
+
+    expect(
+      isBikeMoving(null, 0),
+    ).toBe(false)
+  })
+
+
+  it('treats negative cadence and speed as stopped', () => {
+    expect(
+      isBikeMoving(-1, 25),
+    ).toBe(false)
+
+    expect(
+      isBikeMoving(null, -1),
+    ).toBe(false)
   })
 })
 
