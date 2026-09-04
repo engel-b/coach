@@ -4,7 +4,7 @@ import { abortWorkout, completeWorkout } from '../api/workouts'
 import type { DeviceState } from '../devices/types'
 import type { Person } from '../persons/types'
 import type { Workout, WorkoutPhase } from './types'
-import { calculateVideoPlaybackRate, shouldPauseVideoForBike } from './videoPlayback'
+import { calculateVideoPlaybackRate, isBikeMoving } from './videoPlayback'
 import { WorkoutVideo } from './WorkoutVideo'
 
 interface WorkoutViewProps {
@@ -116,16 +116,20 @@ export function WorkoutView({
   const [elapsedSeconds, setElapsedSeconds] =
     useState(0)
 
-  const [paused, setPaused] =
-    useState(false)
+  /*
+  * Manuelle Pause und automatische Bike-Pause sind
+  * unterschiedliche Ursachen.
+  *
+  * Sie dürfen nicht gegenseitig aufgehoben werden.
+  */
+  const [manualPaused, setManualPaused] = useState(false)
 
   const [
     finishConfirmation,
     setFinishConfirmation,
   ] = useState(false)
 
-  const [finishing, setFinishing] =
-    useState(false)
+  const [finishing, setFinishing] = useState(false)
 
   const current = getCurrentPhase(
     workout.phases,
@@ -182,30 +186,6 @@ export function WorkoutView({
         )
       : 100
 
-  useEffect(() => {
-    if (
-      paused ||
-      finishConfirmation ||
-      workoutFinished
-    ) {
-      return
-    }
-
-    const timer = window.setInterval(() => {
-      setElapsedSeconds((currentSeconds) => {
-        return currentSeconds + 1
-      })
-    }, 1000)
-
-    return () => {
-      window.clearInterval(timer)
-    }
-  }, [
-    paused,
-    finishConfirmation,
-    workoutFinished,
-  ])
-
   /*
    * Wir suchen den aktuell verbundenen Pulsgurt.
    *
@@ -260,23 +240,75 @@ export function WorkoutView({
     [devices],
   )
   
-  const speedKmh =
-    bikeDevice?.speedKmh ?? null
+  const speedKmh = bikeDevice?.speedKmh ?? null
   
-  const cadenceRpm =
-    bikeDevice?.cadenceRpm ?? null
+  const cadenceRpm = bikeDevice?.cadenceRpm ?? null
   
-  const powerW =
-    bikeDevice?.powerW ?? null
+  const powerW = bikeDevice?.powerW ?? null
     
   /*
-   * Bike-Stillstand pausiert nur das Video.
-   *
-   * Die Trainingszeit selbst läuft weiter. Eine echte
-   * Workout-Pause wird weiterhin ausschließlich über
-   * `paused` gesteuert.
-   */
-  const videoPausedByBike = shouldPauseVideoForBike(speedKmh)
+  * Die Trittfrequenz entscheidet bevorzugt darüber,
+  * ob tatsächlich gefahren wird.
+  *
+  * Liefert das Bike keine Cadence, verwendet
+  * isBikeMoving() die Geschwindigkeit als Fallback.
+  */
+  const bikeMoving =
+    isBikeMoving(
+      cadenceRpm,
+      speedKmh,
+    )
+
+  /*
+  * null bedeutet:
+  * Es gibt noch keine verwertbare Bike-Telemetrie.
+  *
+  * In diesem Fall darf das Workout nicht automatisch
+  * pausiert werden.
+  */
+  const autoPaused =
+    bikeMoving === false
+
+  /*
+  * Die effektive Pause ergibt sich aus beiden Ursachen.
+  *
+  * Wichtig:
+  * Ein wieder fahrendes Bike kann manualPaused nicht
+  * aufheben.
+  */
+  const workoutPaused =
+    manualPaused || autoPaused
+
+  /*
+  * Während der Fahrt folgt die Geschwindigkeit des
+  * Trainingsvideos der gemessenen Bike-Geschwindigkeit.
+  */
+  const videoPlaybackRate = calculateVideoPlaybackRate(speedKmh)
+
+
+  useEffect(() => {
+    if (
+      workoutPaused ||
+      finishConfirmation ||
+      workoutFinished
+    ) {
+      return
+    }
+
+    const timer = window.setInterval(() => {
+      setElapsedSeconds((currentSeconds) => {
+        return currentSeconds + 1
+      })
+    }, 1000)
+
+    return () => {
+      window.clearInterval(timer)
+    }
+  }, [
+    workoutPaused,
+    finishConfirmation,
+    workoutFinished,
+  ])
 
   /*
    * Während der Fahrt folgt die Geschwindigkeit des
@@ -362,7 +394,7 @@ export function WorkoutView({
       }
 
       if (event.key === 'Enter') {
-        setPaused(
+        setManualPaused(
           (currentPaused) => !currentPaused,
         )
         return
@@ -433,10 +465,9 @@ export function WorkoutView({
         <WorkoutVideo
           src="/videos/cycling/alpen.mp4"
           paused={
-            paused ||
+            workoutPaused ||
             finishConfirmation ||
-            workoutFinished ||
-            videoPausedByBike
+            workoutFinished
           }
           playbackRate={videoPlaybackRate}
         />
@@ -559,10 +590,15 @@ export function WorkoutView({
           </div>
         </div>
 
-        {paused && !workoutFinished && (
+        {workoutPaused && !workoutFinished && (
           <div className="workout-pause-overlay">
             <strong>PAUSE</strong>
-            <span>Enter zum Fortsetzen</span>
+
+            <span>
+              {manualPaused
+                ? 'Training manuell pausiert'
+                : 'Weiter treten zum Fortsetzen'}
+            </span>
           </div>
         )}
 
@@ -682,13 +718,13 @@ export function WorkoutView({
                   className="workout-pause-button"
                   disabled={finishing}
                   onClick={() => {
-                    setPaused(
+                    setManualPaused(
                       (currentPaused) =>
                         !currentPaused,
                     )
                   }}
                 >
-                  {paused
+                  {manualPaused
                     ? '▶ Fortsetzen'
                     : 'Ⅱ Pause'}
                 </button>
