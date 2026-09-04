@@ -122,11 +122,6 @@ export function WorkoutView({
 
   const [finishing, setFinishing] = useState(false)
 
-  const current = getCurrentPhase(
-    workout.phases,
-    elapsedSeconds,
-  )
-
   const totalDurationSeconds = useMemo(
     () =>
       workout.phases.reduce(
@@ -153,8 +148,18 @@ const [engineState, setEngineState] =
     ),
   )
 
+/*
+ * elapsedSeconds ist kein eigener React-State mehr.
+ * Die WorkoutEngine ist die einzige Quelle dafür.
+ */
 const elapsedSeconds =
   engineState.elapsedSeconds
+
+    const current = getCurrentPhase(
+    workout.phases,
+    elapsedSeconds,
+  )
+
 
 const finishWindowRemainingSeconds =
   getFinishWindowRemainingSeconds(
@@ -342,7 +347,7 @@ useEffect(() => {
        */
       if (
         transition.effects
-          .playFinishSound
+          const .playFinishSound
       ) {
         void playWorkoutFinishSound()
       }
