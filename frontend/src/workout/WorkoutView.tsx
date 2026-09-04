@@ -127,21 +127,6 @@ export function WorkoutView({
     elapsedSeconds,
   )
 
-  /*
-   * current.phase === null bedeutet ab jetzt nur noch:
-   *
-   *   Der geplante Trainingsplan ist abgearbeitet.
-   *
-   * Es bedeutet ausdrücklich NICHT mehr, dass das
-   * tatsächliche Workout beendet wurde.
-   */
-  //const planFinished = current.phase === null
-
-const finishWindowRemainingSeconds =
-  getFinishWindowRemainingSeconds(
-    runtime,
-  )
-
   const totalDurationSeconds = useMemo(
     () =>
       workout.phases.reduce(
@@ -314,9 +299,6 @@ useEffect(() => {
     window.clearTimeout(timer)
   }
 }, [bikeMoving])
-
-const workoutPaused =
-  engineState.state === 'paused'
 
   /*
   * Während der Fahrt folgt die Geschwindigkeit des
