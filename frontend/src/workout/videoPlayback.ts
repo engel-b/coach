@@ -1,8 +1,7 @@
-const REFERENCE_SPEED_KMH = 20
+const REFERENCE_SPEED_KMH = 20;
 
-const MIN_PLAYBACK_RATE = 0.5
-const MAX_PLAYBACK_RATE = 2.0
-
+const MIN_PLAYBACK_RATE = 0.5;
+const MAX_PLAYBACK_RATE = 2.0;
 
 /*
  * Entscheidet, ob das Bike aktuell als aktiv gefahren
@@ -27,16 +26,15 @@ export function isBikeMoving(
   speedKmh: number | null,
 ): boolean | null {
   if (cadenceRpm !== null) {
-    return cadenceRpm > 0
+    return cadenceRpm > 0;
   }
 
   if (speedKmh !== null) {
-    return speedKmh > 0
+    return speedKmh > 0;
   }
 
-  return null
+  return null;
 }
-
 
 /*
  * Berechnet die Wiedergabegeschwindigkeit des Videos
@@ -55,21 +53,15 @@ export function isBikeMoving(
  * Falls noch keine Bike-Geschwindigkeit bekannt ist,
  * läuft das Video mit normaler Geschwindigkeit.
  */
-export function calculateVideoPlaybackRate(
-  speedKmh: number | null,
-): number {
+export function calculateVideoPlaybackRate(speedKmh: number | null): number {
   if (speedKmh === null) {
-    return 1
+    return 1;
   }
 
-  const calculatedRate =
-    speedKmh / REFERENCE_SPEED_KMH
+  const calculatedRate = speedKmh / REFERENCE_SPEED_KMH;
 
   return Math.min(
     MAX_PLAYBACK_RATE,
-    Math.max(
-      MIN_PLAYBACK_RATE,
-      calculatedRate,
-    ),
-  )
+    Math.max(MIN_PLAYBACK_RATE, calculatedRate),
+  );
 }

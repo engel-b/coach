@@ -1,5 +1,4 @@
-import type { DeviceState } from './types'
-
+import type { DeviceState } from "./types";
 
 /*
  * Führt einen REST-Snapshot mit dem bereits bekannten
@@ -21,50 +20,29 @@ export function mergeDeviceSnapshot(
   currentDevices: DeviceState[],
   snapshotDevices: DeviceState[],
 ): DeviceState[] {
-  const mergedDevices = new Map<
-    string,
-    DeviceState
-  >()
+  const mergedDevices = new Map<string, DeviceState>();
 
   for (const device of currentDevices) {
-    mergedDevices.set(
-      device.deviceId,
-      device,
-    )
+    mergedDevices.set(device.deviceId, device);
   }
 
   for (const snapshotDevice of snapshotDevices) {
-    const currentDevice =
-      mergedDevices.get(
-        snapshotDevice.deviceId,
-      )
+    const currentDevice = mergedDevices.get(snapshotDevice.deviceId);
 
     if (
       currentDevice === undefined ||
-      isNewerOrSame(
-        snapshotDevice.lastSeen,
-        currentDevice.lastSeen,
-      )
+      isNewerOrSame(snapshotDevice.lastSeen, currentDevice.lastSeen)
     ) {
-      mergedDevices.set(
-        snapshotDevice.deviceId,
-        snapshotDevice,
-      )
+      mergedDevices.set(snapshotDevice.deviceId, snapshotDevice);
     }
   }
 
-  return Array.from(
-    mergedDevices.values(),
-  )
+  return Array.from(mergedDevices.values());
 }
-
 
 function isNewerOrSame(
   candidateTimestamp: string,
   currentTimestamp: string,
 ): boolean {
-  return (
-    Date.parse(candidateTimestamp) >=
-    Date.parse(currentTimestamp)
-  )
+  return Date.parse(candidateTimestamp) >= Date.parse(currentTimestamp);
 }

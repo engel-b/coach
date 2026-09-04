@@ -5,7 +5,6 @@
  * displayName ist ausschließlich für die Darstellung gedacht.
  */
 export interface Person {
-  id: number
-  displayName: string
+  id: number;
+  displayName: string;
 }
-

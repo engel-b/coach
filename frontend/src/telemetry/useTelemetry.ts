@@ -1,81 +1,60 @@
-import { useEffect, useState } from 'react'
-import { parseTelemetryMessage } from './parseTelemetryMessage'
-import type { TelemetryMessage } from './types'
-
+import { useEffect, useState } from "react";
+import { parseTelemetryMessage } from "./parseTelemetryMessage";
+import type { TelemetryMessage } from "./types";
 
 interface UseTelemetryOptions {
-  onMessage: (
-    message: TelemetryMessage,
-  ) => void
+  onMessage: (message: TelemetryMessage) => void;
 
-  onConnected?: () => void
+  onConnected?: () => void;
 }
 
-
-const RECONNECT_DELAY_MS = 2_000
-
+const RECONNECT_DELAY_MS = 2_000;
 
 export function useTelemetry({
   onMessage,
   onConnected,
 }: UseTelemetryOptions): boolean {
-  const [connected, setConnected] =
-    useState(false)
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    let websocket: WebSocket | null = null
-    let reconnectTimer:
-      ReturnType<typeof setTimeout> | null = null
+    let websocket: WebSocket | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
-    let stopped = false
-
+    let stopped = false;
 
     function scheduleReconnect(): void {
-      if (
-        stopped ||
-        reconnectTimer !== null
-      ) {
-        return
+      if (stopped || reconnectTimer !== null) {
+        return;
       }
 
-      reconnectTimer = setTimeout(
-        () => {
-          reconnectTimer = null
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
 
-          if (!stopped) {
-            connect()
-          }
-        },
-        RECONNECT_DELAY_MS,
-      )
+        if (!stopped) {
+          connect();
+        }
+      }, RECONNECT_DELAY_MS);
     }
-
 
     function connect(): void {
       if (stopped) {
-        return
+        return;
       }
 
-      const protocol =
-        window.location.protocol === 'https:'
-          ? 'wss'
-          : 'ws'
+      const protocol = window.location.protocol === "https:" ? "wss" : "ws";
 
       const socket = new WebSocket(
         `${protocol}://${window.location.host}/ws/telemetry`,
-      )
+      );
 
-      websocket = socket
+      websocket = socket;
 
       socket.onopen = () => {
-        if (
-          stopped ||
-          websocket !== socket
-        ) {
-          return
+        if (stopped || websocket !== socket) {
+          return;
         }
 
-        setConnected(true)
+        setConnected(true);
 
         /*
          * Bei jeder erfolgreich hergestellten Verbindung
@@ -84,16 +63,12 @@ export function useTelemetry({
          * Das gilt sowohl für den ersten Connect als auch
          * für spätere Reconnects.
          */
-        onConnected?.()
-      }
+        onConnected?.();
+      };
 
       socket.onmessage = (event) => {
-        if (
-          stopped ||
-          websocket !== socket ||
-          typeof event.data !== 'string'
-        ) {
-          return
+        if (stopped || websocket !== socket || typeof event.data !== "string") {
+          return;
         }
 
         try {
@@ -104,14 +79,12 @@ export function useTelemetry({
            * und darf erst nach erfolgreicher Runtime-Validierung
            * in die Anwendung gelangen.
            */
-          const parsed: unknown =
-            JSON.parse(event.data)
-        
-          const message =
-            parseTelemetryMessage(parsed)
-        
+          const parsed: unknown = JSON.parse(event.data);
+
+          const message = parseTelemetryMessage(parsed);
+
           if (message !== null) {
-            onMessage(message)
+            onMessage(message);
           }
         } catch {
           /*
@@ -119,59 +92,52 @@ export function useTelemetry({
            * WebSocket-Grenze verworfen.
            */
         }
-      }
+      };
 
       socket.onerror = () => {
-        if (
-          stopped ||
-          websocket !== socket
-        ) {
-          return
+        if (stopped || websocket !== socket) {
+          return;
         }
 
-        setConnected(false)
+        setConnected(false);
 
         /*
          * onclose ist der einzige Pfad, der einen
          * Reconnect plant.
          */
-        socket.close()
-      }
+        socket.close();
+      };
 
       socket.onclose = () => {
-        if (
-          stopped ||
-          websocket !== socket
-        ) {
-          return
+        if (stopped || websocket !== socket) {
+          return;
         }
 
-        websocket = null
-        setConnected(false)
+        websocket = null;
+        setConnected(false);
 
-        scheduleReconnect()
-      }
+        scheduleReconnect();
+      };
     }
 
-
-    connect()
+    connect();
 
     return () => {
-      stopped = true
+      stopped = true;
 
       if (reconnectTimer !== null) {
-        clearTimeout(reconnectTimer)
-        reconnectTimer = null
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
       }
 
       if (websocket !== null) {
-        const socket = websocket
-        websocket = null
+        const socket = websocket;
+        websocket = null;
 
-        socket.close()
+        socket.close();
       }
-    }
-  }, [onConnected, onMessage])
+    };
+  }, [onConnected, onMessage]);
 
-  return connected
+  return connected;
 }
