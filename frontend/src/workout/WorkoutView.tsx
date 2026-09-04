@@ -5,9 +5,9 @@ import type { DeviceState } from '../devices/types'
 import type { Person } from '../persons/types'
 import type { Workout, WorkoutPhase } from './types'
 import { calculateVideoPlaybackRate, isBikeMoving } from './videoPlayback'
-import { applyWorkoutRuntimeEvent, createWorkoutRuntime, getFinishWindowRemainingSeconds } from './workoutRuntime'
 import { playWorkoutFinishSound } from './workoutSound'
 import { WorkoutVideo } from './WorkoutVideo'
+import { applyWorkoutEngineEvent, createWorkoutEngine, getFinishWindowRemainingSeconds, shouldPlayWorkoutVideo } from './workoutEngine'
 
 interface WorkoutViewProps {
   person: Person
@@ -115,26 +115,6 @@ export function WorkoutView({
   devices,
   onComplete,
 }: WorkoutViewProps) {
-  const [elapsedSeconds, setElapsedSeconds] =
-    useState(0)
-
-  /*
-  * Manuelle Pause und automatische Bike-Pause sind
-  * unterschiedliche Ursachen.
-  *
-  * Sie dürfen nicht gegenseitig aufgehoben werden.
-  */
-  const [manualPaused, setManualPaused] = useState(false)
-
-  /*
-   * Fachlicher Laufzeitzustand des Workouts.
-   *
-   * Noch liegt der State in WorkoutView.
-   * Im nächsten Architektur-Schritt ziehen wir ihn
-   * vollständig in die WorkoutEngine.
-   */
-  const [runtime, setRuntime] = useState(createWorkoutRuntime)
-
   const [
     finishConfirmation,
     setFinishConfirmation,
@@ -170,6 +150,30 @@ const finishWindowRemainingSeconds =
         0,
       ),
     [workout.phases],
+  )
+
+  /*
+ * Die WorkoutEngine ist ab jetzt die einzige Quelle
+ * für den fachlichen Laufzeitzustand des Workouts.
+ *
+ * Vergleichbar mit einem Domain-Objekt in Java:
+ *
+ *   WorkoutEngine engine =
+ *       new WorkoutEngine(plannedDurationSeconds);
+ */
+const [engineState, setEngineState] =
+  useState(() =>
+    createWorkoutEngine(
+      totalDurationSeconds,
+    ),
+  )
+
+const elapsedSeconds =
+  engineState.elapsedSeconds
+
+const finishWindowRemainingSeconds =
+  getFinishWindowRemainingSeconds(
+    engineState,
   )
 
   const workoutProgress =
@@ -270,37 +274,49 @@ const finishWindowRemainingSeconds =
   const powerW = bikeDevice?.powerW ?? null
     
   /*
-  * Die Trittfrequenz entscheidet bevorzugt darüber,
-  * ob tatsächlich gefahren wird.
-  *
-  * Liefert das Bike keine Cadence, verwendet
-  * isBikeMoving() die Geschwindigkeit als Fallback.
-  */
-  const bikeMoving =
-    isBikeMoving(
-      cadenceRpm,
-      speedKmh,
+ * Die Telemetrie entscheidet nur, ob das Bike gerade
+ * bewegt wird.
+ *
+ * Ob daraus tatsächlich eine Pause entsteht, entscheidet
+ * ausschließlich die WorkoutEngine. Dort sitzt auch die
+ * 3-Sekunden-Entprellung.
+ */
+const bikeMoving =
+  isBikeMoving(
+    cadenceRpm,
+    speedKmh,
+  )
+
+  /*
+ * Neue Bike-Telemetrie wird als Event an die Engine
+ * weitergereicht.
+ *
+ * setTimeout verhindert einen direkten State-Write
+ * innerhalb des Effects und verträgt sich damit mit
+ * unserer React-Hooks-Lint-Regel.
+ */
+useEffect(() => {
+  const timer = window.setTimeout(() => {
+    setEngineState(
+      (currentState) =>
+        applyWorkoutEngineEvent(
+          currentState,
+          {
+            type:
+              'bike_movement_changed',
+            moving: bikeMoving,
+          },
+        ).state,
     )
+  }, 0)
 
-  /*
-  * null bedeutet:
-  * Es gibt noch keine verwertbare Bike-Telemetrie.
-  *
-  * In diesem Fall darf das Workout nicht automatisch
-  * pausiert werden.
-  */
-  const autoPaused =
-    bikeMoving === false
+  return () => {
+    window.clearTimeout(timer)
+  }
+}, [bikeMoving])
 
-  /*
-  * Die effektive Pause ergibt sich aus beiden Ursachen.
-  *
-  * Wichtig:
-  * Ein wieder fahrendes Bike kann manualPaused nicht
-  * aufheben.
-  */
-  const workoutPaused =
-    manualPaused || autoPaused
+const workoutPaused =
+  engineState.state === 'paused'
 
   /*
   * Während der Fahrt folgt die Geschwindigkeit des
@@ -309,96 +325,60 @@ const finishWindowRemainingSeconds =
   const videoPlaybackRate = calculateVideoPlaybackRate(speedKmh)
 
 
-  /*
-   * Ein einzelner Tick erhöht die tatsächlich trainierte
-   * Zeit.
-   *
-   * setTimeout statt setInterval ist hier bewusst gewählt:
-   * Nach jedem Tick rendert React den neuen Zustand und
-   * entscheidet anschließend neu, ob weitergezählt werden
-   * darf.
-   *
-   * Dadurch bleiben Pause, Finish Window und Overtime
-   * deterministisch.
-   */
-  useEffect(() => {
-    if (
-      workoutPaused ||
-      finishConfirmation ||
-      runtime.state === 'completed'
-    ) {
-      return
-    }
+/*
+ * Der Browser liefert nur noch den 1-Sekunden-Takt.
+ *
+ * Was dieser Tick fachlich bedeutet, entscheidet die
+ * WorkoutEngine.
+ */
+useEffect(() => {
+  if (
+    finishConfirmation ||
+    engineState.state === 'paused' ||
+    engineState.state === 'completed' ||
+    engineState.state === 'aborted'
+  ) {
+    return
+  }
 
-    const timer = window.setTimeout(() => {
-      const nextElapsedSeconds =
-        elapsedSeconds + 1
-
-      setElapsedSeconds(
-        nextElapsedSeconds,
-      )
-
-      /*
-      * Genau beim Erreichen der geplanten Dauer wechseln
-      * wir vom normalen Training in das 30-Sekunden-
-      * Abschlussfenster.
-      */
-      if (
-        runtime.state === 'running' &&
-        nextElapsedSeconds >=
-          totalDurationSeconds
-      ) {
-        setRuntime((currentRuntime) =>
-          applyWorkoutRuntimeEvent(
-            currentRuntime,
-            {
-              type:
-                'planned_duration_reached',
-            },
-          ),
+  const timer = window.setTimeout(() => {
+    setEngineState((currentState) => {
+      const transition =
+        applyWorkoutEngineEvent(
+          currentState,
+          {
+            type: 'tick',
+          },
         )
 
-        /*
-        * Der Ton wird ausschließlich bei diesem
-        * Zustandsübergang ausgelöst und damit genau einmal.
-        */
+      /*
+       * Ein Engine-Effekt wird genau beim zugehörigen
+       * Zustandsübergang ausgeführt.
+       *
+       * Der Sound gehört technisch in den Browser-Adapter,
+       * nicht in die reine Engine.
+       */
+      if (
+        transition.effects
+          .playFinishSound
+      ) {
         void playWorkoutFinishSound()
-
-        return
       }
 
-      /*
-      * Während des Finish Window zählt zusätzlich dessen
-      * eigener 30-Sekunden-Zähler.
-      *
-      * Nach Tick 30 wechselt workoutRuntime automatisch
-      * nach overtime.
-      */
-      if (
-        runtime.state ===
-        'finish_window'
-      ) {
-        setRuntime((currentRuntime) =>
-          applyWorkoutRuntimeEvent(
-            currentRuntime,
-            {
-              type: 'tick',
-            },
-          ),
-        )
-      }
-    }, 1000)
+      return transition.state
+    })
+  }, 1000)
 
-    return () => {
-      window.clearTimeout(timer)
-    }
-  }, [
-    elapsedSeconds,
-    finishConfirmation,
-    runtime.state,
-    totalDurationSeconds,
-    workoutPaused,
-  ])
+  return () => {
+    window.clearTimeout(timer)
+  }
+}, [
+  engineState.state,
+  engineState.elapsedSeconds,
+  engineState.finishWindowElapsedSeconds,
+  engineState.bikeStoppedForSeconds,
+  finishConfirmation,
+])
 
 const completeCurrentWorkout =
   useCallback(
@@ -434,38 +414,22 @@ const completeCurrentWorkout =
     ],
   )
 
-/*
- * Stoppt der Fahrer während des 30-Sekunden-Fensters,
- * wird das Workout automatisch regulär abgeschlossen.
+  /*
+ * "completed" ist ein fachlicher Endzustand der Engine.
  *
- * Außerhalb dieses Fensters bedeutet Bike-Stillstand
- * weiterhin nur Auto-Pause.
+ * Erst hier übersetzen wir ihn in die technische
+ * Backend-Aktion.
  */
 useEffect(() => {
   if (
-    !autoPaused ||
-    runtime.state !==
-      'finish_window' ||
+    engineState.state !==
+      'completed' ||
     finishing
   ) {
     return
   }
 
-  /*
-   * Der Callback läuft bewusst asynchron nach dem Effekt.
-   * Damit bleibt der React-Effekt selbst frei von direkten
-   * State-Updates.
-   */
   const timer = window.setTimeout(() => {
-    setRuntime((currentRuntime) =>
-      applyWorkoutRuntimeEvent(
-        currentRuntime,
-        {
-          type: 'bike_stopped',
-        },
-      ),
-    )
-
     void completeCurrentWorkout()
   }, 0)
 
@@ -473,10 +437,9 @@ useEffect(() => {
     window.clearTimeout(timer)
   }
 }, [
-  autoPaused,
   completeCurrentWorkout,
+  engineState.state,
   finishing,
-  runtime.state,
 ])
 
   async function abortCurrentWorkout(): Promise<void> {
@@ -525,9 +488,21 @@ useEffect(() => {
       }
 
       if (event.key === 'Enter') {
-        setManualPaused(
-          (currentPaused) => !currentPaused,
-        )
+        setEngineState(
+  (currentState) =>
+    applyWorkoutEngineEvent(
+      currentState,
+      {
+        type:
+          currentState.state ===
+            'paused' &&
+          currentState.pauseReason ===
+            'manual'
+            ? 'manual_resume'
+            : 'manual_pause',
+      },
+    ).state,
+)
         return
       }
 
@@ -573,10 +548,10 @@ useEffect(() => {
     ? phaseLabel(
         current.phase.phaseType,
       )
-    : runtime.state ===
+    : engineState.state ===
         'finish_window'
       ? 'Trainingsziel erreicht'
-      : runtime.state ===
+      : engineState.state ===
           'overtime'
         ? 'Overtime'
         : 'Abgeschlossen'}
@@ -602,9 +577,10 @@ useEffect(() => {
         <WorkoutVideo
   src="/videos/cycling/alpen.mp4"
   paused={
-    workoutPaused ||
-    finishConfirmation ||
-    runtime.state === 'completed'
+    !shouldPlayWorkoutVideo(
+      engineState,
+    ) ||
+    finishConfirmation
   }
   playbackRate={videoPlaybackRate}
 />
@@ -620,10 +596,10 @@ useEffect(() => {
     ? phaseLabel(
         current.phase.phaseType,
       )
-    : runtime.state ===
+    : engineState.state ===
         'finish_window'
       ? 'Trainingsziel erreicht'
-      : runtime.state ===
+      : engineState.state ===
           'overtime'
         ? 'Overtime'
         : 'Training abgeschlossen'}
@@ -733,23 +709,20 @@ useEffect(() => {
           </div>
         </div>
 
-        {workoutPaused &&
-  runtime.state !==
-    'finish_window' &&
-  runtime.state !==
-    'completed' && (
-    <div className="workout-pause-overlay">
-      <strong>PAUSE</strong>
+        {engineState.state === 'paused' && (
+  <div className="workout-pause-overlay">
+    <strong>PAUSE</strong>
 
-      <span>
-        {manualPaused
-          ? 'Training manuell pausiert'
-          : 'Weiter treten zum Fortsetzen'}
-      </span>
-    </div>
-  )}
+    <span>
+      {engineState.pauseReason ===
+      'manual'
+        ? 'Training manuell pausiert'
+        : 'Weiter treten zum Fortsetzen'}
+    </span>
+  </div>
+)}
 
-{runtime.state ===
+{engineState.state ===
   'finish_window' && (
   <div className="workout-pause-overlay workout-complete-overlay">
     <strong>
@@ -856,22 +829,36 @@ useEffect(() => {
           </div>
 
           <div className="workout-telemetry-actions">
-  {runtime.state !== 'completed' && (
+  {engineState.state !== 'completed' && (
     <>
       <button
         type="button"
         className="workout-pause-button"
         disabled={finishing}
         onClick={() => {
-          setManualPaused(
-            (currentPaused) =>
-              !currentPaused,
-          )
-        }}
+  setEngineState(
+    (currentState) =>
+      applyWorkoutEngineEvent(
+        currentState,
+        {
+          type:
+            currentState.state ===
+              'paused' &&
+            currentState.pauseReason ===
+              'manual'
+              ? 'manual_resume'
+              : 'manual_pause',
+        },
+      ).state,
+  )
+}}
       >
-        {manualPaused
-          ? '▶ Fortsetzen'
-          : 'Ⅱ Pause'}
+        {engineState.state ===
+  'paused' &&
+engineState.pauseReason ===
+  'manual'
+  ? '▶ Fortsetzen'
+  : 'Ⅱ Pause'}
       </button>
 
       <button
