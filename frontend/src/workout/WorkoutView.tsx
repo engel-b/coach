@@ -310,12 +310,6 @@ export function WorkoutView({
     workoutFinished,
   ])
 
-  /*
-   * Während der Fahrt folgt die Geschwindigkeit des
-   * Trainingsvideos der gemessenen Bike-Geschwindigkeit.
-   */
-  const videoPlaybackRate = calculateVideoPlaybackRate(speedKmh)
-
   async function completeCurrentWorkout(): Promise<void> {
     if (finishing) {
       return
