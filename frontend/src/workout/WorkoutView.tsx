@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { abortWorkout, completeWorkout } from '../api/workouts'
 import type { DeviceState } from '../devices/types'
 import type { Person } from '../persons/types'
 import type { Workout, WorkoutPhase } from './types'
 import { calculateVideoPlaybackRate, isBikeMoving } from './videoPlayback'
+import { applyWorkoutRuntimeEvent, createWorkoutRuntime, getFinishWindowRemainingSeconds } from './workoutRuntime'
+import { playWorkoutFinishSound } from './workoutSound'
 import { WorkoutVideo } from './WorkoutVideo'
 
 interface WorkoutViewProps {
@@ -124,6 +126,15 @@ export function WorkoutView({
   */
   const [manualPaused, setManualPaused] = useState(false)
 
+  /*
+   * Fachlicher Laufzeitzustand des Workouts.
+   *
+   * Noch liegt der State in WorkoutView.
+   * Im nächsten Architektur-Schritt ziehen wir ihn
+   * vollständig in die WorkoutEngine.
+   */
+  const [runtime, setRuntime] = useState(createWorkoutRuntime)
+
   const [
     finishConfirmation,
     setFinishConfirmation,
@@ -136,8 +147,20 @@ export function WorkoutView({
     elapsedSeconds,
   )
 
-  const workoutFinished =
-    current.phase === null
+  /*
+   * current.phase === null bedeutet ab jetzt nur noch:
+   *
+   *   Der geplante Trainingsplan ist abgearbeitet.
+   *
+   * Es bedeutet ausdrücklich NICHT mehr, dass das
+   * tatsächliche Workout beendet wurde.
+   */
+  //const planFinished = current.phase === null
+
+const finishWindowRemainingSeconds =
+  getFinishWindowRemainingSeconds(
+    runtime,
+  )
 
   const totalDurationSeconds = useMemo(
     () =>
@@ -286,53 +309,175 @@ export function WorkoutView({
   const videoPlaybackRate = calculateVideoPlaybackRate(speedKmh)
 
 
+  /*
+   * Ein einzelner Tick erhöht die tatsächlich trainierte
+   * Zeit.
+   *
+   * setTimeout statt setInterval ist hier bewusst gewählt:
+   * Nach jedem Tick rendert React den neuen Zustand und
+   * entscheidet anschließend neu, ob weitergezählt werden
+   * darf.
+   *
+   * Dadurch bleiben Pause, Finish Window und Overtime
+   * deterministisch.
+   */
   useEffect(() => {
     if (
       workoutPaused ||
       finishConfirmation ||
-      workoutFinished
+      runtime.state === 'completed'
     ) {
       return
     }
 
-    const timer = window.setInterval(() => {
-      setElapsedSeconds((currentSeconds) => {
-        return currentSeconds + 1
-      })
+    const timer = window.setTimeout(() => {
+      const nextElapsedSeconds =
+        elapsedSeconds + 1
+
+      setElapsedSeconds(
+        nextElapsedSeconds,
+      )
+
+      /*
+      * Genau beim Erreichen der geplanten Dauer wechseln
+      * wir vom normalen Training in das 30-Sekunden-
+      * Abschlussfenster.
+      */
+      if (
+        runtime.state === 'running' &&
+        nextElapsedSeconds >=
+          totalDurationSeconds
+      ) {
+        setRuntime((currentRuntime) =>
+          applyWorkoutRuntimeEvent(
+            currentRuntime,
+            {
+              type:
+                'planned_duration_reached',
+            },
+          ),
+        )
+
+        /*
+        * Der Ton wird ausschließlich bei diesem
+        * Zustandsübergang ausgelöst und damit genau einmal.
+        */
+        void playWorkoutFinishSound()
+
+        return
+      }
+
+      /*
+      * Während des Finish Window zählt zusätzlich dessen
+      * eigener 30-Sekunden-Zähler.
+      *
+      * Nach Tick 30 wechselt workoutRuntime automatisch
+      * nach overtime.
+      */
+      if (
+        runtime.state ===
+        'finish_window'
+      ) {
+        setRuntime((currentRuntime) =>
+          applyWorkoutRuntimeEvent(
+            currentRuntime,
+            {
+              type: 'tick',
+            },
+          ),
+        )
+      }
     }, 1000)
 
     return () => {
-      window.clearInterval(timer)
+      window.clearTimeout(timer)
     }
   }, [
-    workoutPaused,
+    elapsedSeconds,
     finishConfirmation,
-    workoutFinished,
+    runtime.state,
+    totalDurationSeconds,
+    workoutPaused,
   ])
 
-  async function completeCurrentWorkout(): Promise<void> {
-    if (finishing) {
-      return
-    }
+const completeCurrentWorkout =
+  useCallback(
+    async (): Promise<void> => {
+      if (finishing) {
+        return
+      }
 
-    try {
-      setFinishing(true)
+      try {
+        setFinishing(true)
 
-      const completed = await completeWorkout(
-        workout.id,
-        elapsedSeconds,
-      )
+        const completed =
+          await completeWorkout(
+            workout.id,
+            elapsedSeconds,
+          )
 
-      onComplete(completed)
-    } catch (error) {
-      console.error(
-        'Could not complete workout',
-        error,
-      )
-    } finally {
-      setFinishing(false)
-    }
+        onComplete(completed)
+      } catch (error) {
+        console.error(
+          'Could not complete workout',
+          error,
+        )
+      } finally {
+        setFinishing(false)
+      }
+    },
+    [
+      elapsedSeconds,
+      finishing,
+      onComplete,
+      workout.id,
+    ],
+  )
+
+/*
+ * Stoppt der Fahrer während des 30-Sekunden-Fensters,
+ * wird das Workout automatisch regulär abgeschlossen.
+ *
+ * Außerhalb dieses Fensters bedeutet Bike-Stillstand
+ * weiterhin nur Auto-Pause.
+ */
+useEffect(() => {
+  if (
+    !autoPaused ||
+    runtime.state !==
+      'finish_window' ||
+    finishing
+  ) {
+    return
   }
+
+  /*
+   * Der Callback läuft bewusst asynchron nach dem Effekt.
+   * Damit bleibt der React-Effekt selbst frei von direkten
+   * State-Updates.
+   */
+  const timer = window.setTimeout(() => {
+    setRuntime((currentRuntime) =>
+      applyWorkoutRuntimeEvent(
+        currentRuntime,
+        {
+          type: 'bike_stopped',
+        },
+      ),
+    )
+
+    void completeCurrentWorkout()
+  }, 0)
+
+  return () => {
+    window.clearTimeout(timer)
+  }
+}, [
+  autoPaused,
+  completeCurrentWorkout,
+  finishing,
+  runtime.state,
+])
 
   async function abortCurrentWorkout(): Promise<void> {
     if (finishing) {
@@ -374,14 +519,6 @@ export function WorkoutView({
 
         if (event.key === 'Escape') {
           setFinishConfirmation(false)
-        }
-
-        return
-      }
-
-      if (workoutFinished) {
-        if (event.key === 'Enter') {
-          void completeCurrentWorkout()
         }
 
         return
@@ -432,12 +569,18 @@ export function WorkoutView({
           </strong>
 
           <span>
-            {current.phase !== null
-              ? phaseLabel(
-                  current.phase.phaseType,
-                )
-              : 'Abgeschlossen'}
-          </span>
+  {current.phase !== null
+    ? phaseLabel(
+        current.phase.phaseType,
+      )
+    : runtime.state ===
+        'finish_window'
+      ? 'Trainingsziel erreicht'
+      : runtime.state ===
+          'overtime'
+        ? 'Overtime'
+        : 'Abgeschlossen'}
+</span>
         </div>
 
         <div className="workout-stage-status">
@@ -457,14 +600,14 @@ export function WorkoutView({
 
       <div className="workout-stage">
         <WorkoutVideo
-          src="/videos/cycling/alpen.mp4"
-          paused={
-            workoutPaused ||
-            finishConfirmation ||
-            workoutFinished
-          }
-          playbackRate={videoPlaybackRate}
-        />
+  src="/videos/cycling/alpen.mp4"
+  paused={
+    workoutPaused ||
+    finishConfirmation ||
+    runtime.state === 'completed'
+  }
+  playbackRate={videoPlaybackRate}
+/>
         <div className="workout-stage-shade" />
 
         <div className="workout-phase-overlay workout-overlay-card">
@@ -473,12 +616,18 @@ export function WorkoutView({
           </div>
 
           <div className="workout-overlay-title">
-            {current.phase !== null
-              ? phaseLabel(
-                  current.phase.phaseType,
-                )
-              : 'Training abgeschlossen'}
-          </div>
+  {current.phase !== null
+    ? phaseLabel(
+        current.phase.phaseType,
+      )
+    : runtime.state ===
+        'finish_window'
+      ? 'Trainingsziel erreicht'
+      : runtime.state ===
+          'overtime'
+        ? 'Overtime'
+        : 'Training abgeschlossen'}
+</div>
 
           {current.phase !== null && (
             <>
@@ -584,28 +733,43 @@ export function WorkoutView({
           </div>
         </div>
 
-        {workoutPaused && !workoutFinished && (
-          <div className="workout-pause-overlay">
-            <strong>PAUSE</strong>
+        {workoutPaused &&
+  runtime.state !==
+    'finish_window' &&
+  runtime.state !==
+    'completed' && (
+    <div className="workout-pause-overlay">
+      <strong>PAUSE</strong>
 
-            <span>
-              {manualPaused
-                ? 'Training manuell pausiert'
-                : 'Weiter treten zum Fortsetzen'}
-            </span>
-          </div>
-        )}
+      <span>
+        {manualPaused
+          ? 'Training manuell pausiert'
+          : 'Weiter treten zum Fortsetzen'}
+      </span>
+    </div>
+  )}
 
-        {workoutFinished && (
-          <div className="workout-pause-overlay workout-complete-overlay">
-            <strong>
-              Training abgeschlossen
-            </strong>
-            <span>
-              Enter zum Speichern
-            </span>
-          </div>
-        )}
+{runtime.state ===
+  'finish_window' && (
+  <div className="workout-pause-overlay workout-complete-overlay">
+    <strong>
+      Trainingsziel erreicht
+    </strong>
+
+    <span>
+      Weiterfahren für Overtime
+    </span>
+
+    <span>
+      Bei Stopp wird das Training
+      abgeschlossen
+    </span>
+
+    <strong>
+      {finishWindowRemainingSeconds}s
+    </strong>
+  </div>
+)}    
 
         <div className="workout-telemetry-bar">
           <div className="workout-telemetry-metrics">
@@ -692,50 +856,37 @@ export function WorkoutView({
           </div>
 
           <div className="workout-telemetry-actions">
-            {workoutFinished ? (
-              <button
-                type="button"
-                className="workout-complete-button"
-                disabled={finishing}
-                onClick={() => {
-                  void completeCurrentWorkout()
-                }}
-              >
-                {finishing
-                  ? 'Wird gespeichert …'
-                  : 'Training speichern'}
-              </button>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  className="workout-pause-button"
-                  disabled={finishing}
-                  onClick={() => {
-                    setManualPaused(
-                      (currentPaused) =>
-                        !currentPaused,
-                    )
-                  }}
-                >
-                  {manualPaused
-                    ? '▶ Fortsetzen'
-                    : 'Ⅱ Pause'}
-                </button>
+  {runtime.state !== 'completed' && (
+    <>
+      <button
+        type="button"
+        className="workout-pause-button"
+        disabled={finishing}
+        onClick={() => {
+          setManualPaused(
+            (currentPaused) =>
+              !currentPaused,
+          )
+        }}
+      >
+        {manualPaused
+          ? '▶ Fortsetzen'
+          : 'Ⅱ Pause'}
+      </button>
 
-                <button
-                  type="button"
-                  className="workout-stop-button"
-                  disabled={finishing}
-                  onClick={() => {
-                    setFinishConfirmation(true)
-                  }}
-                >
-                  □ Workout beenden
-                </button>
-              </>
-            )}
-          </div>
+      <button
+        type="button"
+        className="workout-stop-button"
+        disabled={finishing}
+        onClick={() => {
+          setFinishConfirmation(true)
+        }}
+      >
+        □ Workout beenden
+      </button>
+    </>
+  )}
+</div>
         </div>
       </div>
 
