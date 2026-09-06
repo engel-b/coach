@@ -74,8 +74,7 @@ async def consume_bike_telemetry(
     Der eigentliche Retry-Lifecycle liegt bewusst nicht mehr
     in dieser Funktion, sondern zentral in run_device_worker().
 
-    Dadurch können HR und Bike später dieselbe Retry-Policy
-    verwenden.
+    Dadurch können HR und Bike dieselbe Retry-Policy verwenden.
 
     Java-Vergleich:
     Diese Funktion beschreibt die eigentliche Arbeit.
@@ -94,9 +93,11 @@ async def consume_bike_telemetry(
 
         async for telemetry in bike_source.telemetry():
             logger.info(
-                "Bike: speed=%s km/h cadence=%s rpm power=%s W",
+                "Bike: speed=%s km/h cadence=%s rpm "
+                "distance=%s m power=%s W",
                 telemetry.speed_kmh,
                 telemetry.cadence_rpm,
+                telemetry.distance_m,
                 telemetry.power_w,
             )
 
@@ -107,6 +108,7 @@ async def consume_bike_telemetry(
                 payload={
                     "speedKmh": telemetry.speed_kmh,
                     "cadenceRpm": telemetry.cadence_rpm,
+                    "distanceM": telemetry.distance_m,
                     "powerW": telemetry.power_w,
                     "resistance": telemetry.resistance,
                 },
@@ -119,7 +121,6 @@ async def consume_bike_telemetry(
         operation=consume_once,
         retry_delay_seconds=5.0,
     )
-
 
 async def run() -> None:
     """
