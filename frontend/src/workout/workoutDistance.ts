@@ -1,6 +1,6 @@
 export interface WorkoutDistanceState {
-  lastNativeDistanceM: number | null
-  accumulatedDistanceM: number
+  lastNativeDistanceM: number | null;
+  accumulatedDistanceM: number;
 }
 
 /*
@@ -20,12 +20,11 @@ export function createWorkoutDistanceState(
   initialNativeDistanceM: number | null = null,
 ): WorkoutDistanceState {
   return {
-    lastNativeDistanceM:
-      isValidNativeDistance(initialNativeDistanceM)
-        ? initialNativeDistanceM
-        : null,
+    lastNativeDistanceM: isValidNativeDistance(initialNativeDistanceM)
+      ? initialNativeDistanceM
+      : null,
     accumulatedDistanceM: 0,
-  }
+  };
 }
 
 /*
@@ -42,7 +41,7 @@ export function applyNativeDistanceSample(
   countDistance: boolean,
 ): WorkoutDistanceState {
   if (!isValidNativeDistance(nativeDistanceM)) {
-    return current
+    return current;
   }
 
   /*
@@ -53,11 +52,10 @@ export function applyNativeDistanceSample(
     return {
       ...current,
       lastNativeDistanceM: nativeDistanceM,
-    }
+    };
   }
 
-  const deltaM =
-    nativeDistanceM - current.lastNativeDistanceM
+  const deltaM = nativeDistanceM - current.lastNativeDistanceM;
 
   /*
    * Der native FTMS-Zähler kann bei Reconnect oder
@@ -74,7 +72,7 @@ export function applyNativeDistanceSample(
     return {
       ...current,
       lastNativeDistanceM: nativeDistanceM,
-    }
+    };
   }
 
   /*
@@ -88,17 +86,10 @@ export function applyNativeDistanceSample(
   return {
     lastNativeDistanceM: nativeDistanceM,
     accumulatedDistanceM:
-      current.accumulatedDistanceM +
-      (countDistance ? deltaM : 0),
-  }
+      current.accumulatedDistanceM + (countDistance ? deltaM : 0),
+  };
 }
 
-function isValidNativeDistance(
-  value: number | null,
-): value is number {
-  return (
-    value !== null &&
-    Number.isFinite(value) &&
-    value >= 0
-  )
+function isValidNativeDistance(value: number | null): value is number {
+  return value !== null && Number.isFinite(value) && value >= 0;
 }

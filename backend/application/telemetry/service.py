@@ -225,7 +225,7 @@ class TelemetryService:
             )
 
         self._devices[message.device_id] = state
-        
+
     def get_devices(self) -> list[DeviceState]:
         """
         Liefert einen Snapshot aller aktuell bekannten Geräte.

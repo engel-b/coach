@@ -135,8 +135,7 @@ class FtmsBikeAdapter:
                         # bewusst mit BleakError. Der Device-Worker übernimmt
                         # anschließend den Retry und baut eine neue Verbindung auf.
                         raise BleakError(
-                            f"FTMS bike connected but telemetry became silent: "
-                            f"{self._device_id}"
+                            f"FTMS bike connected but telemetry became silent: {self._device_id}"
                         ) from exc
 
                     yield telemetry

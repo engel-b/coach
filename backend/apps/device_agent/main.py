@@ -93,8 +93,7 @@ async def consume_bike_telemetry(
 
         async for telemetry in bike_source.telemetry():
             logger.info(
-                "Bike: speed=%s km/h cadence=%s rpm "
-                "distance=%s m power=%s W",
+                "Bike: speed=%s km/h cadence=%s rpm distance=%s m power=%s W",
                 telemetry.speed_kmh,
                 telemetry.cadence_rpm,
                 telemetry.distance_m,
@@ -121,6 +120,7 @@ async def consume_bike_telemetry(
         operation=consume_once,
         retry_delay_seconds=5.0,
     )
+
 
 async def run() -> None:
     """

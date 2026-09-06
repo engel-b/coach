@@ -11,14 +11,10 @@
  *
  * Anders als ein Java enum existiert dieser Typ nur zur Compile-Zeit.
  */
-export type DeviceType = 'heart_rate' | 'bike' | 'scale'
+export type DeviceType = "heart_rate" | "bike" | "scale";
 
 export type DeviceStatus =
-  | 'disconnected'
-  | 'scanning'
-  | 'connecting'
-  | 'connected'
-  | 'error'
+  "disconnected" | "scanning" | "connecting" | "connected" | "error";
 
 /**
  * Aktueller Zustand eines Geräts.
@@ -34,17 +30,17 @@ export type DeviceStatus =
  * exakt so, wie FastAPI ihn aktuell liefert.
  */
 export interface DeviceState {
-  deviceId: string
-  deviceType: DeviceType
-  deviceName: string
-  status: DeviceStatus
-  lastSeen: string
+  deviceId: string;
+  deviceType: DeviceType;
+  deviceName: string;
+  status: DeviceStatus;
+  lastSeen: string;
 
-  heartRateBpm: number | null
+  heartRateBpm: number | null;
 
-  speedKmh: number | null
-  cadenceRpm: number | null
-  distanceM: number | null
-  powerW: number | null
-  resistance: number | null
+  speedKmh: number | null;
+  cadenceRpm: number | null;
+  distanceM: number | null;
+  powerW: number | null;
+  resistance: number | null;
 }

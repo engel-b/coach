@@ -1,179 +1,136 @@
-import type { DeviceState } from '../devices/types'
-import type { TelemetryMessage } from './types'
+import type { DeviceState } from "../devices/types";
+import type { TelemetryMessage } from "./types";
 
 export function applyTelemetryMessage(
   currentDevices: DeviceState[],
   message: TelemetryMessage,
 ): DeviceState[] {
-  if (message.type === 'device.status_changed') {
-    return applyDeviceStatusChanged(
-      currentDevices,
-      message,
-    )
+  if (message.type === "device.status_changed") {
+    return applyDeviceStatusChanged(currentDevices, message);
   }
 
-  if (message.type === 'heart_rate.sample') {
-    return applyHeartRateSample(
-      currentDevices,
-      message,
-    )
+  if (message.type === "heart_rate.sample") {
+    return applyHeartRateSample(currentDevices, message);
   }
 
-  if (message.type === 'bike.telemetry') {
-    return applyBikeTelemetry(
-      currentDevices,
-      message,
-    )
+  if (message.type === "bike.telemetry") {
+    return applyBikeTelemetry(currentDevices, message);
   }
 
-  return currentDevices
+  return currentDevices;
 }
 
 function applyDeviceStatusChanged(
   currentDevices: DeviceState[],
   message: TelemetryMessage,
 ): DeviceState[] {
-  const deviceType = message.payload.deviceType
-  const deviceName = message.payload.deviceName
-  const status = message.payload.status
+  const deviceType = message.payload.deviceType;
+  const deviceName = message.payload.deviceName;
+  const status = message.payload.status;
 
   if (
-    typeof deviceType !== 'string' ||
-    typeof deviceName !== 'string' ||
-    typeof status !== 'string'
+    typeof deviceType !== "string" ||
+    typeof deviceName !== "string" ||
+    typeof status !== "string"
   ) {
-    return currentDevices
+    return currentDevices;
   }
 
-  const existingDevice =
-    findDevice(currentDevices, message.deviceId)
+  const existingDevice = findDevice(currentDevices, message.deviceId);
 
   const updatedDevice: DeviceState = {
     deviceId: message.deviceId,
-    deviceType:
-      deviceType as DeviceState['deviceType'],
+    deviceType: deviceType as DeviceState["deviceType"],
     deviceName,
-    status:
-      status as DeviceState['status'],
+    status: status as DeviceState["status"],
     lastSeen: message.timestamp,
-    heartRateBpm:
-      existingDevice?.heartRateBpm ?? null,
-    speedKmh:
-      existingDevice?.speedKmh ?? null,
-    cadenceRpm:
-      existingDevice?.cadenceRpm ?? null,
-    distanceM:
-      existingDevice?.distanceM ?? null,
-    powerW:
-      existingDevice?.powerW ?? null,
-    resistance:
-      existingDevice?.resistance ?? null,
-  }
+    heartRateBpm: existingDevice?.heartRateBpm ?? null,
+    speedKmh: existingDevice?.speedKmh ?? null,
+    cadenceRpm: existingDevice?.cadenceRpm ?? null,
+    distanceM: existingDevice?.distanceM ?? null,
+    powerW: existingDevice?.powerW ?? null,
+    resistance: existingDevice?.resistance ?? null,
+  };
 
-  return upsertDevice(
-    currentDevices,
-    updatedDevice,
-  )
+  return upsertDevice(currentDevices, updatedDevice);
 }
 
 function applyHeartRateSample(
   currentDevices: DeviceState[],
   message: TelemetryMessage,
 ): DeviceState[] {
-  const bpm = message.payload.bpm
+  const bpm = message.payload.bpm;
 
-  if (typeof bpm !== 'number') {
-    return currentDevices
+  if (typeof bpm !== "number") {
+    return currentDevices;
   }
 
-  const existingDevice =
-    findDevice(currentDevices, message.deviceId)
+  const existingDevice = findDevice(currentDevices, message.deviceId);
 
   const heartRateDevice: DeviceState = {
     deviceId: message.deviceId,
-    deviceType: 'heart_rate',
-    deviceName:
-      existingDevice?.deviceName ??
-      'Heart Rate Sensor',
-    status: 'connected',
+    deviceType: "heart_rate",
+    deviceName: existingDevice?.deviceName ?? "Heart Rate Sensor",
+    status: "connected",
     lastSeen: message.timestamp,
     heartRateBpm: bpm,
-    speedKmh:
-      existingDevice?.speedKmh ?? null,
-    cadenceRpm:
-      existingDevice?.cadenceRpm ?? null,
-    distanceM:
-      existingDevice?.distanceM ?? null,
-    powerW:
-      existingDevice?.powerW ?? null,
-    resistance:
-      existingDevice?.resistance ?? null,
-  }
+    speedKmh: existingDevice?.speedKmh ?? null,
+    cadenceRpm: existingDevice?.cadenceRpm ?? null,
+    distanceM: existingDevice?.distanceM ?? null,
+    powerW: existingDevice?.powerW ?? null,
+    resistance: existingDevice?.resistance ?? null,
+  };
 
-  return upsertDevice(
-    currentDevices,
-    heartRateDevice,
-  )
+  return upsertDevice(currentDevices, heartRateDevice);
 }
 
 function applyBikeTelemetry(
   currentDevices: DeviceState[],
   message: TelemetryMessage,
 ): DeviceState[] {
-  const speedKmh = message.payload.speedKmh
-  const cadenceRpm = message.payload.cadenceRpm
-  const distanceM = message.payload.distanceM
-  const powerW = message.payload.powerW
-  const resistance = message.payload.resistance
+  const speedKmh = message.payload.speedKmh;
+  const cadenceRpm = message.payload.cadenceRpm;
+  const distanceM = message.payload.distanceM;
+  const powerW = message.payload.powerW;
+  const resistance = message.payload.resistance;
 
-  const existingDevice =
-    findDevice(currentDevices, message.deviceId)
+  const existingDevice = findDevice(currentDevices, message.deviceId);
 
   const bikeDevice: DeviceState = {
     deviceId: message.deviceId,
-    deviceType: 'bike',
-    deviceName:
-      existingDevice?.deviceName ??
-      'FTMS Bike',
-    status: 'connected',
+    deviceType: "bike",
+    deviceName: existingDevice?.deviceName ?? "FTMS Bike",
+    status: "connected",
     lastSeen: message.timestamp,
-    heartRateBpm:
-      existingDevice?.heartRateBpm ?? null,
+    heartRateBpm: existingDevice?.heartRateBpm ?? null,
     speedKmh:
-      typeof speedKmh === 'number'
+      typeof speedKmh === "number"
         ? speedKmh
-        : existingDevice?.speedKmh ?? null,
+        : (existingDevice?.speedKmh ?? null),
     cadenceRpm:
-      typeof cadenceRpm === 'number'
+      typeof cadenceRpm === "number"
         ? cadenceRpm
-        : existingDevice?.cadenceRpm ?? null,
+        : (existingDevice?.cadenceRpm ?? null),
     distanceM:
-      typeof distanceM === 'number'
+      typeof distanceM === "number"
         ? distanceM
-        : existingDevice?.distanceM ?? null,
+        : (existingDevice?.distanceM ?? null),
     powerW:
-      typeof powerW === 'number'
-        ? powerW
-        : existingDevice?.powerW ?? null,
+      typeof powerW === "number" ? powerW : (existingDevice?.powerW ?? null),
     resistance:
-      typeof resistance === 'number'
+      typeof resistance === "number"
         ? resistance
-        : existingDevice?.resistance ?? null,
-  }
+        : (existingDevice?.resistance ?? null),
+  };
 
-  return upsertDevice(
-    currentDevices,
-    bikeDevice,
-  )
+  return upsertDevice(currentDevices, bikeDevice);
 }
 
 function findDevice(
   devices: DeviceState[],
   deviceId: string,
 ): DeviceState | undefined {
-  return devices.find(
-    (device) => device.deviceId === deviceId,
-  )
+  return devices.find((device) => device.deviceId === deviceId);
 }
 
 function upsertDevice(
@@ -181,10 +138,7 @@ function upsertDevice(
   updatedDevice: DeviceState,
 ): DeviceState[] {
   return [
-    ...devices.filter(
-      (device) =>
-        device.deviceId !== updatedDevice.deviceId,
-    ),
+    ...devices.filter((device) => device.deviceId !== updatedDevice.deviceId),
     updatedDevice,
-  ]
+  ];
 }

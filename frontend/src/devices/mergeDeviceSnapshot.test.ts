@@ -13,6 +13,7 @@ function createBike(overrides: Partial<DeviceState> = {}): DeviceState {
     heartRateBpm: null,
     speedKmh: 25,
     cadenceRpm: 80,
+    distanceM: 500,
     powerW: 150,
     resistance: 10,
     ...overrides,

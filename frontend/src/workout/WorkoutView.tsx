@@ -13,12 +13,12 @@ import {
   getFinishWindowRemainingSeconds,
   shouldCountWorkoutTime,
   shouldPlayWorkoutVideo,
-} from './workoutEngine'
+} from "./workoutEngine";
 
 import {
   applyNativeDistanceSample,
   createWorkoutDistanceState,
-} from './workoutDistance'
+} from "./workoutDistance";
 
 interface WorkoutViewProps {
   person: Person;
@@ -225,70 +225,60 @@ export function WorkoutView({
 
   const cadenceRpm = bikeDevice?.cadenceRpm ?? null;
 
-  const nativeDistanceM = bikeDevice?.distanceM ?? null
+  const nativeDistanceM = bikeDevice?.distanceM ?? null;
 
   const powerW = bikeDevice?.powerW ?? null;
 
   /*
- * Die FTMS Total Distance ist ein nativer absoluter
- * Bike-Zähler.
- *
- * Unser Workout beginnt aber immer bei 0 m.
- * Deshalb merken wir uns den beim Mount bereits bekannten
- * Wert als Baseline.
- */
-const [
-  workoutDistance,
-  setWorkoutDistance,
-] = useState(() =>
-  createWorkoutDistanceState(
-    nativeDistanceM,
-  ),
-)
+   * Die FTMS Total Distance ist ein nativer absoluter
+   * Bike-Zähler.
+   *
+   * Unser Workout beginnt aber immer bei 0 m.
+   * Deshalb merken wir uns den beim Mount bereits bekannten
+   * Wert als Baseline.
+   */
+  const [workoutDistance, setWorkoutDistance] = useState(() =>
+    createWorkoutDistanceState(nativeDistanceM),
+  );
 
-/*
- * Die Engine ist die fachliche Quelle dafür, ob gerade
- * Trainingszeit zählt.
- *
- * Bei manueller bzw. automatischer Pause zählt deshalb
- * auch keine Workout-Distanz.
- *
- * Das Abbruch-Bestätigungsfenster pausiert ebenfalls
- * Timer und Video und wird deshalb hier genauso behandelt.
- */
-const countWorkoutDistance =
-  shouldCountWorkoutTime(engineState) &&
-  !finishConfirmation
+  /*
+   * Die Engine ist die fachliche Quelle dafür, ob gerade
+   * Trainingszeit zählt.
+   *
+   * Bei manueller bzw. automatischer Pause zählt deshalb
+   * auch keine Workout-Distanz.
+   *
+   * Das Abbruch-Bestätigungsfenster pausiert ebenfalls
+   * Timer und Video und wird deshalb hier genauso behandelt.
+   */
+  const countWorkoutDistance =
+    shouldCountWorkoutTime(engineState) && !finishConfirmation;
 
-/*
- * Neue native FTMS-Distanzwerte werden in relative
- * Workout-Distanz umgerechnet.
- *
- * setTimeout(0) verwenden wir aus demselben Grund wie beim
- * Bike-Movement-Event: kein direkter State-Write innerhalb
- * des Effects gemäß unserer Hooks-Lint-Regel.
- */
-useEffect(() => {
-  const timer = window.setTimeout(() => {
-    setWorkoutDistance(
-      (currentDistance) =>
+  /*
+   * Neue native FTMS-Distanzwerte werden in relative
+   * Workout-Distanz umgerechnet.
+   *
+   * setTimeout(0) verwenden wir aus demselben Grund wie beim
+   * Bike-Movement-Event: kein direkter State-Write innerhalb
+   * des Effects gemäß unserer Hooks-Lint-Regel.
+   */
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setWorkoutDistance((currentDistance) =>
         applyNativeDistanceSample(
           currentDistance,
           nativeDistanceM,
           countWorkoutDistance,
         ),
-    )
-  }, 0)
+      );
+    }, 0);
 
-  return () => {
-    window.clearTimeout(timer)
-  }
-}, [
-  countWorkoutDistance,
-  nativeDistanceM,
-])
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [countWorkoutDistance, nativeDistanceM]);
 
-const workoutDistanceKm = workoutDistance.accumulatedDistanceM / 1000
+  const workoutDistanceKm = workoutDistance.accumulatedDistanceM / 1000;
 
   /*
    * Die Telemetrie entscheidet nur, ob das Bike gerade
@@ -681,20 +671,14 @@ const workoutDistanceKm = workoutDistance.accumulatedDistanceM / 1000
             </div>
 
             <div className="telemetry-metric">
-              <div className="telemetry-label">
-                ↔ DISTANZ
-              </div>
+              <div className="telemetry-label">↔ DISTANZ</div>
 
               <div className="telemetry-value">
-                <strong>
-                  {workoutDistanceKm.toFixed(2)}
-                </strong>
+                <strong>{workoutDistanceKm.toFixed(2)}</strong>
                 <span>km</span>
               </div>
 
-              <div className="telemetry-caption">
-                Workout
-              </div>
+              <div className="telemetry-caption">Workout</div>
             </div>
 
             <div className="telemetry-metric">

@@ -10,9 +10,9 @@ export interface HeartRateSamplePayload {
 }
 
 export interface BikeTelemetryPayload {
-  powerW?: number
-  cadenceRpm?: number
-  speedKmh?: number
-  distanceM?: number
-  resistance?: number
+  powerW?: number;
+  cadenceRpm?: number;
+  speedKmh?: number;
+  distanceM?: number;
+  resistance?: number;
 }
