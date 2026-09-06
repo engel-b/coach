@@ -26,6 +26,7 @@ FTMS_INDOOR_BIKE_DATA_UUID = "00002ad2-0000-1000-8000-00805f9b34fb"
 class _BikeState:
     speed_kmh: float | None = None
     cadence_rpm: float | None = None
+    distance_m: int | None = None
     power_w: int | None = None
 
     # Das MERACH meldet dieses Feld zwar, bei deinem mechanischen
@@ -91,6 +92,7 @@ class FtmsBikeAdapter:
                 timestamp=datetime.now(UTC),
                 speed_kmh=state.speed_kmh,
                 cadence_rpm=state.cadence_rpm,
+                distance_m=state.distance_m,
                 power_w=state.power_w,
                 # Mechanischer Widerstand:
                 # 0 wäre semantisch irreführend.
@@ -133,7 +135,8 @@ class FtmsBikeAdapter:
                         # bewusst mit BleakError. Der Device-Worker übernimmt
                         # anschließend den Retry und baut eine neue Verbindung auf.
                         raise BleakError(
-                            f"FTMS bike connected but telemetry became silent: {self._device_id}"
+                            f"FTMS bike connected but telemetry became silent: "
+                            f"{self._device_id}"
                         ) from exc
 
                     yield telemetry
@@ -218,6 +221,9 @@ class FtmsBikeAdapter:
 
         if update.cadence_rpm is not None:
             state.cadence_rpm = update.cadence_rpm
+
+        if update.distance_m is not None:
+            state.distance_m = update.distance_m
 
         if update.power_w is not None:
             state.power_w = update.power_w
