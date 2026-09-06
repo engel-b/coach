@@ -88,6 +88,31 @@ def test_checkpoint_updates_running_workout() -> None:
     assert persisted.video_position_seconds == 87.5
 
 
+def test_new_workout_resumes_video_from_previous_workout() -> None:
+    repository = InMemoryWorkoutRepository()
+    service = WorkoutService(repository=repository)
+
+    first_workout = service.start(
+        person_id=1,
+        recommendation=create_recommendation(),
+    )
+
+    service.checkpoint(
+        first_workout.id,
+        elapsed_seconds=120,
+        distance_m=1350,
+        video_position_seconds=87.5,
+    )
+
+    second_workout = service.start(
+        person_id=1,
+        recommendation=create_recommendation(),
+    )
+
+    assert second_workout.video_id == first_workout.video_id
+    assert second_workout.video_position_seconds == 87.5
+
+
 def test_workout_can_be_completed() -> None:
     repository = InMemoryWorkoutRepository()
     service = WorkoutService(repository)

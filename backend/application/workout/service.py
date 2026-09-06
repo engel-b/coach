@@ -42,11 +42,7 @@ class WorkoutService:
             limit=1,
         )
 
-        previous_workout = (
-            previous_workouts[0]
-            if previous_workouts
-            else None
-        )
+        previous_workout = previous_workouts[0] if previous_workouts else None
 
         workout = WorkoutSession(
             id=str(uuid4()),
@@ -54,18 +50,12 @@ class WorkoutService:
             started_at=datetime.now(UTC),
             status=WorkoutStatus.RUNNING,
             phases=recommendation.phases,
-            total_duration_minutes=(
-                recommendation.total_duration_minutes
-            ),
+            total_duration_minutes=(recommendation.total_duration_minutes),
             video_id=(
-                previous_workout.video_id
-                if previous_workout is not None
-                else DEFAULT_VIDEO_ID
+                previous_workout.video_id if previous_workout is not None else DEFAULT_VIDEO_ID
             ),
             video_position_seconds=(
-                previous_workout.video_position_seconds
-                if previous_workout is not None
-                else 0.0
+                previous_workout.video_position_seconds if previous_workout is not None else 0.0
             ),
         )
 

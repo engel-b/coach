@@ -86,7 +86,15 @@ def test_workout_can_be_started_via_api() -> None:
     assert workout["elapsedSeconds"] == 0
     assert workout["distanceM"] == 0
     assert workout["videoId"] == "cycling-alpen-01"
-    assert workout["videoPositionSeconds"] == 0.0
+
+    video_position_seconds = workout["videoPositionSeconds"]
+
+    assert isinstance(
+        video_position_seconds,
+        int | float,
+    )
+    assert video_position_seconds >= 0
+
     assert workout["totalDurationMinutes"] == 30
 
     phases = workout["phases"]
@@ -118,8 +126,8 @@ def test_workout_can_be_completed_via_api() -> None:
     assert completed["status"] == "completed"
     assert completed["elapsedSeconds"] == 1800
     assert completed["distanceM"] == 12345
-    assert completed["videoId"] == "cycling-alpen-01"
-    assert completed["videoPositionSeconds"] == 0.0
+    assert completed["videoId"] == workout["videoId"]
+    assert completed["videoPositionSeconds"] == workout["videoPositionSeconds"]
 
     assert completed["completedAt"] is not None
 
@@ -147,10 +155,34 @@ def test_workout_can_be_aborted_via_api() -> None:
     assert aborted["status"] == "aborted"
     assert aborted["elapsedSeconds"] == 723
     assert aborted["distanceM"] == 4321
-    assert aborted["videoId"] == "cycling-alpen-01"
-    assert aborted["videoPositionSeconds"] == 0.0
+    assert aborted["videoId"] == workout["videoId"]
+    assert aborted["videoPositionSeconds"] == workout["videoPositionSeconds"]
 
     assert aborted["completedAt"] is not None
+
+
+def test_new_workout_resumes_video_position_via_api() -> None:
+    first_workout = start_workout(1)
+
+    first_workout_id = first_workout["id"]
+
+    assert isinstance(first_workout_id, str)
+
+    checkpoint_response = client.post(
+        f"/api/workouts/{first_workout_id}/checkpoint",
+        json={
+            "elapsedSeconds": 120,
+            "distanceM": 1350,
+            "videoPositionSeconds": 87.5,
+        },
+    )
+
+    assert checkpoint_response.status_code == 200
+
+    second_workout = start_workout(1)
+
+    assert second_workout["videoId"] == first_workout["videoId"]
+    assert second_workout["videoPositionSeconds"] == 87.5
 
 
 def test_unknown_workout_cannot_be_completed() -> None:
