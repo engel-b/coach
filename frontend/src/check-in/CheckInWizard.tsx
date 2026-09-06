@@ -1,41 +1,32 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react";
 
-import { createCheckIn } from '../api/check-ins'
-import type { Person } from '../persons/types'
-import { checkInQuestions } from './questions'
-import type {
-  CheckIn,
-  CheckInRequest,
-} from './types'
-
+import { createCheckIn } from "../api/check-ins";
+import type { Person } from "../persons/types";
+import { checkInQuestions } from "./questions";
+import type { CheckIn, CheckInRequest } from "./types";
 
 interface CheckInWizardProps {
-  person: Person
-  onComplete: (checkIn: CheckIn) => void
-  onCancel: () => void
+  person: Person;
+  onComplete: (checkIn: CheckIn) => void;
+  onCancel: () => void;
 }
 
-
-type Answers = Partial<CheckInRequest>
-
+type Answers = Partial<CheckInRequest>;
 
 export function CheckInWizard({
   person,
   onComplete,
   onCancel,
 }: CheckInWizardProps) {
-  const [step, setStep] = useState(0)
-  const [answers, setAnswers] = useState<Answers>({})
-  const [selectedIndex, setSelectedIndex] =
-    useState<number | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [step, setStep] = useState(0);
+  const [answers, setAnswers] = useState<Answers>({});
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const question = checkInQuestions[step]
+  const question = checkInQuestions[step];
 
-  async function completeCheckIn(
-    finalAnswers: Answers,
-  ): Promise<void> {
+  async function completeCheckIn(finalAnswers: Answers): Promise<void> {
     /*
      * Zu diesem Zeitpunkt müssen alle fünf Antworten vorhanden sein.
      *
@@ -49,8 +40,8 @@ export function CheckInWizard({
       finalAnswers.stress === undefined ||
       finalAnswers.availableTrainingMinutes === undefined
     ) {
-      setError('Der Check-in ist unvollständig.')
-      return
+      setError("Der Check-in ist unvollständig.");
+      return;
     }
 
     const request: CheckInRequest = {
@@ -58,97 +49,86 @@ export function CheckInWizard({
       recovery: finalAnswers.recovery,
       muscleSoreness: finalAnswers.muscleSoreness,
       stress: finalAnswers.stress,
-      availableTrainingMinutes:
-        finalAnswers.availableTrainingMinutes,
-    }
+      availableTrainingMinutes: finalAnswers.availableTrainingMinutes,
+    };
 
     try {
-      setSaving(true)
-      setError(null)
+      setSaving(true);
+      setError(null);
 
-      const result = await createCheckIn(
-        person.id,
-        request,
-      )
+      const result = await createCheckIn(person.id, request);
 
-      onComplete(result)
+      onComplete(result);
     } catch (saveError) {
       const message =
-        saveError instanceof Error
-          ? saveError.message
-          : 'Unknown error'
+        saveError instanceof Error ? saveError.message : "Unknown error";
 
-      setError(message)
-      setSaving(false)
+      setError(message);
+      setSaving(false);
     }
   }
 
   function selectOption(index: number): void {
     if (question === undefined) {
-      return
+      return;
     }
 
     if (index < 0 || index >= question.options.length) {
-      return
+      return;
     }
 
-    setSelectedIndex(index)
+    setSelectedIndex(index);
   }
 
   function goBack(): void {
     if (saving) {
-      return
+      return;
     }
 
     if (step === 0) {
-      onCancel()
-      return
+      onCancel();
+      return;
     }
 
-    setStep((current) => current - 1)
-    setSelectedIndex(null)
-    setError(null)
+    setStep((current) => current - 1);
+    setSelectedIndex(null);
+    setError(null);
   }
 
   function confirmSelection(): void {
-    if (
-      question === undefined ||
-      selectedIndex === null ||
-      saving
-    ) {
-      return
+    if (question === undefined || selectedIndex === null || saving) {
+      return;
     }
 
-    const option = question.options[selectedIndex]
+    const option = question.options[selectedIndex];
 
     if (option === undefined) {
-      return
+      return;
     }
 
     const newAnswers: Answers = {
       ...answers,
       [question.field]: option.value,
-    }
+    };
 
-    setAnswers(newAnswers)
+    setAnswers(newAnswers);
 
-    const isLastQuestion =
-      step === checkInQuestions.length - 1
+    const isLastQuestion = step === checkInQuestions.length - 1;
 
     if (isLastQuestion) {
-      void completeCheckIn(newAnswers)
-      return
+      void completeCheckIn(newAnswers);
+      return;
     }
 
-    setStep((current) => current + 1)
-    setSelectedIndex(null)
-    setError(null)
+    setStep((current) => current + 1);
+    setSelectedIndex(null);
+    setError(null);
   }
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
       if (saving || question === undefined) {
-        return
+        return;
       }
 
       /*
@@ -157,47 +137,42 @@ export function CheckInWizard({
        * Das funktioniert sowohl mit der normalen Tastatur
        * als später auch mit einem USB-Nummernblock.
        */
-      const number = Number(event.key)
+      const number = Number(event.key);
 
       if (
         Number.isInteger(number) &&
         number >= 1 &&
         number <= question.options.length
       ) {
-        selectOption(number - 1)
-        return
+        selectOption(number - 1);
+        return;
       }
 
-      if (event.key === 'Enter') {
-        confirmSelection()
-        return
+      if (event.key === "Enter") {
+        confirmSelection();
+        return;
       }
 
-      if (event.key === 'Escape') {
-        goBack()
+      if (event.key === "Escape") {
+        goBack();
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener(
-        'keydown',
-        handleKeyDown,
-      )
-    }
-  })
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  });
 
   if (question === undefined) {
-    return null
+    return null;
   }
 
   return (
     <section className="check-in">
       <header className="check-in-header">
-        <div className="eyebrow">
-          CHECK-IN · {person.displayName}
-        </div>
+        <div className="eyebrow">CHECK-IN · {person.displayName}</div>
 
         <div className="check-in-progress">
           Frage {step + 1} von {checkInQuestions.length}
@@ -207,57 +182,38 @@ export function CheckInWizard({
       <div className="check-in-content">
         <h1>{question.title}</h1>
 
-        <p className="check-in-description">
-          {question.description}
-        </p>
+        <p className="check-in-description">{question.description}</p>
 
         <div className="check-in-options">
           {question.options.map((option, index) => {
-            const selected = selectedIndex === index
+            const selected = selectedIndex === index;
 
             return (
               <button
                 key={option.value}
                 type="button"
                 className={
-                  selected
-                    ? 'check-in-option selected'
-                    : 'check-in-option'
+                  selected ? "check-in-option selected" : "check-in-option"
                 }
                 onClick={() => selectOption(index)}
                 disabled={saving}
               >
-                <span className="option-key">
-                  {index + 1}
-                </span>
+                <span className="option-key">{index + 1}</span>
 
-                <span className="option-label">
-                  {option.label}
-                </span>
+                <span className="option-label">{option.label}</span>
               </button>
-            )
+            );
           })}
         </div>
 
-        {error !== null && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
+        {error !== null && <div className="error-message">{error}</div>}
       </div>
 
       <footer className="check-in-footer">
-        <span>
-          Esc · Zurück
-        </span>
+        <span>Esc · Zurück</span>
 
-        <span>
-          {saving
-            ? 'Check-in wird gespeichert …'
-            : 'Enter · Weiter'}
-        </span>
+        <span>{saving ? "Check-in wird gespeichert …" : "Enter · Weiter"}</span>
       </footer>
     </section>
-  )
+  );
 }
-

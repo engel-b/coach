@@ -1,123 +1,84 @@
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from 'react'
+import { useCallback, useEffect, useState } from "react";
 
-import { getDevices } from './api/devices'
-import { getPersons } from './api/persons'
-import { getTrainingRecommendation } from './api/training'
-import { startWorkout } from './api/workouts'
-import './App.css'
-import { CheckInWizard } from './check-in/CheckInWizard'
-import type { CheckIn } from './check-in/types'
-import { DeviceCard } from './devices/DeviceCard'
-import { mergeDeviceSnapshot } from './devices/mergeDeviceSnapshot'
-import type { DeviceState } from './devices/types'
-import { PersonDashboard } from './persons/PersonDashboard'
-import { PersonSelection } from './persons/PersonSelection'
-import type { Person } from './persons/types'
-import { applyTelemetryMessage } from './telemetry/applyTelemetryMessage'
-import { useTelemetry } from './telemetry/useTelemetry'
-import { TrainingRecommendationView } from './training/TrainingRecommendationView'
-import type { TrainingRecommendation } from './training/types'
-import { WorkoutSummaryView } from './workout/WorkoutSummaryView'
-import type { Workout } from './workout/types'
-import { WorkoutView } from './workout/WorkoutView'
-
+import { getDevices } from "./api/devices";
+import { getPersons } from "./api/persons";
+import { getTrainingRecommendation } from "./api/training";
+import { startWorkout } from "./api/workouts";
+import "./App.css";
+import { CheckInWizard } from "./check-in/CheckInWizard";
+import type { CheckIn } from "./check-in/types";
+import { DeviceCard } from "./devices/DeviceCard";
+import { mergeDeviceSnapshot } from "./devices/mergeDeviceSnapshot";
+import type { DeviceState } from "./devices/types";
+import { PersonDashboard } from "./persons/PersonDashboard";
+import { PersonSelection } from "./persons/PersonSelection";
+import type { Person } from "./persons/types";
+import { applyTelemetryMessage } from "./telemetry/applyTelemetryMessage";
+import { useTelemetry } from "./telemetry/useTelemetry";
+import { TrainingRecommendationView } from "./training/TrainingRecommendationView";
+import type { TrainingRecommendation } from "./training/types";
+import { WorkoutSummaryView } from "./workout/WorkoutSummaryView";
+import type { Workout } from "./workout/types";
+import { WorkoutView } from "./workout/WorkoutView";
 
 function App() {
-  const [persons, setPersons] =
-    useState<Person[]>([])
+  const [persons, setPersons] = useState<Person[]>([]);
 
-  const [activePerson, setActivePerson] =
-    useState<Person | null>(null)
+  const [activePerson, setActivePerson] = useState<Person | null>(null);
 
-  const [checkIn, setCheckIn] =
-    useState<CheckIn | null>(null)
+  const [checkIn, setCheckIn] = useState<CheckIn | null>(null);
 
-  const [
-    recommendation,
-    setRecommendation,
-  ] =
-    useState<TrainingRecommendation | null>(
-      null,
-    )
+  const [recommendation, setRecommendation] =
+    useState<TrainingRecommendation | null>(null);
 
-  const [
-    recommendationLoading,
-    setRecommendationLoading,
-  ] = useState(false)
+  const [recommendationLoading, setRecommendationLoading] = useState(false);
 
-  const [
-    recommendationError,
-    setRecommendationError,
-  ] =
-    useState<string | null>(null)
+  const [recommendationError, setRecommendationError] = useState<string | null>(
+    null,
+  );
 
-  const [workout, setWorkout] =
-    useState<Workout | null>(null)
+  const [workout, setWorkout] = useState<Workout | null>(null);
 
-  const [
-    checkInActive,
-    setCheckInActive,
-  ] = useState(false)
+  const [checkInActive, setCheckInActive] = useState(false);
 
-  const [devices, setDevices] =
-    useState<DeviceState[]>([])
+  const [devices, setDevices] = useState<DeviceState[]>([]);
 
-  const [error, setError] =
-    useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null);
 
-
-/*
- * Eingehende Live-Telemetrie wird durch eine pure Funktion
- * auf unseren aktuellen Device-State angewendet.
- *
- * React ist damit nur noch für die State-Verwaltung zuständig.
- * Die fachliche Merge-/Upsert-Logik liegt in
- * applyTelemetryMessage().
- */
-const handleTelemetryMessage =
-  useCallback(
-    (
-      message: Parameters<
-        typeof applyTelemetryMessage
-      >[1],
-    ) => {
+  /*
+   * Eingehende Live-Telemetrie wird durch eine pure Funktion
+   * auf unseren aktuellen Device-State angewendet.
+   *
+   * React ist damit nur noch für die State-Verwaltung zuständig.
+   * Die fachliche Merge-/Upsert-Logik liegt in
+   * applyTelemetryMessage().
+   */
+  const handleTelemetryMessage = useCallback(
+    (message: Parameters<typeof applyTelemetryMessage>[1]) => {
       setDevices((currentDevices) =>
-        applyTelemetryMessage(
-          currentDevices,
-          message,
-        ),
-      )
+        applyTelemetryMessage(currentDevices, message),
+      );
     },
     [],
-  )
+  );
 
-
-/*
- * Lädt den aktuellen Gerätezustand als REST-Snapshot.
- *
- * Der Snapshot ersetzt den lokalen Zustand nicht blind.
- * mergeDeviceSnapshot() sorgt dafür, dass neuere
- * WebSocket-Daten erhalten bleiben.
- *
- * Diese Funktion wird sowohl beim Start als auch nach
- * einem WebSocket-Reconnect verwendet.
- */
-const loadDeviceSnapshot =
-  useCallback(async (): Promise<void> => {
+  /*
+   * Lädt den aktuellen Gerätezustand als REST-Snapshot.
+   *
+   * Der Snapshot ersetzt den lokalen Zustand nicht blind.
+   * mergeDeviceSnapshot() sorgt dafür, dass neuere
+   * WebSocket-Daten erhalten bleiben.
+   *
+   * Diese Funktion wird sowohl beim Start als auch nach
+   * einem WebSocket-Reconnect verwendet.
+   */
+  const loadDeviceSnapshot = useCallback(async (): Promise<void> => {
     try {
-      const result =
-        await getDevices()
+      const result = await getDevices();
 
       setDevices((currentDevices) =>
-        mergeDeviceSnapshot(
-          currentDevices,
-          result,
-        ),
-      )
+        mergeDeviceSnapshot(currentDevices, result),
+      );
     } catch {
       /*
        * Der Device-Snapshot ist optional.
@@ -126,47 +87,41 @@ const loadDeviceSnapshot =
        * WebSocket-Telemetrie trotzdem weiterlaufen.
        */
     }
-  }, [])
+  }, []);
 
+  /*
+   * WebSocket-Verbindung zum Backend aktivieren.
+   *
+   * Nach einer tatsächlich wiederhergestellten Verbindung
+   * synchronisieren wir zusätzlich den aktuellen REST-Snapshot.
+   * Dadurch holen wir Zustandsänderungen nach, die während
+   * des WebSocket-Ausfalls möglicherweise verpasst wurden.
+   */
+  useTelemetry({
+    onMessage: handleTelemetryMessage,
+    onConnected: loadDeviceSnapshot,
+  });
 
-/*
- * WebSocket-Verbindung zum Backend aktivieren.
- *
- * Nach einer tatsächlich wiederhergestellten Verbindung
- * synchronisieren wir zusätzlich den aktuellen REST-Snapshot.
- * Dadurch holen wir Zustandsänderungen nach, die während
- * des WebSocket-Ausfalls möglicherweise verpasst wurden.
- */
-useTelemetry({
-  onMessage: handleTelemetryMessage,
-  onConnected: loadDeviceSnapshot,
-})
+  /*
+   * Personen einmal beim Start laden.
+   */
+  useEffect(() => {
+    async function loadPersons(): Promise<void> {
+      try {
+        const result = await getPersons();
 
+        setPersons(result);
+        setError(null);
+      } catch (loadError) {
+        const message =
+          loadError instanceof Error ? loadError.message : "Unknown error";
 
-/*
- * Personen einmal beim Start laden.
- */
-useEffect(() => {
-  async function loadPersons(): Promise<void> {
-    try {
-      const result =
-        await getPersons()
-
-      setPersons(result)
-      setError(null)
-    } catch (loadError) {
-      const message =
-        loadError instanceof Error
-          ? loadError.message
-          : 'Unknown error'
-
-      setError(message)
+        setError(message);
+      }
     }
-  }
 
-  void loadPersons()
-}, [])
-
+    void loadPersons();
+  }, []);
 
   /*
    * WebSocket-Verbindung zum Backend aktivieren.
@@ -175,10 +130,10 @@ useEffect(() => {
    * Verbindung und das Einlesen der Nachrichten.
    * Die fachliche Verarbeitung erfolgt oben im Callback.
    */
-useTelemetry({
-  onMessage: handleTelemetryMessage,
-  onConnected: loadDeviceSnapshot,
-})
+  useTelemetry({
+    onMessage: handleTelemetryMessage,
+    onConnected: loadDeviceSnapshot,
+  });
 
   /*
    * Personen einmal beim Start laden.
@@ -186,24 +141,20 @@ useTelemetry({
   useEffect(() => {
     async function loadPersons(): Promise<void> {
       try {
-        const result =
-          await getPersons()
+        const result = await getPersons();
 
-        setPersons(result)
-        setError(null)
+        setPersons(result);
+        setError(null);
       } catch (loadError) {
         const message =
-          loadError instanceof Error
-            ? loadError.message
-            : 'Unknown error'
+          loadError instanceof Error ? loadError.message : "Unknown error";
 
-        setError(message)
+        setError(message);
       }
     }
 
-    void loadPersons()
-  }, [])
-
+    void loadPersons();
+  }, []);
 
   /*
    * Geräte einmal beim Start als Snapshot laden.
@@ -219,9 +170,11 @@ useTelemetry({
   useEffect(() => {
     async function loadDevices(): Promise<void> {
       try {
-        const result = await getDevices()
+        const result = await getDevices();
 
-        setDevices((currentDevices) => mergeDeviceSnapshot(currentDevices, result))
+        setDevices((currentDevices) =>
+          mergeDeviceSnapshot(currentDevices, result),
+        );
       } catch {
         /*
          * Der Device-Snapshot ist optional.
@@ -232,55 +185,44 @@ useTelemetry({
       }
     }
 
-    void loadDevices()
-  }, [])
-
+    void loadDevices();
+  }, []);
 
   async function handleStartWorkout(): Promise<void> {
     if (activePerson === null) {
-      return
+      return;
     }
 
-    const startedWorkout =
-      await startWorkout(
-        activePerson.id,
-      )
+    const startedWorkout = await startWorkout(activePerson.id);
 
-    setWorkout(startedWorkout)
+    setWorkout(startedWorkout);
   }
-
 
   async function handleCheckInComplete(
     completedCheckIn: CheckIn,
   ): Promise<void> {
     if (activePerson === null) {
-      return
+      return;
     }
 
-    setCheckIn(completedCheckIn)
-    setCheckInActive(false)
-    setRecommendationLoading(true)
-    setRecommendationError(null)
+    setCheckIn(completedCheckIn);
+    setCheckInActive(false);
+    setRecommendationLoading(true);
+    setRecommendationError(null);
 
     try {
-      const result =
-        await getTrainingRecommendation(
-          activePerson.id,
-        )
+      const result = await getTrainingRecommendation(activePerson.id);
 
-      setRecommendation(result)
+      setRecommendation(result);
     } catch (loadError) {
       const message =
-        loadError instanceof Error
-          ? loadError.message
-          : 'Unknown error'
+        loadError instanceof Error ? loadError.message : "Unknown error";
 
-      setRecommendationError(message)
+      setRecommendationError(message);
     } finally {
-      setRecommendationLoading(false)
+      setRecommendationLoading(false);
     }
   }
-
 
   /*
    * Solange keine Person gewählt wurde, zeigen wir
@@ -290,19 +232,13 @@ useTelemetry({
     return (
       <main className="app">
         {error !== null && (
-          <div className="error-message">
-            Backend nicht erreichbar: {error}
-          </div>
+          <div className="error-message">Backend nicht erreichbar: {error}</div>
         )}
 
-        <PersonSelection
-          persons={persons}
-          onSelect={setActivePerson}
-        />
+        <PersonSelection persons={persons} onSelect={setActivePerson} />
       </main>
-    )
+    );
   }
-
 
   /*
    * Person wurde gewählt, aber ein Check-in wurde
@@ -311,56 +247,46 @@ useTelemetry({
    * In diesem Zustand zeigen wir das persönliche
    * Dashboard inklusive Trainingshistorie.
    */
-  if (
-    checkIn === null &&
-    !checkInActive
-  ) {
+  if (checkIn === null && !checkInActive) {
     return (
       <main className="app">
         <PersonDashboard
           person={activePerson}
           onStartCheckIn={() => {
-            setCheckInActive(true)
+            setCheckInActive(true);
           }}
           onChangePerson={() => {
-            setCheckIn(null)
-            setRecommendation(null)
-            setWorkout(null)
-            setCheckInActive(false)
-            setActivePerson(null)
+            setCheckIn(null);
+            setRecommendation(null);
+            setWorkout(null);
+            setCheckInActive(false);
+            setActivePerson(null);
           }}
         />
       </main>
-    )
+    );
   }
-
 
   /*
    * Check-in läuft.
    */
-  if (
-    checkIn === null &&
-    checkInActive
-  ) {
+  if (checkIn === null && checkInActive) {
     return (
       <main className="app">
         <CheckInWizard
           person={activePerson}
           onComplete={(completedCheckIn) => {
-            void handleCheckInComplete(
-              completedCheckIn,
-            )
+            void handleCheckInComplete(completedCheckIn);
           }}
           onCancel={() => {
-            setCheckIn(null)
-            setRecommendation(null)
-            setCheckInActive(false)
+            setCheckIn(null);
+            setRecommendation(null);
+            setCheckInActive(false);
           }}
         />
       </main>
-    )
+    );
   }
-
 
   /*
    * Empfehlung wird gerade berechnet/geladen.
@@ -368,13 +294,10 @@ useTelemetry({
   if (recommendationLoading) {
     return (
       <main className="app">
-        <div className="loading-state">
-          Training wird geplant …
-        </div>
+        <div className="loading-state">Training wird geplant …</div>
       </main>
-    )
+    );
   }
-
 
   /*
    * Laden der Trainingsempfehlung ist fehlgeschlagen.
@@ -382,33 +305,27 @@ useTelemetry({
   if (recommendationError !== null) {
     return (
       <main className="app">
-        <div className="error-message">
-          {recommendationError}
-        </div>
+        <div className="error-message">{recommendationError}</div>
 
         <button
           type="button"
           className="secondary-action"
           onClick={() => {
-            setCheckIn(null)
-            setRecommendation(null)
-            setRecommendationError(null)
+            setCheckIn(null);
+            setRecommendation(null);
+            setRecommendationError(null);
           }}
         >
           Check-in erneut durchführen
         </button>
       </main>
-    )
+    );
   }
-
 
   /*
    * Aktives Training.
    */
-  if (
-    workout !== null &&
-    workout.status === 'running'
-  ) {
+  if (workout !== null && workout.status === "running") {
     return (
       <main className="app">
         <WorkoutView
@@ -416,23 +333,19 @@ useTelemetry({
           workout={workout}
           devices={devices}
           onComplete={(completedWorkout) => {
-            setWorkout(completedWorkout)
+            setWorkout(completedWorkout);
           }}
         />
       </main>
-    )
+    );
   }
-
 
   /*
    * Training wurde beendet oder abgebrochen.
    */
   if (
     workout !== null &&
-    (
-      workout.status === 'completed' ||
-      workout.status === 'aborted'
-    )
+    (workout.status === "completed" || workout.status === "aborted")
   ) {
     return (
       <main className="app">
@@ -440,16 +353,15 @@ useTelemetry({
           person={activePerson}
           workout={workout}
           onDone={() => {
-            setWorkout(null)
-            setCheckIn(null)
-            setRecommendation(null)
-            setCheckInActive(false)
+            setWorkout(null);
+            setCheckIn(null);
+            setRecommendation(null);
+            setCheckInActive(false);
           }}
         />
       </main>
-    )
+    );
   }
-
 
   /*
    * Check-in abgeschlossen und Empfehlung vorhanden.
@@ -461,17 +373,16 @@ useTelemetry({
           person={activePerson}
           recommendation={recommendation}
           onBack={() => {
-            setCheckIn(null)
-            setRecommendation(null)
+            setCheckIn(null);
+            setRecommendation(null);
           }}
           onStart={() => {
-            void handleStartWorkout()
+            void handleStartWorkout();
           }}
         />
       </main>
-    )
+    );
   }
-
 
   /*
    * Fallback-Anzeige der erkannten Pulssensoren.
@@ -480,36 +391,28 @@ useTelemetry({
    * Später können hier weitere Geräte wie das Bike
    * hinzukommen.
    */
-  const heartRateDevices =
-    devices.filter(
-      (device) =>
-        device.deviceType ===
-        'heart_rate',
-    )
-
+  const heartRateDevices = devices.filter(
+    (device) => device.deviceType === "heart_rate",
+  );
 
   return (
     <main className="app">
       <header className="app-header">
         <div>
-          <div className="eyebrow">
-            DIGITAL FITNESS COACH
-          </div>
+          <div className="eyebrow">DIGITAL FITNESS COACH</div>
 
-          <h1>
-            Hallo {activePerson.displayName}
-          </h1>
+          <h1>Hallo {activePerson.displayName}</h1>
         </div>
 
         <button
           className="change-person"
           type="button"
           onClick={() => {
-            setCheckIn(null)
-            setRecommendation(null)
-            setWorkout(null)
-            setCheckInActive(false)
-            setActivePerson(null)
+            setCheckIn(null);
+            setRecommendation(null);
+            setWorkout(null);
+            setCheckInActive(false);
+            setActivePerson(null);
           }}
         >
           Person wechseln
@@ -517,24 +420,16 @@ useTelemetry({
       </header>
 
       <section className="device-grid">
-        {heartRateDevices.map(
-          (device) => (
-            <DeviceCard
-              key={device.deviceId}
-              device={device}
-            />
-          ),
-        )}
+        {heartRateDevices.map((device) => (
+          <DeviceCard key={device.deviceId} device={device} />
+        ))}
 
         {heartRateDevices.length === 0 && (
-          <div className="empty-state">
-            Noch kein Pulsgurt erkannt.
-          </div>
+          <div className="empty-state">Noch kein Pulsgurt erkannt.</div>
         )}
       </section>
     </main>
-  )
+  );
 }
 
-
-export default App
+export default App;
