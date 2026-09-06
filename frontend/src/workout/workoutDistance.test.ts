@@ -6,34 +6,59 @@ import {
 } from './workoutDistance'
 
 describe('workoutDistance', () => {
-  it('starts without accumulated distance', () => {
-    expect(createWorkoutDistanceState()).toEqual({
+  it('starts without a native baseline by default', () => {
+    expect(
+      createWorkoutDistanceState(),
+    ).toEqual({
       lastNativeDistanceM: null,
       accumulatedDistanceM: 0,
     })
   })
 
-  it('uses the first native distance as baseline', () => {
-    const result = applyNativeDistanceSample(
-      createWorkoutDistanceState(),
+  it('can start with an already known native distance', () => {
+    expect(
+      createWorkoutDistanceState(1234),
+    ).toEqual({
+      lastNativeDistanceM: 1234,
+      accumulatedDistanceM: 0,
+    })
+  })
+
+  it('ignores invalid initial native distance', () => {
+    expect(
+      createWorkoutDistanceState(-1),
+    ).toEqual({
+      lastNativeDistanceM: null,
+      accumulatedDistanceM: 0,
+    })
+
+    expect(
+      createWorkoutDistanceState(Number.NaN),
+    ).toEqual({
+      lastNativeDistanceM: null,
+      accumulatedDistanceM: 0,
+    })
+  })
+
+  it('uses the first native sample only as baseline', () => {
+    const initial =
+      createWorkoutDistanceState()
+
+    const next = applyNativeDistanceSample(
+      initial,
       406,
       true,
     )
 
-    expect(result).toEqual({
+    expect(next).toEqual({
       lastNativeDistanceM: 406,
       accumulatedDistanceM: 0,
     })
   })
 
-  it('accumulates native distance while workout is active', () => {
-    let state = createWorkoutDistanceState()
-
-    state = applyNativeDistanceSample(
-      state,
-      406,
-      true,
-    )
+  it('accumulates positive native distance deltas', () => {
+    let state =
+      createWorkoutDistanceState(406)
 
     state = applyNativeDistanceSample(
       state,
@@ -53,80 +78,53 @@ describe('workoutDistance', () => {
     })
   })
 
-  it('does not accumulate distance while paused', () => {
-    let state = createWorkoutDistanceState()
+  it('updates baseline but does not count while paused', () => {
+    let state =
+      createWorkoutDistanceState(100)
 
     state = applyNativeDistanceSample(
       state,
-      1000,
-      true,
-    )
-
-    state = applyNativeDistanceSample(
-      state,
-      1010,
-      true,
-    )
-
-    state = applyNativeDistanceSample(
-      state,
-      1020,
+      120,
       false,
     )
 
     expect(state).toEqual({
-      lastNativeDistanceM: 1020,
-      accumulatedDistanceM: 10,
+      lastNativeDistanceM: 120,
+      accumulatedDistanceM: 0,
     })
   })
 
   it('does not include paused distance after resume', () => {
-    let state = createWorkoutDistanceState()
+    let state =
+      createWorkoutDistanceState(100)
 
     state = applyNativeDistanceSample(
       state,
-      1000,
+      120,
       true,
     )
 
     state = applyNativeDistanceSample(
       state,
-      1010,
-      true,
-    )
-
-    /*
-     * Während Pause rollt das Bike noch 20 m weiter.
-     */
-    state = applyNativeDistanceSample(
-      state,
-      1030,
+      140,
       false,
     )
 
-    /*
-     * Nach Resume kommen weitere 10 m dazu.
-     */
     state = applyNativeDistanceSample(
       state,
-      1040,
+      150,
       true,
     )
 
     expect(state).toEqual({
-      lastNativeDistanceM: 1040,
-      accumulatedDistanceM: 20,
+      lastNativeDistanceM: 150,
+      accumulatedDistanceM: 30,
     })
   })
 
-  it('handles a native bike distance reset', () => {
-    let state = createWorkoutDistanceState()
-
-    state = applyNativeDistanceSample(
-      state,
-      1000,
-      true,
-    )
+  it('handles a native distance counter reset', () => {
+    let state =
+      createWorkoutDistanceState(1000)
 
     state = applyNativeDistanceSample(
       state,
@@ -134,18 +132,12 @@ describe('workoutDistance', () => {
       true,
     )
 
-    /*
-     * Bike wurde zurückgesetzt.
-     */
     state = applyNativeDistanceSample(
       state,
       5,
       true,
     )
 
-    /*
-     * Danach läuft der neue Zähler normal weiter.
-     */
     state = applyNativeDistanceSample(
       state,
       20,
@@ -158,41 +150,37 @@ describe('workoutDistance', () => {
     })
   })
 
-  it('ignores null distance samples', () => {
-    const current = {
-      lastNativeDistanceM: 100,
-      accumulatedDistanceM: 25,
-    }
+  it('ignores null samples', () => {
+    const state =
+      createWorkoutDistanceState(500)
 
     expect(
       applyNativeDistanceSample(
-        current,
+        state,
         null,
         true,
       ),
-    ).toBe(current)
+    ).toEqual(state)
   })
 
-  it('ignores invalid distance samples', () => {
-    const current = {
-      lastNativeDistanceM: 100,
-      accumulatedDistanceM: 25,
-    }
+  it('ignores NaN and negative samples', () => {
+    const state =
+      createWorkoutDistanceState(500)
 
     expect(
       applyNativeDistanceSample(
-        current,
+        state,
         Number.NaN,
         true,
       ),
-    ).toBe(current)
+    ).toEqual(state)
 
     expect(
       applyNativeDistanceSample(
-        current,
+        state,
         -1,
         true,
       ),
-    ).toBe(current)
+    ).toEqual(state)
   })
 })

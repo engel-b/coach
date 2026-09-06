@@ -1,53 +1,53 @@
 export interface WorkoutDistanceState {
-  /*
-   * Letzter nativer Total-Distance-Wert des Bikes.
-   *
-   * Wichtig:
-   * Dieser Wert wird auch während einer Workout-Pause aktualisiert.
-   * Dadurch zählen wir nach dem Resume nicht versehentlich Strecke,
-   * die während der Pause entstanden ist.
-   */
   lastNativeDistanceM: number | null
-
-  /*
-   * Tatsächlich dem aktuellen Workout zugerechnete Strecke.
-   */
   accumulatedDistanceM: number
 }
 
-export function createWorkoutDistanceState():
-  WorkoutDistanceState {
+/*
+ * Erzeugt den Distanzzustand eines neuen Workouts.
+ *
+ * Wenn beim Start bereits ein nativer FTMS-Distanzwert
+ * bekannt ist, verwenden wir ihn sofort als Baseline.
+ *
+ * Beispiel:
+ *
+ *   Bike zeigt beim Workout-Start bereits 1240 m.
+ *
+ * Das Workout startet trotzdem bei 0 m.
+ * Erst die Differenz zu folgenden Samples zählt.
+ */
+export function createWorkoutDistanceState(
+  initialNativeDistanceM: number | null = null,
+): WorkoutDistanceState {
   return {
-    lastNativeDistanceM: null,
+    lastNativeDistanceM:
+      isValidNativeDistance(initialNativeDistanceM)
+        ? initialNativeDistanceM
+        : null,
     accumulatedDistanceM: 0,
   }
 }
 
+/*
+ * Übernimmt ein neues FTMS-Total-Distance-Sample.
+ *
+ * Wichtig:
+ * Die vom Bike gelieferte Distanz ist ein absoluter
+ * Geräte-/Session-Zähler. Für das Workout speichern wir
+ * ausschließlich die Differenzen zwischen den Samples.
+ */
 export function applyNativeDistanceSample(
   current: WorkoutDistanceState,
   nativeDistanceM: number | null,
   countDistance: boolean,
 ): WorkoutDistanceState {
-  /*
-   * Kein verwertbarer FTMS-Wert:
-   * Zustand unverändert lassen.
-   */
-  if (
-    nativeDistanceM === null ||
-    !Number.isFinite(nativeDistanceM) ||
-    nativeDistanceM < 0
-  ) {
+  if (!isValidNativeDistance(nativeDistanceM)) {
     return current
   }
 
   /*
-   * Der erste Wert ist ausschließlich unsere Baseline.
-   *
-   * Beispiel:
-   *
-   * Bike steht beim Workout-Start bereits bei 406 m.
-   *
-   * 406 m dürfen nicht als Workout-Distanz gewertet werden.
+   * Erstes Sample:
+   * Nur Baseline setzen, noch nichts zum Workout addieren.
    */
   if (current.lastNativeDistanceM === null) {
     return {
@@ -60,16 +60,15 @@ export function applyNativeDistanceSample(
     nativeDistanceM - current.lastNativeDistanceM
 
   /*
-   * Der Bike-Zähler kann durch Reconnect, Neustart oder
-   * Ausschalten wieder bei 0 beginnen.
+   * Der native FTMS-Zähler kann bei Reconnect oder
+   * neuer Bike-Session zurückspringen.
    *
    * Beispiel:
    *
-   * letzter Wert: 1850 m
-   * neuer Wert:     12 m
+   *   1050 -> 5
    *
-   * Das ist keine negative Fahrstrecke, sondern ein Reset.
-   * Wir setzen deshalb nur eine neue Baseline.
+   * Das ist keine negative Workout-Distanz.
+   * Wir setzen lediglich eine neue Baseline.
    */
   if (deltaM < 0) {
     return {
@@ -79,18 +78,12 @@ export function applyNativeDistanceSample(
   }
 
   /*
-   * lastNativeDistanceM wird IMMER aktualisiert.
+   * Auch während einer Pause aktualisieren wir immer die
+   * Baseline.
    *
-   * accumulatedDistanceM wächst aber nur dann, wenn das
-   * Workout diesen Abschnitt tatsächlich zählen soll.
-   *
-   * Genau dadurch funktioniert Pause korrekt:
-   *
-   *   RUNNING: 1000 -> 1010  => +10 m
-   *   PAUSED:  1010 -> 1020  =>  +0 m
-   *   RUNNING: 1020 -> 1030  => +10 m
-   *
-   * und nicht fälschlich +20 m nach dem Resume.
+   * Dadurch wird beispielsweise die durch das ausrollende
+   * Schwungrad entstandene Distanz nach dem Fortsetzen
+   * nicht nachträglich zum Workout addiert.
    */
   return {
     lastNativeDistanceM: nativeDistanceM,
@@ -98,4 +91,14 @@ export function applyNativeDistanceSample(
       current.accumulatedDistanceM +
       (countDistance ? deltaM : 0),
   }
+}
+
+function isValidNativeDistance(
+  value: number | null,
+): value is number {
+  return (
+    value !== null &&
+    Number.isFinite(value) &&
+    value >= 0
+  )
 }
