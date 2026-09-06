@@ -22,6 +22,9 @@ class FinishWorkoutRequest(BaseModel):
     Request für regulären Abschluss oder Abbruch eines Workouts.
 
     elapsed_seconds ist die tatsächlich absolvierte aktive Trainingszeit.
+
+    distance_m ist die während dieses Workouts gefahrene Distanz
+    in ganzen Metern.
     """
 
     model_config = ConfigDict(
@@ -30,6 +33,11 @@ class FinishWorkoutRequest(BaseModel):
     )
 
     elapsed_seconds: Annotated[
+        int,
+        Field(ge=0),
+    ]
+
+    distance_m: Annotated[
         int,
         Field(ge=0),
     ]
@@ -47,6 +55,7 @@ class WorkoutResponse(BaseModel):
     status: str
     total_duration_minutes: int
     elapsed_seconds: int
+    distance_m: int
     completed_at: datetime | None
     phases: list[WorkoutPhaseResponse]
 

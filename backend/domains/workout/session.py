@@ -21,7 +21,14 @@ class WorkoutSession:
 
     elapsed_seconds:
         Tatsächlich absolvierte aktive Trainingszeit.
-        Pausen zählen aktuell nicht mit.
+        Pausen zählen nicht mit.
+
+    distance_m:
+        Tatsächlich während dieses Workouts gefahrene Distanz
+        in ganzen Metern.
+
+        Der Wert ist ausdrücklich nicht der absolute
+        FTMS-Total-Distance-Zähler des Bikes.
     """
 
     id: str
@@ -32,4 +39,5 @@ class WorkoutSession:
     total_duration_minutes: int
 
     elapsed_seconds: int = 0
+    distance_m: int = 0
     completed_at: datetime | None = None

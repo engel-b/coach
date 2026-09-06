@@ -55,15 +55,18 @@ class WorkoutService:
         workout_id: str,
         *,
         elapsed_seconds: int,
+        distance_m: int,
     ) -> WorkoutSession:
         workout = self._get_running_workout(workout_id)
 
         self._validate_elapsed_seconds(elapsed_seconds)
+        self._validate_distance_m(distance_m)
 
         completed = replace(
             workout,
             status=WorkoutStatus.COMPLETED,
             elapsed_seconds=elapsed_seconds,
+            distance_m=distance_m,
             completed_at=datetime.now(UTC),
         )
 
@@ -76,15 +79,18 @@ class WorkoutService:
         workout_id: str,
         *,
         elapsed_seconds: int,
+        distance_m: int,
     ) -> WorkoutSession:
         workout = self._get_running_workout(workout_id)
 
         self._validate_elapsed_seconds(elapsed_seconds)
+        self._validate_distance_m(distance_m)
 
         aborted = replace(
             workout,
             status=WorkoutStatus.ABORTED,
             elapsed_seconds=elapsed_seconds,
+            distance_m=distance_m,
             completed_at=datetime.now(UTC),
         )
 
@@ -134,6 +140,15 @@ class WorkoutService:
         if elapsed_seconds < 0:
             raise InvalidWorkoutDurationError("Elapsed seconds must not be negative")
 
+    @staticmethod
+    def _validate_distance_m(
+        distance_m: int,
+    ) -> None:
+        if distance_m < 0:
+            raise ValueError(
+                "Distance meters must not be negative"
+            )
+            
     def get_for_person(
         self,
         person_id: int,
