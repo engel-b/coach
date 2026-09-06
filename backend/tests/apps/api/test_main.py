@@ -43,6 +43,7 @@ def test_get_devices_returns_camel_case_api_contract() -> None:
                 "payload": {
                     "speedKmh": 28.4,
                     "cadenceRpm": 82.5,
+                    "distanceM": 1234,
                     "powerW": 175,
                     "resistance": 12,
                 },
@@ -68,6 +69,7 @@ def test_get_devices_returns_camel_case_api_contract() -> None:
         "heartRateBpm": None,
         "speedKmh": 28.4,
         "cadenceRpm": 82.5,
+        "distanceM": 1234,
         "powerW": 175,
         "resistance": 12,
     }
@@ -110,9 +112,11 @@ def test_get_devices_does_not_expose_snake_case_fields() -> None:
     assert "deviceName" in device
     assert "lastSeen" in device
     assert "heartRateBpm" in device
+    assert "distanceM" in device
 
     assert "device_id" not in device
     assert "device_type" not in device
     assert "device_name" not in device
     assert "last_seen" not in device
     assert "heart_rate_bpm" not in device
+    assert "distance_m" not in device

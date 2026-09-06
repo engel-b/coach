@@ -131,6 +131,7 @@ function isBikeTelemetryPayload(
     isOptionalFiniteNumber(payload.powerW) &&
     isOptionalFiniteNumber(payload.cadenceRpm) &&
     isOptionalFiniteNumber(payload.speedKmh) &&
+    isOptionalFiniteNumber(payload.distanceM) &&
     isOptionalFiniteNumber(payload.resistance)
   );
 }

@@ -1,3 +1,6 @@
 node_modules
 dist
 coverage
+
+# Trainingsvideos sind Binärdateien und dürfen nicht von Prettier verarbeitet werden.
+public/videos/

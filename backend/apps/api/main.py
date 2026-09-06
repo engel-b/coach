@@ -101,6 +101,7 @@ async def devices() -> list[DeviceResponse]:
             heart_rate_bpm=device.heart_rate_bpm,
             speed_kmh=device.speed_kmh,
             cadence_rpm=device.cadence_rpm,
+            distance_m=device.distance_m,
             power_w=device.power_w,
             resistance=device.resistance,
         )

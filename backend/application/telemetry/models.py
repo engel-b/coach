@@ -17,17 +17,6 @@ class DeviceState:
         ├── connected
         ├── last_seen = ...
         └── heart_rate = 82
-
-    Java-Vergleich:
-
-        public record DeviceState(
-            String deviceId,
-            DeviceType deviceType,
-            String deviceName,
-            DeviceStatus status,
-            Instant lastSeen,
-            Integer heartRateBpm
-        ) {}
     """
 
     device_id: str
@@ -40,5 +29,6 @@ class DeviceState:
 
     speed_kmh: float | None = None
     cadence_rpm: float | None = None
+    distance_m: int | None = None
     power_w: int | None = None
     resistance: int | None = None

@@ -44,6 +44,10 @@ class DeviceResponse(BaseModel):
         default=None,
         serialization_alias="cadenceRpm",
     )
+    distance_m: int | None = Field(
+        default=None,
+        serialization_alias="distanceM",
+    )
     power_w: int | None = Field(
         default=None,
         serialization_alias="powerW",

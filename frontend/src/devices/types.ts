@@ -40,6 +40,7 @@ export interface DeviceState {
 
   speedKmh: number | null;
   cadenceRpm: number | null;
+  distanceM: number | null;
   powerW: number | null;
   resistance: number | null;
 }

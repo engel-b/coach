@@ -47,6 +47,7 @@ function applyDeviceStatusChanged(
     heartRateBpm: existingDevice?.heartRateBpm ?? null,
     speedKmh: existingDevice?.speedKmh ?? null,
     cadenceRpm: existingDevice?.cadenceRpm ?? null,
+    distanceM: existingDevice?.distanceM ?? null,
     powerW: existingDevice?.powerW ?? null,
     resistance: existingDevice?.resistance ?? null,
   };
@@ -75,6 +76,7 @@ function applyHeartRateSample(
     heartRateBpm: bpm,
     speedKmh: existingDevice?.speedKmh ?? null,
     cadenceRpm: existingDevice?.cadenceRpm ?? null,
+    distanceM: existingDevice?.distanceM ?? null,
     powerW: existingDevice?.powerW ?? null,
     resistance: existingDevice?.resistance ?? null,
   };
@@ -88,6 +90,7 @@ function applyBikeTelemetry(
 ): DeviceState[] {
   const speedKmh = message.payload.speedKmh;
   const cadenceRpm = message.payload.cadenceRpm;
+  const distanceM = message.payload.distanceM;
   const powerW = message.payload.powerW;
   const resistance = message.payload.resistance;
 
@@ -108,6 +111,10 @@ function applyBikeTelemetry(
       typeof cadenceRpm === "number"
         ? cadenceRpm
         : (existingDevice?.cadenceRpm ?? null),
+    distanceM:
+      typeof distanceM === "number"
+        ? distanceM
+        : (existingDevice?.distanceM ?? null),
     powerW:
       typeof powerW === "number" ? powerW : (existingDevice?.powerW ?? null),
     resistance:
