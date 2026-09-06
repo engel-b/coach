@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from domains.training.recommendation import TrainingRecommendation
 from domains.workout.repository import WorkoutRepository
-from domains.workout.session import WorkoutSession, WorkoutStatus
+from domains.workout.session import DEFAULT_VIDEO_ID, WorkoutSession, WorkoutStatus
 from domains.workout.summary import WorkoutSummary, create_workout_summary
 
 
@@ -37,13 +37,36 @@ class WorkoutService:
         person_id: int,
         recommendation: TrainingRecommendation,
     ) -> WorkoutSession:
+        previous_workouts = self._repository.get_for_person(
+            person_id,
+            limit=1,
+        )
+
+        previous_workout = (
+            previous_workouts[0]
+            if previous_workouts
+            else None
+        )
+
         workout = WorkoutSession(
             id=str(uuid4()),
             person_id=person_id,
             started_at=datetime.now(UTC),
             status=WorkoutStatus.RUNNING,
             phases=recommendation.phases,
-            total_duration_minutes=(recommendation.total_duration_minutes),
+            total_duration_minutes=(
+                recommendation.total_duration_minutes
+            ),
+            video_id=(
+                previous_workout.video_id
+                if previous_workout is not None
+                else DEFAULT_VIDEO_ID
+            ),
+            video_position_seconds=(
+                previous_workout.video_position_seconds
+                if previous_workout is not None
+                else 0.0
+            ),
         )
 
         self._repository.save(workout)
