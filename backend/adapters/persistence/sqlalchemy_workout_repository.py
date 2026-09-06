@@ -40,6 +40,8 @@ class SqlAlchemyWorkoutRepository:
                     total_duration_minutes=(workout.total_duration_minutes),
                     elapsed_seconds=workout.elapsed_seconds,
                     distance_m=workout.distance_m,
+                    video_id=workout.video_id,
+                    video_position_seconds=workout.video_position_seconds,
                     completed_at=workout.completed_at,
                 )
 
@@ -60,6 +62,8 @@ class SqlAlchemyWorkoutRepository:
                 existing.status = workout.status.value
                 existing.elapsed_seconds = workout.elapsed_seconds
                 existing.distance_m = workout.distance_m
+                existing.video_id = workout.video_id
+                existing.video_position_seconds = workout.video_position_seconds
                 existing.completed_at = workout.completed_at
 
             session.commit()
@@ -110,9 +114,11 @@ class SqlAlchemyWorkoutRepository:
             person_id=model.person_id,
             started_at=model.started_at,
             status=WorkoutStatus(model.status),
-            total_duration_minutes=(model.total_duration_minutes),
-            elapsed_seconds=(model.elapsed_seconds),
-            distance_m=(model.distance_m),
+            total_duration_minutes=model.total_duration_minutes,
+            elapsed_seconds=model.elapsed_seconds,
+            distance_m=model.distance_m,
+            video_id=model.video_id,
+            video_position_seconds=model.video_position_seconds,
             completed_at=model.completed_at,
             phases=tuple(
                 WorkoutPhase(

@@ -23,6 +23,8 @@ def to_workout_response(
         total_duration_minutes=workout.total_duration_minutes,
         elapsed_seconds=workout.elapsed_seconds,
         distance_m=workout.distance_m,
+        video_id=workout.video_id,
+        video_position_seconds=workout.video_position_seconds,
         completed_at=workout.completed_at,
         phases=[
             WorkoutPhaseResponse(

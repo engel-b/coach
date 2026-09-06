@@ -17,6 +17,28 @@ class WorkoutPhaseResponse(BaseModel):
     target_heart_rate_max: int
 
 
+class WorkoutCheckpointRequest(BaseModel):
+    elapsed_seconds: int = Field(
+        ge=0,
+        validation_alias="elapsedSeconds",
+        serialization_alias="elapsedSeconds",
+    )
+    distance_m: int = Field(
+        ge=0,
+        validation_alias="distanceM",
+        serialization_alias="distanceM",
+    )
+    video_position_seconds: float = Field(
+        ge=0,
+        validation_alias="videoPositionSeconds",
+        serialization_alias="videoPositionSeconds",
+    )
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+
+
 class FinishWorkoutRequest(BaseModel):
     """
     Request für regulären Abschluss oder Abbruch eines Workouts.
@@ -56,6 +78,10 @@ class WorkoutResponse(BaseModel):
     total_duration_minutes: int
     elapsed_seconds: int
     distance_m: int
+
+    video_id: str
+    video_position_seconds: float
+
     completed_at: datetime | None
     phases: list[WorkoutPhaseResponse]
 

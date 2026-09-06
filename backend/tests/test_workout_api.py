@@ -1,8 +1,27 @@
+import pytest
 from fastapi.testclient import TestClient
 
-from apps.api.main import app
+import apps.api.main as api_main
+from adapters.persistence.in_memory_workout_repository import InMemoryWorkoutRepository
+from application.workout.service import WorkoutService
 
-client = TestClient(app)
+client = TestClient(api_main.app)
+
+
+@pytest.fixture(autouse=True)
+def isolated_workout_service() -> None:
+    """
+    Jeder API-Test bekommt ein frisches Workout-Repository.
+
+    Die HTTP-Routen selbst bleiben unverändert aktiv.
+    Nur die Workout-Persistenz wird für den einzelnen Test
+    durch eine isolierte InMemory-Instanz ersetzt.
+    """
+    repository = InMemoryWorkoutRepository()
+
+    api_main.workout_service = WorkoutService(
+        repository=repository,
+    )
 
 
 def create_check_in(
@@ -50,12 +69,51 @@ def start_workout(
     return result
 
 
+def test_workout_checkpoint() -> None:
+    """
+    Startet ein Workout über die HTTP-API und liefert
+    den JSON-Response für weitere Tests zurück.
+    """
+
+    workout = start_workout(1)
+
+    workout_id = workout["id"]
+
+    response = client.post(
+        f"/api/workouts/{workout_id}/checkpoint",
+        json={
+            "elapsedSeconds": 120,
+            "distanceM": 1350,
+            "videoPositionSeconds": 87.5,
+        },
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["elapsedSeconds"] == 120
+    assert body["distanceM"] == 1350
+    assert body["videoPositionSeconds"] == 87.5
+
+
 def test_workout_can_be_started_via_api() -> None:
     workout = start_workout(1)
 
     assert workout["personId"] == 1
     assert workout["status"] == "running"
     assert workout["elapsedSeconds"] == 0
+    assert workout["distanceM"] == 0
+    assert workout["videoId"] == "cycling-alpen-01"
+
+    video_position_seconds = workout["videoPositionSeconds"]
+
+    assert isinstance(
+        video_position_seconds,
+        int | float,
+    )
+    assert video_position_seconds >= 0
+
     assert workout["totalDurationMinutes"] == 30
 
     phases = workout["phases"]
@@ -87,6 +145,9 @@ def test_workout_can_be_completed_via_api() -> None:
     assert completed["status"] == "completed"
     assert completed["elapsedSeconds"] == 1800
     assert completed["distanceM"] == 12345
+    assert completed["videoId"] == workout["videoId"]
+    assert completed["videoPositionSeconds"] == workout["videoPositionSeconds"]
+
     assert completed["completedAt"] is not None
 
 
@@ -113,7 +174,34 @@ def test_workout_can_be_aborted_via_api() -> None:
     assert aborted["status"] == "aborted"
     assert aborted["elapsedSeconds"] == 723
     assert aborted["distanceM"] == 4321
+    assert aborted["videoId"] == workout["videoId"]
+    assert aborted["videoPositionSeconds"] == workout["videoPositionSeconds"]
+
     assert aborted["completedAt"] is not None
+
+
+def test_new_workout_resumes_video_position_via_api() -> None:
+    first_workout = start_workout(1)
+
+    first_workout_id = first_workout["id"]
+
+    assert isinstance(first_workout_id, str)
+
+    checkpoint_response = client.post(
+        f"/api/workouts/{first_workout_id}/checkpoint",
+        json={
+            "elapsedSeconds": 120,
+            "distanceM": 1350,
+            "videoPositionSeconds": 87.5,
+        },
+    )
+
+    assert checkpoint_response.status_code == 200
+
+    second_workout = start_workout(1)
+
+    assert second_workout["videoId"] == first_workout["videoId"]
+    assert second_workout["videoPositionSeconds"] == 87.5
 
 
 def test_unknown_workout_cannot_be_completed() -> None:
