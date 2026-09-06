@@ -1,8 +1,27 @@
+import pytest
 from fastapi.testclient import TestClient
 
-from apps.api.main import app
+import apps.api.main as api_main
+from adapters.persistence.in_memory_workout_repository import InMemoryWorkoutRepository
+from application.workout.service import WorkoutService
 
-client = TestClient(app)
+client = TestClient(api_main.app)
+
+
+@pytest.fixture(autouse=True)
+def isolated_workout_service() -> None:
+    """
+    Jeder API-Test bekommt ein frisches Workout-Repository.
+
+    Die HTTP-Routen selbst bleiben unverändert aktiv.
+    Nur die Workout-Persistenz wird für den einzelnen Test
+    durch eine isolierte InMemory-Instanz ersetzt.
+    """
+    repository = InMemoryWorkoutRepository()
+
+    api_main.workout_service = WorkoutService(
+        repository=repository,
+    )
 
 
 def create_check_in(
