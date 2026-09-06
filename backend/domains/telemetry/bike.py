@@ -20,4 +20,5 @@ class BikeTelemetry:
     power_w: int | None = None
     cadence_rpm: float | None = None
     speed_kmh: float | None = None
+    distance_m: int | None = None
     resistance: int | None = None
