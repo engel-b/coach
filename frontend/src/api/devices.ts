@@ -1,4 +1,4 @@
-import type { DeviceState } from '../devices/types'
+import type { DeviceState } from "../devices/types";
 
 /**
  * Lädt den aktuellen Zustand aller Geräte.
@@ -12,12 +12,10 @@ import type { DeviceState } from '../devices/types'
  * Nur ohne zusätzliches Framework.
  */
 export async function getDevices(): Promise<DeviceState[]> {
-  const response = await fetch('/api/devices')
+  const response = await fetch("/api/devices");
 
   if (!response.ok) {
-    throw new Error(
-      `Could not load devices: HTTP ${response.status}`,
-    )
+    throw new Error(`Could not load devices: HTTP ${response.status}`);
   }
 
   /*
@@ -28,6 +26,5 @@ export async function getDevices(): Promise<DeviceState[]> {
    *
    * Später können wir hier Runtime-Validierung ergänzen.
    */
-  return (await response.json()) as DeviceState[]
+  return (await response.json()) as DeviceState[];
 }
-

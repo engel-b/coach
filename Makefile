@@ -63,6 +63,7 @@ check-backend:
 check-frontend:
 	cd frontend && \
 	npm run lint && \
+	npm run format:check && \
 	npx tsc --noEmit && \
   npm run build && \
   npm test
@@ -72,6 +73,7 @@ format:
 	. .venv/bin/activate && \
 	python -m ruff format . && \
 	python -m ruff check . --fix
+	cd frontend && npm run format
 
 format-check:
 	cd backend && \

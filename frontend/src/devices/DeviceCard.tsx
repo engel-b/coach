@@ -1,7 +1,7 @@
-import type { DeviceState } from './types'
+import type { DeviceState } from "./types";
 
 interface DeviceCardProps {
-  device: DeviceState
+  device: DeviceState;
 }
 
 /**
@@ -18,40 +18,27 @@ interface DeviceCardProps {
  *
  * Das Component verändert DeviceState nicht.
  */
-export function DeviceCard({
-  device,
-}: DeviceCardProps) {
-  const connected = device.status === 'connected'
+export function DeviceCard({ device }: DeviceCardProps) {
+  const connected = device.status === "connected";
 
   return (
     <article className="device-card">
       <div className="device-header">
         <div>
-          <div className="device-kind">
-            ♥ Pulsgurt
-          </div>
+          <div className="device-kind">♥ Pulsgurt</div>
 
-          <div className="device-name">
-            {device.deviceName}
-          </div>
+          <div className="device-name">{device.deviceName}</div>
         </div>
 
-        <div
-          className={
-            connected
-              ? 'status connected'
-              : 'status disconnected'
-          }
-        >
-          {connected ? 'Verbunden' : 'Nicht verbunden'}
+        <div className={connected ? "status connected" : "status disconnected"}>
+          {connected ? "Verbunden" : "Nicht verbunden"}
         </div>
       </div>
 
       <div className="heart-rate">
-        {device.heartRateBpm ?? '–'}
+        {device.heartRateBpm ?? "–"}
         <span>bpm</span>
       </div>
     </article>
-  )
+  );
 }
-

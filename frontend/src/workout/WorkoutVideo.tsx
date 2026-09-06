@@ -1,24 +1,13 @@
-import {
-  useEffect,
-  useRef,
-} from 'react'
-
+import { useEffect, useRef } from "react";
 
 interface WorkoutVideoProps {
-  src: string
-  paused: boolean
-  playbackRate: number
+  src: string;
+  paused: boolean;
+  playbackRate: number;
 }
 
-
-export function WorkoutVideo({
-  src,
-  paused,
-  playbackRate,
-}: WorkoutVideoProps) {
-  const videoRef =
-    useRef<HTMLVideoElement | null>(null)
-
+export function WorkoutVideo({ src, paused, playbackRate }: WorkoutVideoProps) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   /*
    * WorkoutView bleibt die Source of Truth.
@@ -30,22 +19,20 @@ export function WorkoutVideo({
    * gehört deshalb in useEffect(), nicht in den Render.
    */
   useEffect(() => {
-    const videoElement =
-      videoRef.current
+    const videoElement = videoRef.current;
 
     if (videoElement === null) {
-      return
+      return;
     }
 
-    videoElement.playbackRate =
-      playbackRate
+    videoElement.playbackRate = playbackRate;
 
     if (paused) {
       if (!videoElement.paused) {
-        videoElement.pause()
+        videoElement.pause();
       }
 
-      return
+      return;
     }
 
     if (videoElement.paused) {
@@ -63,13 +50,9 @@ export function WorkoutVideo({
          * Falls Autoplay doch blockiert wird, bleibt die
          * Trainingsanwendung weiterhin benutzbar.
          */
-      })
+      });
     }
-  }, [
-    paused,
-    playbackRate,
-  ])
-
+  }, [paused, playbackRate]);
 
   return (
     <video
@@ -82,5 +65,5 @@ export function WorkoutVideo({
       playsInline
       preload="auto"
     />
-  )
+  );
 }
