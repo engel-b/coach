@@ -165,6 +165,9 @@ function isBikeTelemetryPayload(
       payload.speedKmh,
     ) &&
     isOptionalFiniteNumber(
+      payload.distanceM,
+    ) &&
+    isOptionalFiniteNumber(
       payload.resistance,
     )
   )

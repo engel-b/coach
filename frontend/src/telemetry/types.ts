@@ -15,5 +15,6 @@ export interface BikeTelemetryPayload {
   powerW?: number
   cadenceRpm?: number
   speedKmh?: number
+  distanceM?: number
   resistance?: number
 }

@@ -4,7 +4,6 @@ import type { DeviceState } from '../devices/types'
 import { applyTelemetryMessage } from './applyTelemetryMessage'
 import type { TelemetryMessage } from './types'
 
-
 describe('applyTelemetryMessage', () => {
   it('creates a heart-rate device from a sample', () => {
     const message: TelemetryMessage = {
@@ -32,12 +31,12 @@ describe('applyTelemetryMessage', () => {
         heartRateBpm: 142,
         speedKmh: null,
         cadenceRpm: null,
+        distanceM: null,
         powerW: null,
         resistance: null,
       },
     ])
   })
-
 
   it('creates a bike device from telemetry', () => {
     const message: TelemetryMessage = {
@@ -47,6 +46,7 @@ describe('applyTelemetryMessage', () => {
       payload: {
         speedKmh: 28.4,
         cadenceRpm: 82.5,
+        distanceM: 1234,
         powerW: 175,
         resistance: 12,
       },
@@ -68,12 +68,12 @@ describe('applyTelemetryMessage', () => {
         heartRateBpm: null,
         speedKmh: 28.4,
         cadenceRpm: 82.5,
+        distanceM: 1234,
         powerW: 175,
         resistance: 12,
       },
     ])
   })
-
 
   it('preserves previous bike values for partial telemetry', () => {
     const currentDevices: DeviceState[] = [
@@ -86,6 +86,7 @@ describe('applyTelemetryMessage', () => {
         heartRateBpm: null,
         speedKmh: 28.4,
         cadenceRpm: 82.5,
+        distanceM: 1234,
         powerW: 175,
         resistance: 12,
       },
@@ -116,12 +117,12 @@ describe('applyTelemetryMessage', () => {
         heartRateBpm: null,
         speedKmh: 28.4,
         cadenceRpm: 82.5,
+        distanceM: 1234,
         powerW: 190,
         resistance: 12,
       },
     ])
   })
-
 
   it('preserves telemetry when a status event arrives later', () => {
     const currentDevices: DeviceState[] = [
@@ -134,6 +135,7 @@ describe('applyTelemetryMessage', () => {
         heartRateBpm: null,
         speedKmh: 28.4,
         cadenceRpm: 82.5,
+        distanceM: 1234,
         powerW: 175,
         resistance: 12,
       },
@@ -166,6 +168,7 @@ describe('applyTelemetryMessage', () => {
         heartRateBpm: null,
         speedKmh: 28.4,
         cadenceRpm: 82.5,
+        distanceM: 1234,
         powerW: 175,
         resistance: 12,
       },

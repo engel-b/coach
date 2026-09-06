@@ -1,7 +1,6 @@
 import type { DeviceState } from '../devices/types'
 import type { TelemetryMessage } from './types'
 
-
 export function applyTelemetryMessage(
   currentDevices: DeviceState[],
   message: TelemetryMessage,
@@ -29,7 +28,6 @@ export function applyTelemetryMessage(
 
   return currentDevices
 }
-
 
 function applyDeviceStatusChanged(
   currentDevices: DeviceState[],
@@ -64,6 +62,8 @@ function applyDeviceStatusChanged(
       existingDevice?.speedKmh ?? null,
     cadenceRpm:
       existingDevice?.cadenceRpm ?? null,
+    distanceM:
+      existingDevice?.distanceM ?? null,
     powerW:
       existingDevice?.powerW ?? null,
     resistance:
@@ -75,7 +75,6 @@ function applyDeviceStatusChanged(
     updatedDevice,
   )
 }
-
 
 function applyHeartRateSample(
   currentDevices: DeviceState[],
@@ -103,6 +102,8 @@ function applyHeartRateSample(
       existingDevice?.speedKmh ?? null,
     cadenceRpm:
       existingDevice?.cadenceRpm ?? null,
+    distanceM:
+      existingDevice?.distanceM ?? null,
     powerW:
       existingDevice?.powerW ?? null,
     resistance:
@@ -115,13 +116,13 @@ function applyHeartRateSample(
   )
 }
 
-
 function applyBikeTelemetry(
   currentDevices: DeviceState[],
   message: TelemetryMessage,
 ): DeviceState[] {
   const speedKmh = message.payload.speedKmh
   const cadenceRpm = message.payload.cadenceRpm
+  const distanceM = message.payload.distanceM
   const powerW = message.payload.powerW
   const resistance = message.payload.resistance
 
@@ -146,6 +147,10 @@ function applyBikeTelemetry(
       typeof cadenceRpm === 'number'
         ? cadenceRpm
         : existingDevice?.cadenceRpm ?? null,
+    distanceM:
+      typeof distanceM === 'number'
+        ? distanceM
+        : existingDevice?.distanceM ?? null,
     powerW:
       typeof powerW === 'number'
         ? powerW
@@ -162,7 +167,6 @@ function applyBikeTelemetry(
   )
 }
 
-
 function findDevice(
   devices: DeviceState[],
   deviceId: string,
@@ -171,7 +175,6 @@ function findDevice(
     (device) => device.deviceId === deviceId,
   )
 }
-
 
 function upsertDevice(
   devices: DeviceState[],

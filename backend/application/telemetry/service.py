@@ -153,6 +153,7 @@ class TelemetryService:
 
         speed_value = message.payload.get("speedKmh")
         cadence_value = message.payload.get("cadenceRpm")
+        distance_value = message.payload.get("distanceM")
         power_value = message.payload.get("powerW")
         resistance_value = message.payload.get("resistance")
 
@@ -170,6 +171,14 @@ class TelemetryService:
             float(cadence_value)
             if isinstance(cadence_value, int | float)
             else previous.cadence_rpm
+            if previous is not None
+            else None
+        )
+
+        distance_m = (
+            distance_value
+            if isinstance(distance_value, int)
+            else previous.distance_m
             if previous is not None
             else None
         )
@@ -199,6 +208,7 @@ class TelemetryService:
                 last_seen=message.timestamp,
                 speed_kmh=speed_kmh,
                 cadence_rpm=cadence_rpm,
+                distance_m=distance_m,
                 power_w=power_w,
                 resistance=resistance,
             )
@@ -209,12 +219,13 @@ class TelemetryService:
                 last_seen=message.timestamp,
                 speed_kmh=speed_kmh,
                 cadence_rpm=cadence_rpm,
+                distance_m=distance_m,
                 power_w=power_w,
                 resistance=resistance,
             )
 
         self._devices[message.device_id] = state
-
+        
     def get_devices(self) -> list[DeviceState]:
         """
         Liefert einen Snapshot aller aktuell bekannten Geräte.
