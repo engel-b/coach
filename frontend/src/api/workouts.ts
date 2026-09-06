@@ -1,23 +1,16 @@
-import type { Workout } from '../workout/types'
-import type { WorkoutSummary } from '../workout/summary-types'
+import type { Workout } from "../workout/types";
+import type { WorkoutSummary } from "../workout/summary-types";
 
-export async function startWorkout(
-  personId: number,
-): Promise<Workout> {
-  const response = await fetch(
-    `/api/persons/${personId}/workouts`,
-    {
-      method: 'POST',
-    },
-  )
+export async function startWorkout(personId: number): Promise<Workout> {
+  const response = await fetch(`/api/persons/${personId}/workouts`, {
+    method: "POST",
+  });
 
   if (!response.ok) {
-    throw new Error(
-      `Could not start workout: HTTP ${response.status}`,
-    )
+    throw new Error(`Could not start workout: HTTP ${response.status}`);
   }
 
-  return (await response.json()) as Workout
+  return (await response.json()) as Workout;
 }
 
 export async function completeWorkout(
@@ -25,27 +18,22 @@ export async function completeWorkout(
   elapsedSeconds: number,
   distanceM: number,
 ): Promise<Workout> {
-  const response = await fetch(
-    `/api/workouts/${workoutId}/complete`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        elapsedSeconds,
-        distanceM,
-      }),
+  const response = await fetch(`/api/workouts/${workoutId}/complete`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
     },
-  )
+    body: JSON.stringify({
+      elapsedSeconds,
+      distanceM,
+    }),
+  });
 
   if (!response.ok) {
-    throw new Error(
-      `Could not complete workout: HTTP ${response.status}`,
-    )
+    throw new Error(`Could not complete workout: HTTP ${response.status}`);
   }
 
-  return (await response.json()) as Workout
+  return (await response.json()) as Workout;
 }
 
 export async function abortWorkout(
@@ -53,27 +41,22 @@ export async function abortWorkout(
   elapsedSeconds: number,
   distanceM: number,
 ): Promise<Workout> {
-  const response = await fetch(
-    `/api/workouts/${workoutId}/abort`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        elapsedSeconds,
-        distanceM,
-      }),
+  const response = await fetch(`/api/workouts/${workoutId}/abort`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
     },
-  )
+    body: JSON.stringify({
+      elapsedSeconds,
+      distanceM,
+    }),
+  });
 
   if (!response.ok) {
-    throw new Error(
-      `Could not abort workout: HTTP ${response.status}`,
-    )
+    throw new Error(`Could not abort workout: HTTP ${response.status}`);
   }
 
-  return (await response.json()) as Workout
+  return (await response.json()) as Workout;
 }
 
 export async function getWorkoutHistory(
@@ -82,29 +65,23 @@ export async function getWorkoutHistory(
 ): Promise<Workout[]> {
   const response = await fetch(
     `/api/persons/${personId}/workouts?limit=${limit}`,
-  )
+  );
 
   if (!response.ok) {
-    throw new Error(
-      `Could not load workout history: HTTP ${response.status}`,
-    )
+    throw new Error(`Could not load workout history: HTTP ${response.status}`);
   }
 
-  return (await response.json()) as Workout[]
+  return (await response.json()) as Workout[];
 }
 
 export async function getWorkoutSummary(
   workoutId: string,
 ): Promise<WorkoutSummary> {
-  const response = await fetch(
-    `/api/workouts/${workoutId}/summary`,
-  )
+  const response = await fetch(`/api/workouts/${workoutId}/summary`);
 
   if (!response.ok) {
-    throw new Error(
-      `Could not load workout summary: HTTP ${response.status}`,
-    )
+    throw new Error(`Could not load workout summary: HTTP ${response.status}`);
   }
 
-  return (await response.json()) as WorkoutSummary
+  return (await response.json()) as WorkoutSummary;
 }

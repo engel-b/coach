@@ -46,7 +46,7 @@ class WorkoutModel(Base):
         nullable=False,
         default=0,
     )
-    
+
     completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,

@@ -42,6 +42,7 @@ def to_workout_summary_response(
     return WorkoutSummaryResponse(
         planned_seconds=summary.planned_seconds,
         elapsed_seconds=summary.elapsed_seconds,
+        distance_m=summary.distance_m,
         completion_percent=summary.completion_percent,
         status=summary.status.value,
     )

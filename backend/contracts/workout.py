@@ -68,5 +68,6 @@ class WorkoutSummaryResponse(BaseModel):
 
     planned_seconds: int
     elapsed_seconds: int
+    distance_m: int
     completion_percent: int
     status: str

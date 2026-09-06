@@ -116,6 +116,7 @@ class WorkoutService:
         return create_workout_summary(
             total_duration_minutes=(workout.total_duration_minutes),
             elapsed_seconds=(workout.elapsed_seconds),
+            distance_m=(workout.distance_m),
             status=workout.status,
         )
 
@@ -145,10 +146,8 @@ class WorkoutService:
         distance_m: int,
     ) -> None:
         if distance_m < 0:
-            raise ValueError(
-                "Distance meters must not be negative"
-            )
-            
+            raise ValueError("Distance meters must not be negative")
+
     def get_for_person(
         self,
         person_id: int,
