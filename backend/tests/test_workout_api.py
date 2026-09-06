@@ -75,6 +75,7 @@ def test_workout_can_be_completed_via_api() -> None:
         f"/api/workouts/{workout_id}/complete",
         json={
             "elapsedSeconds": 1800,
+            "distanceM": 12345,
         },
     )
 
@@ -85,6 +86,7 @@ def test_workout_can_be_completed_via_api() -> None:
     assert completed["id"] == workout_id
     assert completed["status"] == "completed"
     assert completed["elapsedSeconds"] == 1800
+    assert completed["distanceM"] == 12345
     assert completed["completedAt"] is not None
 
 
@@ -99,6 +101,7 @@ def test_workout_can_be_aborted_via_api() -> None:
         f"/api/workouts/{workout_id}/abort",
         json={
             "elapsedSeconds": 723,
+            "distanceM": 4321,
         },
     )
 
@@ -109,6 +112,7 @@ def test_workout_can_be_aborted_via_api() -> None:
     assert aborted["id"] == workout_id
     assert aborted["status"] == "aborted"
     assert aborted["elapsedSeconds"] == 723
+    assert aborted["distanceM"] == 4321
     assert aborted["completedAt"] is not None
 
 
@@ -117,6 +121,7 @@ def test_unknown_workout_cannot_be_completed() -> None:
         "/api/workouts/does-not-exist/complete",
         json={
             "elapsedSeconds": 100,
+            "distanceM": 500,
         },
     )
 
@@ -134,6 +139,25 @@ def test_negative_elapsed_seconds_are_rejected() -> None:
         f"/api/workouts/{workout_id}/abort",
         json={
             "elapsedSeconds": -1,
+            "distanceM": 1000,
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_negative_distance_is_rejected() -> None:
+    workout = start_workout(1)
+
+    workout_id = workout["id"]
+
+    assert isinstance(workout_id, str)
+
+    response = client.post(
+        f"/api/workouts/{workout_id}/complete",
+        json={
+            "elapsedSeconds": 100,
+            "distanceM": -1,
         },
     )
 
@@ -204,6 +228,7 @@ def test_get_workout_summary() -> None:
         f"/api/workouts/{workout_id}/complete",
         json={
             "elapsedSeconds": 900,
+            "distanceM": 6789,
         },
     )
 
@@ -216,6 +241,7 @@ def test_get_workout_summary() -> None:
     body = response.json()
 
     assert body["elapsedSeconds"] == 900
+    assert body["distanceM"] == 6789
     assert body["status"] == "completed"
 
     # Die Empfehlung kann unterschiedliche Gesamtdauern

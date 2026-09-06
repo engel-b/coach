@@ -16,6 +16,7 @@ export async function startWorkout(personId: number): Promise<Workout> {
 export async function completeWorkout(
   workoutId: string,
   elapsedSeconds: number,
+  distanceM: number,
 ): Promise<Workout> {
   const response = await fetch(`/api/workouts/${workoutId}/complete`, {
     method: "POST",
@@ -24,6 +25,7 @@ export async function completeWorkout(
     },
     body: JSON.stringify({
       elapsedSeconds,
+      distanceM,
     }),
   });
 
@@ -37,6 +39,7 @@ export async function completeWorkout(
 export async function abortWorkout(
   workoutId: string,
   elapsedSeconds: number,
+  distanceM: number,
 ): Promise<Workout> {
   const response = await fetch(`/api/workouts/${workoutId}/abort`, {
     method: "POST",
@@ -45,6 +48,7 @@ export async function abortWorkout(
     },
     body: JSON.stringify({
       elapsedSeconds,
+      distanceM,
     }),
   });
 

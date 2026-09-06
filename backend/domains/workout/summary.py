@@ -15,6 +15,7 @@ class WorkoutSummary:
 
     planned_seconds: int
     elapsed_seconds: int
+    distance_m: int
     completion_percent: int
     status: WorkoutStatus
 
@@ -23,6 +24,7 @@ def create_workout_summary(
     *,
     total_duration_minutes: int,
     elapsed_seconds: int,
+    distance_m: int,
     status: WorkoutStatus,
 ) -> WorkoutSummary:
     """
@@ -47,6 +49,7 @@ def create_workout_summary(
     return WorkoutSummary(
         planned_seconds=planned_seconds,
         elapsed_seconds=elapsed_seconds,
+        distance_m=distance_m,
         completion_percent=completion_percent,
         status=status,
     )

@@ -424,6 +424,7 @@ async def complete_workout(
         workout = workout_service.complete(
             workout_id,
             elapsed_seconds=request.elapsed_seconds,
+            distance_m=request.distance_m,
         )
 
     except WorkoutNotFoundError as exc:
@@ -460,6 +461,7 @@ async def abort_workout(
         workout = workout_service.abort(
             workout_id,
             elapsed_seconds=request.elapsed_seconds,
+            distance_m=request.distance_m,
         )
 
     except WorkoutNotFoundError as exc:

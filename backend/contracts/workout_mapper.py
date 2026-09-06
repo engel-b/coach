@@ -22,6 +22,7 @@ def to_workout_response(
         status=workout.status.value,
         total_duration_minutes=workout.total_duration_minutes,
         elapsed_seconds=workout.elapsed_seconds,
+        distance_m=workout.distance_m,
         completed_at=workout.completed_at,
         phases=[
             WorkoutPhaseResponse(
@@ -41,6 +42,7 @@ def to_workout_summary_response(
     return WorkoutSummaryResponse(
         planned_seconds=summary.planned_seconds,
         elapsed_seconds=summary.elapsed_seconds,
+        distance_m=summary.distance_m,
         completion_percent=summary.completion_percent,
         status=summary.status.value,
     )

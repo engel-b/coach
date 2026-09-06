@@ -376,7 +376,11 @@ export function WorkoutView({
     try {
       setFinishing(true);
 
-      const completed = await completeWorkout(workout.id, elapsedSeconds);
+      const completed = await completeWorkout(
+        workout.id,
+        elapsedSeconds,
+        Math.round(workoutDistance.accumulatedDistanceM),
+      );
 
       onComplete(completed);
     } catch (error) {
@@ -384,7 +388,13 @@ export function WorkoutView({
     } finally {
       setFinishing(false);
     }
-  }, [elapsedSeconds, finishing, onComplete, workout.id]);
+  }, [
+    elapsedSeconds,
+    finishing,
+    onComplete,
+    workout.id,
+    workoutDistance.accumulatedDistanceM,
+  ]);
 
   /*
    * "completed" ist ein fachlicher Endzustand der Engine.
@@ -414,7 +424,11 @@ export function WorkoutView({
     try {
       setFinishing(true);
 
-      const aborted = await abortWorkout(workout.id, elapsedSeconds);
+      const aborted = await abortWorkout(
+        workout.id,
+        elapsedSeconds,
+        Math.round(workoutDistance.accumulatedDistanceM),
+      );
 
       onComplete(aborted);
     } catch (error) {

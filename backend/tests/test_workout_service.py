@@ -65,10 +65,12 @@ def test_workout_can_be_completed() -> None:
     completed = service.complete(
         workout.id,
         elapsed_seconds=1800,
+        distance_m=12345,
     )
 
     assert completed.status == WorkoutStatus.COMPLETED
     assert completed.elapsed_seconds == 1800
+    assert completed.distance_m == 12345
     assert completed.completed_at is not None
 
 
@@ -84,8 +86,10 @@ def test_workout_can_be_aborted() -> None:
     aborted = service.abort(
         workout.id,
         elapsed_seconds=723,
+        distance_m=4321,
     )
 
     assert aborted.status == WorkoutStatus.ABORTED
     assert aborted.elapsed_seconds == 723
+    assert aborted.distance_m == 4321
     assert aborted.completed_at is not None

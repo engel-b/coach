@@ -14,6 +14,7 @@ export interface Workout {
   status: WorkoutStatus;
   totalDurationMinutes: number;
   elapsedSeconds: number;
+  distanceM: number;
   completedAt: string | null;
   phases: WorkoutPhase[];
 }
