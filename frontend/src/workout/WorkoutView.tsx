@@ -1,6 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { abortWorkout, completeWorkout } from "../api/workouts";
+import {
+  abortWorkout,
+  checkpointWorkout,
+  completeWorkout,
+} from "../api/workouts";
 import type { DeviceState } from "../devices/types";
 import type { Person } from "../persons/types";
 import type { Workout, WorkoutPhase } from "./types";
@@ -123,6 +127,27 @@ export function WorkoutView({
   const [finishConfirmation, setFinishConfirmation] = useState(false);
 
   const [finishing, setFinishing] = useState(false);
+
+  /*
+   * Die aktuelle Videoposition ist technischer Laufzeitzustand.
+   *
+   * Sie beeinflusst den Render nicht. Deshalb verwenden wir ein Ref
+   * statt useState. Der spätere 5-Sekunden-Checkpoint kann jederzeit
+   * den zuletzt bekannten Wert daraus lesen.
+   *
+   * Java-Vergleich:
+   * ungefähr ein veränderliches privates Feld, das nicht Teil des
+   * UI-State-Modells ist.
+   */
+  const videoPositionSecondsRef = useRef(workout.videoPositionSeconds);
+
+  /*
+   * Es darf immer nur ein Checkpoint-Request gleichzeitig laufen.
+   *
+   * Ein Ref ist hier passend, weil dieser technische Zustand
+   * keinen Render auslösen soll.
+   */
+  const checkpointInFlightRef = useRef(false);
 
   const totalDurationSeconds = useMemo(
     () =>
@@ -279,6 +304,65 @@ export function WorkoutView({
   }, [countWorkoutDistance, nativeDistanceM]);
 
   const workoutDistanceKm = workoutDistance.accumulatedDistanceM / 1000;
+
+  /*
+   * Die aktuellen Laufzeitwerte werden vom späteren
+   * Checkpoint-Intervall gelesen.
+   *
+   * Refs sind dafür passend, weil Änderungen daran keinen
+   * zusätzlichen Render auslösen.
+   */
+  const elapsedSecondsRef = useRef(engineState.elapsedSeconds);
+
+  const workoutDistanceMRef = useRef(workoutDistance.accumulatedDistanceM);
+
+  /*
+   * Unser React-Lint-Setup erlaubt keine Änderung von
+   * ref.current direkt während des Renderns.
+   *
+   * Deshalb synchronisieren wir die beiden Werte nach dem
+   * jeweiligen Render in einem Effect.
+   */
+  useEffect(() => {
+    elapsedSecondsRef.current = engineState.elapsedSeconds;
+
+    workoutDistanceMRef.current = workoutDistance.accumulatedDistanceM;
+  }, [engineState.elapsedSeconds, workoutDistance.accumulatedDistanceM]);
+
+  /*
+   * Alle fünf Sekunden sichern wir den zuletzt bekannten
+   * Workout-Zustand.
+   *
+   * Es darf immer nur ein Checkpoint gleichzeitig laufen.
+   * Schlägt ein Checkpoint fehl, läuft das Workout weiter
+   * und das nächste Intervall versucht es erneut.
+   */
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (checkpointInFlightRef.current || finishing) {
+        return;
+      }
+
+      checkpointInFlightRef.current = true;
+
+      void checkpointWorkout(
+        workout.id,
+        elapsedSecondsRef.current,
+        Math.round(workoutDistanceMRef.current),
+        videoPositionSecondsRef.current,
+      )
+        .catch((error: unknown) => {
+          console.error("Could not checkpoint workout", error);
+        })
+        .finally(() => {
+          checkpointInFlightRef.current = false;
+        });
+    }, 5000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [finishing, workout.id]);
 
   /*
    * Die Telemetrie entscheidet nur, ob das Bike gerade
@@ -531,6 +615,10 @@ export function WorkoutView({
           src="/videos/cycling/alpen.mp4"
           paused={!shouldPlayWorkoutVideo(engineState) || finishConfirmation}
           playbackRate={videoPlaybackRate}
+          initialPositionSeconds={workout.videoPositionSeconds}
+          onPositionChange={(positionSeconds) => {
+            videoPositionSecondsRef.current = positionSeconds;
+          }}
         />
         <div className="workout-stage-shade" />
 

@@ -50,6 +50,33 @@ class WorkoutService:
 
         return workout
 
+    def checkpoint(
+        self,
+        workout_id: str,
+        *,
+        elapsed_seconds: int,
+        distance_m: int,
+        video_position_seconds: float,
+    ) -> WorkoutSession:
+        workout = self._get_running_workout(workout_id)
+
+        self._validate_elapsed_seconds(elapsed_seconds)
+        self._validate_distance_m(distance_m)
+
+        if video_position_seconds < 0:
+            raise ValueError("Video position seconds must not be negative")
+
+        updated = replace(
+            workout,
+            elapsed_seconds=elapsed_seconds,
+            distance_m=distance_m,
+            video_position_seconds=video_position_seconds,
+        )
+
+        self._repository.save(updated)
+
+        return updated
+
     def complete(
         self,
         workout_id: str,

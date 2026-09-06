@@ -119,7 +119,6 @@ class SqlAlchemyWorkoutRepository:
             distance_m=model.distance_m,
             video_id=model.video_id,
             video_position_seconds=model.video_position_seconds,
-
             completed_at=model.completed_at,
             phases=tuple(
                 WorkoutPhase(

@@ -15,6 +15,8 @@ export interface Workout {
   totalDurationMinutes: number;
   elapsedSeconds: number;
   distanceM: number;
+  videoId: string;
+  videoPositionSeconds: number;
   completedAt: string | null;
   phases: WorkoutPhase[];
 }

@@ -1,6 +1,6 @@
-from adapters.persistence.in_memory_workout_repository import (
-    InMemoryWorkoutRepository,
-)
+from datetime import UTC, datetime
+
+from adapters.persistence.in_memory_workout_repository import InMemoryWorkoutRepository
 from application.workout.service import WorkoutService
 from domains.training.recommendation import (
     TrainingRecommendation,
@@ -8,7 +8,7 @@ from domains.training.recommendation import (
     WorkoutPhaseType,
     WorkoutType,
 )
-from domains.workout.session import WorkoutStatus
+from domains.workout.session import WorkoutSession, WorkoutStatus
 
 
 def create_recommendation() -> TrainingRecommendation:
@@ -51,6 +51,41 @@ def test_workout_can_be_started() -> None:
     assert workout.person_id == 1
     assert workout.status == WorkoutStatus.RUNNING
     assert len(workout.phases) == 3
+
+
+def test_checkpoint_updates_running_workout() -> None:
+    repository = InMemoryWorkoutRepository()
+    service = WorkoutService(repository=repository)
+
+    workout = WorkoutSession(
+        id="workout-checkpoint-test",
+        person_id=1,
+        started_at=datetime.now(UTC),
+        status=WorkoutStatus.RUNNING,
+        phases=(),
+        total_duration_minutes=30,
+    )
+
+    repository.save(workout)
+
+    updated = service.checkpoint(
+        workout.id,
+        elapsed_seconds=120,
+        distance_m=1350,
+        video_position_seconds=87.5,
+    )
+
+    assert updated.status == WorkoutStatus.RUNNING
+    assert updated.elapsed_seconds == 120
+    assert updated.distance_m == 1350
+    assert updated.video_position_seconds == 87.5
+
+    persisted = repository.get(workout.id)
+
+    assert persisted is not None
+    assert persisted.elapsed_seconds == 120
+    assert persisted.distance_m == 1350
+    assert persisted.video_position_seconds == 87.5
 
 
 def test_workout_can_be_completed() -> None:

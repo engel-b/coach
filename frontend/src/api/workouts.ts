@@ -13,6 +13,31 @@ export async function startWorkout(personId: number): Promise<Workout> {
   return (await response.json()) as Workout;
 }
 
+export async function checkpointWorkout(
+  workoutId: string,
+  elapsedSeconds: number,
+  distanceM: number,
+  videoPositionSeconds: number,
+): Promise<Workout> {
+  const response = await fetch(`/api/workouts/${workoutId}/checkpoint`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      elapsedSeconds,
+      distanceM,
+      videoPositionSeconds,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Could not checkpoint workout: HTTP ${response.status}`);
+  }
+
+  return (await response.json()) as Workout;
+}
+
 export async function completeWorkout(
   workoutId: string,
   elapsedSeconds: number,

@@ -50,12 +50,43 @@ def start_workout(
     return result
 
 
+def test_workout_checkpoint() -> None:
+    """
+    Startet ein Workout über die HTTP-API und liefert
+    den JSON-Response für weitere Tests zurück.
+    """
+
+    workout = start_workout(1)
+
+    workout_id = workout["id"]
+
+    response = client.post(
+        f"/api/workouts/{workout_id}/checkpoint",
+        json={
+            "elapsedSeconds": 120,
+            "distanceM": 1350,
+            "videoPositionSeconds": 87.5,
+        },
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["elapsedSeconds"] == 120
+    assert body["distanceM"] == 1350
+    assert body["videoPositionSeconds"] == 87.5
+
+
 def test_workout_can_be_started_via_api() -> None:
     workout = start_workout(1)
 
     assert workout["personId"] == 1
     assert workout["status"] == "running"
     assert workout["elapsedSeconds"] == 0
+    assert workout["distanceM"] == 0
+    assert workout["videoId"] == "cycling-alpen-01"
+    assert workout["videoPositionSeconds"] == 0.0
     assert workout["totalDurationMinutes"] == 30
 
     phases = workout["phases"]
@@ -87,6 +118,9 @@ def test_workout_can_be_completed_via_api() -> None:
     assert completed["status"] == "completed"
     assert completed["elapsedSeconds"] == 1800
     assert completed["distanceM"] == 12345
+    assert completed["videoId"] == "cycling-alpen-01"
+    assert completed["videoPositionSeconds"] == 0.0
+
     assert completed["completedAt"] is not None
 
 
@@ -113,6 +147,9 @@ def test_workout_can_be_aborted_via_api() -> None:
     assert aborted["status"] == "aborted"
     assert aborted["elapsedSeconds"] == 723
     assert aborted["distanceM"] == 4321
+    assert aborted["videoId"] == "cycling-alpen-01"
+    assert aborted["videoPositionSeconds"] == 0.0
+
     assert aborted["completedAt"] is not None
 
 

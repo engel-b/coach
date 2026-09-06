@@ -32,7 +32,12 @@ from contracts.training import (
     TrainingRecommendationResponse,
     WorkoutPhaseResponse,
 )
-from contracts.workout import FinishWorkoutRequest, WorkoutResponse, WorkoutSummaryResponse
+from contracts.workout import (
+    FinishWorkoutRequest,
+    WorkoutCheckpointRequest,
+    WorkoutResponse,
+    WorkoutSummaryResponse,
+)
 from contracts.workout_mapper import to_workout_response, to_workout_summary_response
 from domains.training.heart_rate import get_max_heart_rate
 from domains.training.recommendation import TrainingRecommendation
@@ -53,10 +58,6 @@ app = FastAPI(
 
 
 # Vorerst eine Instanz für den gesamten Backend-Prozess.
-#
-# Java/Spring-Vergleich:
-#
-#     @Bean / Singleton @Service
 #
 # Später lösen wir die Objekterzeugung über einen kleinen
 # Application Container / Dependency Wiring sauberer.
@@ -407,6 +408,43 @@ async def start_workout(
         person_id=person_id,
         recommendation=recommendation,
     )
+
+    return to_workout_response(workout)
+
+
+@app.post(
+    "/api/workouts/{workout_id}/checkpoint",
+    response_model=WorkoutResponse,
+    response_model_by_alias=True,
+)
+async def checkpoint_workout(
+    workout_id: str,
+    request: WorkoutCheckpointRequest,
+) -> WorkoutResponse:
+    try:
+        workout = workout_service.checkpoint(
+            workout_id,
+            elapsed_seconds=request.elapsed_seconds,
+            distance_m=request.distance_m,
+            video_position_seconds=request.video_position_seconds,
+        )
+    except WorkoutNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        ) from exc
+
+    except WorkoutAlreadyFinishedError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+
+    except InvalidWorkoutDurationError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc),
+        ) from exc
 
     return to_workout_response(workout)
 
