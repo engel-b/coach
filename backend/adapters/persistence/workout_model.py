@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from adapters.persistence.database import Base
@@ -45,6 +45,20 @@ class WorkoutModel(Base):
         Integer,
         nullable=False,
         default=0,
+    )
+
+    video_id: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+        default="cycling-alpen-01",
+        server_default="cycling-alpen-01",
+    )
+
+    video_position_seconds: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        default=0.0,
+        server_default="0",
     )
 
     completed_at: Mapped[datetime | None] = mapped_column(

@@ -5,6 +5,9 @@ from enum import StrEnum
 from domains.training.recommendation import WorkoutPhase
 
 
+DEFAULT_VIDEO_ID = "cycling-alpen-01"
+
+
 class WorkoutStatus(StrEnum):
     RUNNING = "running"
     COMPLETED = "completed"
@@ -40,4 +43,8 @@ class WorkoutSession:
 
     elapsed_seconds: int = 0
     distance_m: int = 0
+
+    video_id: str = DEFAULT_VIDEO_ID
+    video_position_seconds: float = 0.0
+
     completed_at: datetime | None = None
