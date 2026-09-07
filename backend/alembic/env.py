@@ -8,6 +8,7 @@ from adapters.persistence.workout_model import (  # noqa: F401
     WorkoutModel,
     WorkoutPhaseModel,
 )
+from adapters.persistence.workout_video_model import WorkoutVideoModel  # noqa: F401
 from alembic import context
 
 config = context.config
