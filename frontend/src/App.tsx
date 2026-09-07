@@ -23,26 +23,19 @@ import { WorkoutView } from "./workout/WorkoutView";
 
 function App() {
   const [persons, setPersons] = useState<Person[]>([]);
-
   const [activePerson, setActivePerson] = useState<Person | null>(null);
-
   const [checkIn, setCheckIn] = useState<CheckIn | null>(null);
-
   const [recommendation, setRecommendation] =
     useState<TrainingRecommendation | null>(null);
-
   const [recommendationLoading, setRecommendationLoading] = useState(false);
-
   const [recommendationError, setRecommendationError] = useState<string | null>(
     null,
   );
-
   const [workout, setWorkout] = useState<Workout | null>(null);
-
   const [checkInActive, setCheckInActive] = useState(false);
-
   const [devices, setDevices] = useState<DeviceState[]>([]);
-
+  const [workoutStartLoading, setWorkoutStartLoading] = useState(false)
+  const [workoutStartError, setWorkoutStartError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null);
 
   /*
@@ -156,13 +149,27 @@ function App() {
   }, []);
 
   async function handleStartWorkout(videoId: string): Promise<void> {
-    if (activePerson === null) {
-      return;
+    if (activePerson === null || workoutStartLoading) {
+      return
     }
 
-    const startedWorkout = await startWorkout(activePerson.id, videoId);
+    setWorkoutStartLoading(true)
+    setWorkoutStartError(null)
 
-    setWorkout(startedWorkout);
+    try {
+      const startedWorkout = await startWorkout(activePerson.id, videoId)
+
+      setWorkout(startedWorkout)
+    } catch (startError) {
+      const message =
+        startError instanceof Error
+          ? startError.message
+          : 'Training konnte nicht gestartet werden'
+
+      setWorkoutStartError(message)
+    } finally {
+      setWorkoutStartLoading(false)
+    }
   }
 
   async function handleCheckInComplete(
@@ -339,6 +346,11 @@ function App() {
         <TrainingRecommendationView
           person={activePerson}
           recommendation={recommendation}
+          startLoading={workoutStartLoading}
+          startError={workoutStartError}
+          onClearStartError={() => {
+            setWorkoutStartError(null)
+          }}
           onBack={() => {
             setCheckIn(null);
             setRecommendation(null);

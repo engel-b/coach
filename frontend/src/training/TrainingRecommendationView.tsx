@@ -15,6 +15,9 @@ interface TrainingRecommendationViewProps {
   recommendation: TrainingRecommendation;
   onStart: (videoId: string) => void;
   onBack: () => void;
+  startLoading: boolean
+  startError: string | null
+  onClearStartError: () => void
 }
 
 function workoutTitle(type: WorkoutType): string {
@@ -64,6 +67,9 @@ export function TrainingRecommendationView({
   recommendation,
   onStart,
   onBack,
+  startLoading,
+  startError,
+  onClearStartError,
 }: TrainingRecommendationViewProps) {
   const [videos, setVideos] = useState<WorkoutVideo[]>([]);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
@@ -133,7 +139,7 @@ export function TrainingRecommendationView({
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
       if (event.key === "Enter") {
-        if (selectedVideoId !== null) {
+        if (selectedVideoId !== null && !startLoading) {
           onStart(selectedVideoId);
         }
 
@@ -150,7 +156,7 @@ export function TrainingRecommendationView({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onStart, onBack, selectedVideoId]);
+  }, [onStart, onBack, selectedVideoId, startLoading]);
 
   return (
     <section className="training-recommendation">
@@ -226,6 +232,7 @@ export function TrainingRecommendationView({
                   aria-pressed={selectedVideoId === video.id}
                   onClick={() => {
                     setSelectedVideoId(video.id);
+                    onClearStartError();
                   }}
                 >
                   <span className="workout-video-option-title">
@@ -244,6 +251,12 @@ export function TrainingRecommendationView({
         </div>
       </div>
 
+      {startError !== null && (
+        <div className="error-message" role="alert">
+          {startError}
+        </div>
+      )}
+
       <footer className="recommendation-actions">
         <button type="button" className="secondary-action" onClick={onBack}>
           Zurück
@@ -252,14 +265,14 @@ export function TrainingRecommendationView({
         <button
           type="button"
           className="primary-action"
-          disabled={selectedVideoId === null}
+          disabled={selectedVideoId === null || startLoading}
           onClick={() => {
-            if (selectedVideoId !== null) {
-              onStart(selectedVideoId);
+            if (selectedVideoId !== null && !startLoading) {
+              onStart(selectedVideoId)
             }
           }}
         >
-          Training starten
+          {startLoading ? 'Training wird gestartet …' : 'Training starten'}
         </button>
       </footer>
     </section>
