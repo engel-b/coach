@@ -16,7 +16,9 @@ export async function startWorkout(personId: number): Promise<Workout> {
 export async function getWorkoutVideo(
   videoId: string,
 ): Promise<WorkoutVideo> {
-  const response = await fetch(`/api/workout-videos/${videoId}`)
+  const response = await fetch(
+    `/api/workout-videos/${encodeURIComponent(videoId)}`,
+  )
 
   if (!response.ok) {
     throw new Error(
