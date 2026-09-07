@@ -20,10 +20,12 @@ import type { TrainingRecommendation } from "./training/types";
 import { WorkoutSummaryView } from "./workout/WorkoutSummaryView";
 import type { Workout } from "./workout/types";
 import { WorkoutView } from "./workout/WorkoutView";
+import { PersonProfileEditor } from './persons/PersonProfileEditor'
 
 function App() {
   const [persons, setPersons] = useState<Person[]>([]);
   const [activePerson, setActivePerson] = useState<Person | null>(null);
+  const [profileEditorOpen, setProfileEditorOpen] = useState(false)
   const [checkIn, setCheckIn] = useState<CheckIn | null>(null);
   const [recommendation, setRecommendation] =
     useState<TrainingRecommendation | null>(null);
@@ -150,6 +152,24 @@ function App() {
     void loadDevices();
   }, []);
 
+  function handleProfileSaved(updatedPerson: Person): void {
+    // Die Personenauswahl erhält den neuen Namen.
+    setPersons((currentPersons) =>
+      currentPersons.map((person) =>
+        person.id === updatedPerson.id ? updatedPerson : person,
+      ),
+    )
+
+    // Auch das aktuell geöffnete Dashboard erhält den neuen Namen.
+    setActivePerson((currentPerson) =>
+      currentPerson?.id === updatedPerson.id
+        ? updatedPerson
+        : currentPerson,
+    )
+
+    setProfileEditorOpen(false)
+  }
+
   async function handleStartWorkout(videoId: string): Promise<void> {
     if (activePerson === null || workoutStartLoading) {
       return;
@@ -217,6 +237,27 @@ function App() {
   }
 
   /*
+  * Personenprofil bearbeiten.
+  *
+  * Der Editor ist nur vom Dashboard aus erreichbar.
+  * Währenddessen bleibt die aktive Person erhalten.
+  */
+  if (profileEditorOpen) {
+    return (
+      <main className="app">
+        <PersonProfileEditor
+          key={activePerson.id}
+          person={activePerson}
+          onSaved={handleProfileSaved}
+          onCancel={() => {
+            setProfileEditorOpen(false)
+          }}
+        />
+      </main>
+    )
+  }
+
+  /*
    * Person wurde gewählt, aber ein Check-in wurde
    * noch nicht gestartet.
    *
@@ -237,6 +278,9 @@ function App() {
             setWorkout(null);
             setCheckInActive(false);
             setActivePerson(null);
+          }}
+          onEditProfile={() => {
+            setProfileEditorOpen(true)
           }}
         />
       </main>

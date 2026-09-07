@@ -1,23 +1,24 @@
-import type { Person } from "./types";
-import { WorkoutHistory } from "../workout/WorkoutHistory";
+import type { Person } from './types'
+import { WorkoutHistory } from '../workout/WorkoutHistory'
 
 interface PersonDashboardProps {
-  person: Person;
-  onStartCheckIn: () => void;
-  onChangePerson: () => void;
+  person: Person
+  onStartCheckIn: () => void
+  onChangePerson: () => void
+  onEditProfile: () => void
 }
 
 export function PersonDashboard({
   person,
   onStartCheckIn,
   onChangePerson,
+  onEditProfile,
 }: PersonDashboardProps) {
   return (
     <section className="person-dashboard">
       <header className="app-header">
         <div>
           <div className="eyebrow">DIGITAL FITNESS COACH</div>
-
           <h1>Hallo {person.displayName}</h1>
         </div>
 
@@ -35,6 +36,14 @@ export function PersonDashboard({
       <div className="dashboard-actions">
         <button
           type="button"
+          className="secondary-action"
+          onClick={onEditProfile}
+        >
+          Profil bearbeiten
+        </button>
+
+        <button
+          type="button"
           className="primary-action"
           onClick={onStartCheckIn}
         >
@@ -42,5 +51,5 @@ export function PersonDashboard({
         </button>
       </div>
     </section>
-  );
+  )
 }
