@@ -4,7 +4,6 @@ from sqlalchemy import engine_from_config, pool
 
 from adapters.persistence.check_in_model import CheckInModel  # noqa: F401
 from adapters.persistence.database import DATABASE_URL, Base
-from adapters.persistence.person_model import PersonModel, PersonProfileModel
 from adapters.persistence.workout_model import (  # noqa: F401
     WorkoutModel,
     WorkoutPhaseModel,
