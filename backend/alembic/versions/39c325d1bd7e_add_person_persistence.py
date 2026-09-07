@@ -43,6 +43,53 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("person_id"),
     )
+
+    # Preserve the stable IDs used by existing workouts and check-ins.
+    person_table = sa.table(
+        "person",
+        sa.column("id", sa.Integer()),
+        sa.column("display_name", sa.String()),
+    )
+
+    op.bulk_insert(
+        person_table,
+        [
+            {"id": 1, "display_name": "Person 1"},
+            {"id": 2, "display_name": "Person 2"},
+            {"id": 3, "display_name": "Person 3"},
+            {"id": 4, "display_name": "Person 4"},
+        ],
+    )
+
+    # Migrate the values from the previous static PersonProfileService.
+    # These are existing defaults, not newly inferred personal data.
+    profile_table = sa.table(
+        "person_profile",
+        sa.column("person_id", sa.Integer()),
+        sa.column("date_of_birth", sa.Date()),
+        sa.column("height_cm", sa.Integer()),
+        sa.column("training_goal", sa.String()),
+        sa.column("max_heart_rate_bpm", sa.Integer()),
+        sa.column("start_weight_kg", sa.Float()),
+        sa.column("target_weight_kg", sa.Float()),
+    )
+
+    op.bulk_insert(
+        profile_table,
+        [
+            {
+                "person_id": person_id,
+                "date_of_birth": date(1980, 1, 1),
+                "height_cm": 180,
+                "training_goal": "general_fitness",
+                "max_heart_rate_bpm": None,
+                "start_weight_kg": None,
+                "target_weight_kg": None,
+            }
+            for person_id in range(1, 5)
+        ],
+    )
+
     # ### end Alembic commands ###
 
 
