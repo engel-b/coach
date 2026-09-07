@@ -12,6 +12,7 @@ from domains.workout.video_repository import WorkoutVideoRepository
 class InvalidWorkoutVideoError(ValueError):
     pass
 
+
 class WorkoutNotFoundError(ValueError):
     pass
 
@@ -58,22 +59,17 @@ class WorkoutService:
             selected_video = self._video_repository.get(video_id)
 
             if selected_video is None or not selected_video.active:
-                raise InvalidWorkoutVideoError(
-                    f"Workout video is not available: {video_id}"
-                )
+                raise InvalidWorkoutVideoError(f"Workout video is not available: {video_id}")
 
             selected_video_id = selected_video.id
         else:
             selected_video_id = (
-                previous_workout.video_id
-                if previous_workout is not None
-                else DEFAULT_VIDEO_ID
+                previous_workout.video_id if previous_workout is not None else DEFAULT_VIDEO_ID
             )
 
         video_position_seconds = (
             previous_workout.video_position_seconds
-            if previous_workout is not None
-            and previous_workout.video_id == selected_video_id
+            if previous_workout is not None and previous_workout.video_id == selected_video_id
             else 0.0
         )
 

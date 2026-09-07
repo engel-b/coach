@@ -23,11 +23,7 @@ class InMemoryWorkoutVideoRepository:
         videos = list(self._videos.values())
 
         if active_only:
-            videos = [
-                video
-                for video in videos
-                if video.active
-            ]
+            videos = [video for video in videos if video.active]
 
         return sorted(
             videos,

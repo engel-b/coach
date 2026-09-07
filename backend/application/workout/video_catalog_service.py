@@ -27,8 +27,6 @@ class VideoCatalogService:
         video = self._repository.get(video_id)
 
         if video is None:
-            raise WorkoutVideoNotFoundError(
-                f"Workout video not found: {video_id}"
-            )
+            raise WorkoutVideoNotFoundError(f"Workout video not found: {video_id}")
 
         return video

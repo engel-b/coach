@@ -14,7 +14,7 @@ class StartWorkoutRequest(BaseModel):
         min_length=1,
     )
 
-    
+
 class WorkoutPhaseResponse(BaseModel):
     model_config = ConfigDict(
         alias_generator=to_camel,

@@ -68,9 +68,7 @@ def test_get_workout_videos_returns_only_active_videos() -> None:
 
 
 def test_get_workout_video_by_id() -> None:
-    response = client.get(
-        "/api/workout-videos/cycling-alpen-01"
-    )
+    response = client.get("/api/workout-videos/cycling-alpen-01")
 
     assert response.status_code == 200
 
@@ -81,8 +79,6 @@ def test_get_workout_video_by_id() -> None:
 
 
 def test_unknown_workout_video_returns_404() -> None:
-    response = client.get(
-        "/api/workout-videos/does-not-exist"
-    )
+    response = client.get("/api/workout-videos/does-not-exist")
 
     assert response.status_code == 404

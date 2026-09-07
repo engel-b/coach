@@ -22,9 +22,9 @@ export interface Workout {
 }
 
 export interface WorkoutVideo {
-  id: string
-  title: string
-  description: string | null
-  url: string
-  durationSeconds: number | null
+  id: string;
+  title: string;
+  description: string | null;
+  url: string;
+  durationSeconds: number | null;
 }

@@ -13,32 +13,26 @@ export async function startWorkout(personId: number): Promise<Workout> {
   return (await response.json()) as Workout;
 }
 
-export async function getWorkoutVideo(
-  videoId: string,
-): Promise<WorkoutVideo> {
+export async function getWorkoutVideo(videoId: string): Promise<WorkoutVideo> {
   const response = await fetch(
     `/api/workout-videos/${encodeURIComponent(videoId)}`,
-  )
+  );
 
   if (!response.ok) {
-    throw new Error(
-      `Could not load workout video: HTTP ${response.status}`,
-    )
+    throw new Error(`Could not load workout video: HTTP ${response.status}`);
   }
 
-  return (await response.json()) as WorkoutVideo
+  return (await response.json()) as WorkoutVideo;
 }
 
 export async function getWorkoutVideos(): Promise<WorkoutVideo[]> {
-  const response = await fetch('/api/workout-videos')
+  const response = await fetch("/api/workout-videos");
 
   if (!response.ok) {
-    throw new Error(
-      `Could not load workout videos: HTTP ${response.status}`,
-    )
+    throw new Error(`Could not load workout videos: HTTP ${response.status}`);
   }
 
-  return (await response.json()) as WorkoutVideo[]
+  return (await response.json()) as WorkoutVideo[];
 }
 
 export async function checkpointWorkout(
@@ -138,4 +132,3 @@ export async function getWorkoutSummary(
 
   return (await response.json()) as WorkoutSummary;
 }
-

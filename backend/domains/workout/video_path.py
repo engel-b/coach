@@ -25,16 +25,12 @@ def validate_workout_video_path(file_path: str) -> str:
         )
 
     if "\\" in file_path:
-        raise InvalidWorkoutVideoPathError(
-            "Video path must use forward slashes"
-        )
+        raise InvalidWorkoutVideoPathError("Video path must use forward slashes")
 
     path = PurePosixPath(file_path)
 
     if path.is_absolute():
-        raise InvalidWorkoutVideoPathError(
-            "Video path must be relative"
-        )
+        raise InvalidWorkoutVideoPathError("Video path must be relative")
 
     if any(part in {"", ".", ".."} for part in file_path.split("/")):
         raise InvalidWorkoutVideoPathError(
@@ -42,13 +38,9 @@ def validate_workout_video_path(file_path: str) -> str:
         )
 
     if ":" in file_path or "?" in file_path or "#" in file_path:
-        raise InvalidWorkoutVideoPathError(
-            "Video path contains unsupported characters"
-        )
+        raise InvalidWorkoutVideoPathError("Video path contains unsupported characters")
 
     if path.suffix.lower() != ".mp4":
-        raise InvalidWorkoutVideoPathError(
-            "Video path must point to an MP4 file"
-        )
+        raise InvalidWorkoutVideoPathError("Video path must point to an MP4 file")
 
     return file_path

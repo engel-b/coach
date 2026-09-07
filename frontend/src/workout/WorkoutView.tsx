@@ -26,9 +26,9 @@ import {
 } from "./workoutDistance";
 
 type VideoLoadState =
-  | { status: 'loading'; videoId: string }
-  | { status: 'ready'; videoId: string; url: string }
-  | { status: 'error'; videoId: string; message: string }
+  | { status: "loading"; videoId: string }
+  | { status: "ready"; videoId: string; url: string }
+  | { status: "error"; videoId: string; message: string };
 
 interface WorkoutViewProps {
   person: Person;
@@ -135,11 +135,11 @@ export function WorkoutView({
   const [finishing, setFinishing] = useState(false);
 
   const [videoLoadState, setVideoLoadState] = useState<VideoLoadState>({
-    status: 'loading',
+    status: "loading",
     videoId: workout.videoId,
-  })
+  });
 
-  const [videoLoadAttempt, setVideoLoadAttempt] = useState(0)
+  const [videoLoadAttempt, setVideoLoadAttempt] = useState(0);
 
   /*
    * Die aktuelle Videoposition ist technischer Laufzeitzustand.
@@ -268,43 +268,43 @@ export function WorkoutView({
   const powerW = bikeDevice?.powerW ?? null;
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     const timer = window.setTimeout(() => {
       setVideoLoadState({
-        status: 'loading',
+        status: "loading",
         videoId: workout.videoId,
-      })
-    }, 0)
+      });
+    }, 0);
 
     void getWorkoutVideo(workout.videoId)
       .then((video) => {
         if (!cancelled) {
           setVideoLoadState({
-            status: 'ready',
+            status: "ready",
             videoId: workout.videoId,
             url: video.url,
-          })
+          });
         }
       })
       .catch((error: unknown) => {
         if (!cancelled) {
           setVideoLoadState({
-            status: 'error',
+            status: "error",
             videoId: workout.videoId,
             message:
               error instanceof Error
                 ? error.message
-                : 'Unbekannter Fehler beim Laden des Trainingsvideos',
-          })
+                : "Unbekannter Fehler beim Laden des Trainingsvideos",
+          });
         }
-      })
+      });
 
     return () => {
-      cancelled = true
-      window.clearTimeout(timer)
-    }
-  }, [workout.videoId, videoLoadAttempt])
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [workout.videoId, videoLoadAttempt]);
 
   /*
    * Die FTMS Total Distance ist ein nativer absoluter
@@ -664,37 +664,36 @@ export function WorkoutView({
 
       <div className="workout-stage">
         {videoLoadState.videoId === workout.videoId &&
-          videoLoadState.status === 'ready' ? (
-            <WorkoutVideo
-              key={workout.videoId}
-              src={videoLoadState.url}
-              paused={!shouldPlayWorkoutVideo(engineState) || finishConfirmation}
-              playbackRate={videoPlaybackRate}
-              initialPositionSeconds={workout.videoPositionSeconds}
-              onPositionChange={(positionSeconds) => {
-                videoPositionSecondsRef.current = positionSeconds
+        videoLoadState.status === "ready" ? (
+          <WorkoutVideo
+            key={workout.videoId}
+            src={videoLoadState.url}
+            paused={!shouldPlayWorkoutVideo(engineState) || finishConfirmation}
+            playbackRate={videoPlaybackRate}
+            initialPositionSeconds={workout.videoPositionSeconds}
+            onPositionChange={(positionSeconds) => {
+              videoPositionSecondsRef.current = positionSeconds;
+            }}
+          />
+        ) : videoLoadState.videoId === workout.videoId &&
+          videoLoadState.status === "error" ? (
+          <div className="workout-video-loading" role="alert">
+            <p>Das Trainingsvideo konnte nicht geladen werden.</p>
+            <p>{videoLoadState.message}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setVideoLoadAttempt((attempt) => attempt + 1);
               }}
-            />
-          ) : videoLoadState.videoId === workout.videoId &&
-            videoLoadState.status === 'error' ? (
-            <div className="workout-video-loading" role="alert">
-              <p>Das Trainingsvideo konnte nicht geladen werden.</p>
-              <p>{videoLoadState.message}</p>
-              <button
-                type="button"
-                onClick={() => {
-                  setVideoLoadAttempt((attempt) => attempt + 1)
-                }}
-              >
-                Erneut versuchen
-              </button>
-            </div>
-          ) : (
-            <div className="workout-video-loading" role="status">
-              Trainingsvideo wird geladen …
-            </div>
-          )
-        }
+            >
+              Erneut versuchen
+            </button>
+          </div>
+        ) : (
+          <div className="workout-video-loading" role="status">
+            Trainingsvideo wird geladen …
+          </div>
+        )}
         <div className="workout-stage-shade" />
 
         <div className="workout-phase-overlay workout-overlay-card">

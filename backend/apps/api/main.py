@@ -10,6 +10,9 @@ from adapters.persistence.sqlalchemy_check_in_repository import (
 from adapters.persistence.sqlalchemy_workout_repository import (
     SqlAlchemyWorkoutRepository,
 )
+from adapters.persistence.sqlalchemy_workout_video_repository import (
+    SqlAlchemyWorkoutVideoRepository,
+)
 from application.check_in.service import (
     CheckInService,
     InvalidCheckInError,
@@ -19,12 +22,13 @@ from application.person.service import PersonService
 from application.telemetry.broadcaster import TelemetryBroadcaster
 from application.telemetry.service import TelemetryService
 from application.workout.service import (
-    InvalidWorkoutVideoError,
     InvalidWorkoutDurationError,
+    InvalidWorkoutVideoError,
     WorkoutAlreadyFinishedError,
     WorkoutNotFoundError,
     WorkoutService,
 )
+from application.workout.video_catalog_service import VideoCatalogService, WorkoutVideoNotFoundError
 from contracts.check_in import CheckInRequest, CheckInResponse
 from contracts.device import DeviceResponse
 from contracts.person import PersonResponse
@@ -41,13 +45,10 @@ from contracts.workout import (
     WorkoutSummaryResponse,
 )
 from contracts.workout_mapper import to_workout_response, to_workout_summary_response
+from contracts.workout_video import WorkoutVideoResponse, to_workout_video_response
 from domains.training.heart_rate import get_max_heart_rate
 from domains.training.recommendation import TrainingRecommendation
 from domains.training.recommendation_engine import TrainingRecommendationEngine
-
-from adapters.persistence.sqlalchemy_workout_video_repository import (SqlAlchemyWorkoutVideoRepository)
-from application.workout.video_catalog_service import (VideoCatalogService, WorkoutVideoNotFoundError)
-from contracts.workout_video import (WorkoutVideoResponse, to_workout_video_response)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -74,7 +75,9 @@ training_recommendation_engine = TrainingRecommendationEngine()
 workout_repository = SqlAlchemyWorkoutRepository()
 workout_video_repository = SqlAlchemyWorkoutVideoRepository()
 
-workout_service = WorkoutService(repository=workout_repository, video_repository=workout_video_repository)
+workout_service = WorkoutService(
+    repository=workout_repository, video_repository=workout_video_repository
+)
 
 video_catalog_service = VideoCatalogService(repository=workout_video_repository)
 video_catalog_service = VideoCatalogService(repository=workout_video_repository)
@@ -443,10 +446,7 @@ async def get_workout_videos() -> list[WorkoutVideoResponse]:
 
     videos = video_catalog_service.get_available()
 
-    return [
-        to_workout_video_response(video)
-        for video in videos
-    ]
+    return [to_workout_video_response(video) for video in videos]
 
 
 @app.get(
@@ -471,7 +471,7 @@ async def get_workout_video(
 
     return to_workout_video_response(video)
 
-    
+
 @app.post(
     "/api/workouts/{workout_id}/checkpoint",
     response_model=WorkoutResponse,

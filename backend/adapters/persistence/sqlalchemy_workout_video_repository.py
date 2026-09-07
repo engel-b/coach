@@ -66,20 +66,13 @@ class SqlAlchemyWorkoutVideoRepository:
             statement = select(WorkoutVideoModel)
 
             if active_only:
-                statement = statement.where(
-                    WorkoutVideoModel.active.is_(True)
-                )
+                statement = statement.where(WorkoutVideoModel.active.is_(True))
 
-            statement = statement.order_by(
-                WorkoutVideoModel.title.asc()
-            )
+            statement = statement.order_by(WorkoutVideoModel.title.asc())
 
             models = session.scalars(statement).all()
 
-            return [
-                self._to_domain(model)
-                for model in models
-            ]
+            return [self._to_domain(model) for model in models]
 
     @staticmethod
     def _to_domain(
