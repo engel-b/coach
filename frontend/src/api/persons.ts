@@ -3,6 +3,7 @@ import type {
   PersonProfile,
   UpdatePersonProfileRequest,
 } from '../persons/types'
+import { readApiError } from './apiError'
 
 export async function getPersons(): Promise<Person[]> {
   const response = await fetch('/api/persons')
@@ -20,7 +21,7 @@ export async function getPersonProfile(
   const response = await fetch(`/api/persons/${personId}/profile`)
 
   if (!response.ok) {
-    throw new Error(`Could not load person profile: HTTP ${response.status}`)
+    throw await readApiError(response, 'Profil konnte nicht geladen werden')
   }
 
   return (await response.json()) as PersonProfile
@@ -39,7 +40,7 @@ export async function updatePersonProfile(
   })
 
   if (!response.ok) {
-    throw new Error(`Could not update person profile: HTTP ${response.status}`)
+    throw await readApiError(response, 'Profil konnte nicht gespeichert werden')
   }
 
   return (await response.json()) as PersonProfile

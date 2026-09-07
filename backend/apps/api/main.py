@@ -47,6 +47,7 @@ from domains.training.recommendation import TrainingRecommendation
 from domains.training.recommendation_engine import TrainingRecommendationEngine
 
 from domains.person.profile import PersonProfile
+from domains.person.profile_validation import InvalidPersonProfileError
 
 logging.basicConfig(
     level=logging.INFO,
@@ -337,6 +338,11 @@ async def update_person_profile(
         raise HTTPException(
             status_code=404,
             detail="Person not found",
+        ) from exc
+    except InvalidPersonProfileError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc),
         ) from exc
 
     return PersonProfileResponse(

@@ -2,6 +2,7 @@ from domains.person.person import Person
 from domains.person.person_profile_writer import PersonProfileWriter
 from domains.person.person_repository import PersonRepository
 from domains.person.profile import PersonProfile
+from domains.person.profile_validation import validate_person_profile
 
 
 class PersonNotFoundError(Exception):
@@ -40,6 +41,8 @@ class PersonManagementService:
             id=person.id,
             display_name=display_name,
         )
+
+        validate_person_profile(profile)
 
         return self._profile_writer.save(
             updated_person,

@@ -1476,3 +1476,7 @@ h1 {
 .person-profile-actions {
   flex-wrap: wrap;
 }
+
+.person-profile-editor .error-message {
+  white-space: pre-line;
+}
