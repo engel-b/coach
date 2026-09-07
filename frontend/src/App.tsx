@@ -124,39 +124,6 @@ function App() {
   }, []);
 
   /*
-   * WebSocket-Verbindung zum Backend aktivieren.
-   *
-   * useTelemetry kümmert sich ausschließlich um die
-   * Verbindung und das Einlesen der Nachrichten.
-   * Die fachliche Verarbeitung erfolgt oben im Callback.
-   */
-  useTelemetry({
-    onMessage: handleTelemetryMessage,
-    onConnected: loadDeviceSnapshot,
-  });
-
-  /*
-   * Personen einmal beim Start laden.
-   */
-  useEffect(() => {
-    async function loadPersons(): Promise<void> {
-      try {
-        const result = await getPersons();
-
-        setPersons(result);
-        setError(null);
-      } catch (loadError) {
-        const message =
-          loadError instanceof Error ? loadError.message : "Unknown error";
-
-        setError(message);
-      }
-    }
-
-    void loadPersons();
-  }, []);
-
-  /*
    * Geräte einmal beim Start als Snapshot laden.
    *
    * Danach werden Änderungen nicht mehr gepollt,
@@ -188,12 +155,12 @@ function App() {
     void loadDevices();
   }, []);
 
-  async function handleStartWorkout(): Promise<void> {
+  async function handleStartWorkout(videoId: string): Promise<void> {
     if (activePerson === null) {
       return;
     }
 
-    const startedWorkout = await startWorkout(activePerson.id);
+    const startedWorkout = await startWorkout(activePerson.id, videoId);
 
     setWorkout(startedWorkout);
   }
@@ -376,8 +343,8 @@ function App() {
             setCheckIn(null);
             setRecommendation(null);
           }}
-          onStart={() => {
-            void handleStartWorkout();
+          onStart={(videoId) => {
+            void handleStartWorkout(videoId);
           }}
         />
       </main>

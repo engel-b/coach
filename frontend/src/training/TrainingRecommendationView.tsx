@@ -1,16 +1,19 @@
+import { useEffect, useState } from "react";
+
+import { getWorkoutVideos } from "../api/workouts";
 import type { Person } from "../persons/types";
+import type { WorkoutVideo } from "../workout/types";
 import type {
   TrainingRecommendation,
   WorkoutPhase,
   WorkoutPhaseType,
   WorkoutType,
 } from "./types";
-import { useEffect } from "react";
 
 interface TrainingRecommendationViewProps {
   person: Person;
   recommendation: TrainingRecommendation;
-  onStart: () => void;
+  onStart: (videoId: string) => void;
   onBack: () => void;
 }
 
@@ -62,10 +65,78 @@ export function TrainingRecommendationView({
   onStart,
   onBack,
 }: TrainingRecommendationViewProps) {
+  const [videos, setVideos] = useState<WorkoutVideo[]>([]);
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+  const [videosLoading, setVideosLoading] = useState(true);
+  const [videosError, setVideosError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadVideos(): Promise<void> {
+      setVideosLoading(true);
+      setVideosError(null);
+
+      try {
+        const result = await getWorkoutVideos();
+
+        if (cancelled) {
+          return;
+        }
+
+        setVideos(result);
+
+        /*
+         * Wenn noch keine Auswahl existiert, wählen wir das erste
+         * verfügbare Video vor.
+         *
+         * Der Benutzer kann die Auswahl anschließend per Maus ändern.
+         */
+        setSelectedVideoId((currentVideoId) => {
+          if (
+            currentVideoId !== null &&
+            result.some((video) => video.id === currentVideoId)
+          ) {
+            return currentVideoId;
+          }
+
+          return result[0]?.id ?? null;
+        });
+      } catch (loadError) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          loadError instanceof Error
+            ? loadError.message
+            : "Trainingsvideos konnten nicht geladen werden";
+
+        setVideos([]);
+        setSelectedVideoId(null);
+        setVideosError(message);
+      } finally {
+        if (!cancelled) {
+          setVideosLoading(false);
+        }
+      }
+    }
+
+    void loadVideos();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadAttempt]);
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
       if (event.key === "Enter") {
-        onStart();
+        if (selectedVideoId !== null) {
+          onStart(selectedVideoId);
+        }
+
         return;
       }
 
@@ -79,7 +150,8 @@ export function TrainingRecommendationView({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onStart, onBack]);
+  }, [onStart, onBack, selectedVideoId]);
+
   return (
     <section className="training-recommendation">
       <header className="recommendation-header">
@@ -112,6 +184,64 @@ export function TrainingRecommendationView({
 
           <p>{recommendation.reason}</p>
         </div>
+
+        <div className="workout-video-selection">
+          <div className="reason-title">Trainingsvideo</div>
+
+          {videosLoading && (
+            <div className="loading-state">Videos werden geladen …</div>
+          )}
+
+          {videosError !== null && (
+            <div className="video-selection-error" role="alert">
+              <div>{videosError}</div>
+
+              <button
+                type="button"
+                className="secondary-action"
+                onClick={() => {
+                  setLoadAttempt((currentAttempt) => currentAttempt + 1);
+                }}
+              >
+                Erneut laden
+              </button>
+            </div>
+          )}
+
+          {!videosLoading && videosError === null && videos.length === 0 && (
+            <div className="empty-state">Keine Trainingsvideos verfügbar.</div>
+          )}
+
+          {!videosLoading && videos.length > 0 && (
+            <div className="workout-video-options">
+              {videos.map((video) => (
+                <button
+                  key={video.id}
+                  type="button"
+                  className={
+                    selectedVideoId === video.id
+                      ? "workout-video-option selected"
+                      : "workout-video-option"
+                  }
+                  aria-pressed={selectedVideoId === video.id}
+                  onClick={() => {
+                    setSelectedVideoId(video.id);
+                  }}
+                >
+                  <span className="workout-video-option-title">
+                    {video.title}
+                  </span>
+
+                  {video.description !== null && (
+                    <span className="workout-video-option-description">
+                      {video.description}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <footer className="recommendation-actions">
@@ -119,7 +249,16 @@ export function TrainingRecommendationView({
           Zurück
         </button>
 
-        <button type="button" className="primary-action" onClick={onStart}>
+        <button
+          type="button"
+          className="primary-action"
+          disabled={selectedVideoId === null}
+          onClick={() => {
+            if (selectedVideoId !== null) {
+              onStart(selectedVideoId);
+            }
+          }}
+        >
           Training starten
         </button>
       </footer>
