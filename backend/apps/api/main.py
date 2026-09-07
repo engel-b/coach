@@ -19,6 +19,7 @@ from application.person.service import PersonService
 from application.telemetry.broadcaster import TelemetryBroadcaster
 from application.telemetry.service import TelemetryService
 from application.workout.service import (
+    InvalidWorkoutVideoError,
     InvalidWorkoutDurationError,
     WorkoutAlreadyFinishedError,
     WorkoutNotFoundError,
@@ -34,6 +35,7 @@ from contracts.training import (
 )
 from contracts.workout import (
     FinishWorkoutRequest,
+    StartWorkoutRequest,
     WorkoutCheckpointRequest,
     WorkoutResponse,
     WorkoutSummaryResponse,
@@ -70,8 +72,11 @@ person_service = PersonService()
 person_profile_service = PersonProfileService()
 training_recommendation_engine = TrainingRecommendationEngine()
 workout_repository = SqlAlchemyWorkoutRepository()
-workout_service = WorkoutService(repository=workout_repository)
 workout_video_repository = SqlAlchemyWorkoutVideoRepository()
+
+workout_service = WorkoutService(repository=workout_repository, video_repository=workout_video_repository)
+
+video_catalog_service = VideoCatalogService(repository=workout_video_repository)
 video_catalog_service = VideoCatalogService(repository=workout_video_repository)
 check_in_repository = SqlAlchemyCheckInRepository()
 check_in_service = CheckInService(repository=check_in_repository)
@@ -399,6 +404,7 @@ async def workout_history(
 )
 async def start_workout(
     person_id: int,
+    request: StartWorkoutRequest | None = None,
 ) -> WorkoutResponse:
     person = person_service.get_person(person_id)
 
@@ -410,10 +416,17 @@ async def start_workout(
 
     recommendation = create_training_recommendation(person_id)
 
-    workout = workout_service.start(
-        person_id=person_id,
-        recommendation=recommendation,
-    )
+    try:
+        workout = workout_service.start(
+            person_id=person_id,
+            recommendation=recommendation,
+            video_id=request.video_id if request is not None else None,
+        )
+    except InvalidWorkoutVideoError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc),
+        ) from exc
 
     return to_workout_response(workout)
 

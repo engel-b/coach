@@ -6,7 +6,11 @@ from domains.training.recommendation import TrainingRecommendation
 from domains.workout.repository import WorkoutRepository
 from domains.workout.session import DEFAULT_VIDEO_ID, WorkoutSession, WorkoutStatus
 from domains.workout.summary import WorkoutSummary, create_workout_summary
+from domains.workout.video_repository import WorkoutVideoRepository
 
+
+class InvalidWorkoutVideoError(ValueError):
+    pass
 
 class WorkoutNotFoundError(ValueError):
     pass
@@ -28,14 +32,17 @@ class WorkoutService:
     def __init__(
         self,
         repository: WorkoutRepository,
+        video_repository: WorkoutVideoRepository | None = None,
     ) -> None:
         self._repository = repository
+        self._video_repository = video_repository
 
     def start(
         self,
         *,
         person_id: int,
         recommendation: TrainingRecommendation,
+        video_id: str | None = None,
     ) -> WorkoutSession:
         previous_workouts = self._repository.get_for_person(
             person_id,
@@ -44,19 +51,41 @@ class WorkoutService:
 
         previous_workout = previous_workouts[0] if previous_workouts else None
 
+        if video_id is not None:
+            if self._video_repository is None:
+                raise RuntimeError("Workout video repository is not configured")
+
+            selected_video = self._video_repository.get(video_id)
+
+            if selected_video is None or not selected_video.active:
+                raise InvalidWorkoutVideoError(
+                    f"Workout video is not available: {video_id}"
+                )
+
+            selected_video_id = selected_video.id
+        else:
+            selected_video_id = (
+                previous_workout.video_id
+                if previous_workout is not None
+                else DEFAULT_VIDEO_ID
+            )
+
+        video_position_seconds = (
+            previous_workout.video_position_seconds
+            if previous_workout is not None
+            and previous_workout.video_id == selected_video_id
+            else 0.0
+        )
+
         workout = WorkoutSession(
             id=str(uuid4()),
             person_id=person_id,
             started_at=datetime.now(UTC),
             status=WorkoutStatus.RUNNING,
             phases=recommendation.phases,
-            total_duration_minutes=(recommendation.total_duration_minutes),
-            video_id=(
-                previous_workout.video_id if previous_workout is not None else DEFAULT_VIDEO_ID
-            ),
-            video_position_seconds=(
-                previous_workout.video_position_seconds if previous_workout is not None else 0.0
-            ),
+            total_duration_minutes=recommendation.total_duration_minutes,
+            video_id=selected_video_id,
+            video_position_seconds=video_position_seconds,
         )
 
         self._repository.save(workout)

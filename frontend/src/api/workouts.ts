@@ -29,6 +29,18 @@ export async function getWorkoutVideo(
   return (await response.json()) as WorkoutVideo
 }
 
+export async function getWorkoutVideos(): Promise<WorkoutVideo[]> {
+  const response = await fetch('/api/workout-videos')
+
+  if (!response.ok) {
+    throw new Error(
+      `Could not load workout videos: HTTP ${response.status}`,
+    )
+  }
+
+  return (await response.json()) as WorkoutVideo[]
+}
+
 export async function checkpointWorkout(
   workoutId: string,
   elapsedSeconds: number,

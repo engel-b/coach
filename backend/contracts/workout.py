@@ -5,6 +5,16 @@ from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
 
+class StartWorkoutRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    video_id: str | None = Field(
+        default=None,
+        alias="videoId",
+        min_length=1,
+    )
+
+    
 class WorkoutPhaseResponse(BaseModel):
     model_config = ConfigDict(
         alias_generator=to_camel,

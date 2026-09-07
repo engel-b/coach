@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 from domains.workout.video import WorkoutVideo
+from domains.workout.video_path import validate_workout_video_path
 
 
 class WorkoutVideoResponse(BaseModel):
@@ -20,10 +21,12 @@ class WorkoutVideoResponse(BaseModel):
 def to_workout_video_response(
     video: WorkoutVideo,
 ) -> WorkoutVideoResponse:
+    file_path = validate_workout_video_path(video.file_path)
+
     return WorkoutVideoResponse(
         id=video.id,
         title=video.title,
         description=video.description,
-        url=f"/videos/{video.file_path}",
+        url=f"/videos/{file_path}",
         duration_seconds=video.duration_seconds,
     )

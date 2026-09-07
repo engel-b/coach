@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { getWorkoutVideo } from './workouts'
+import { getWorkoutVideo, getWorkoutVideos } from './workouts'
 
 describe('getWorkoutVideo', () => {
   afterEach(() => {
@@ -63,5 +63,49 @@ describe('getWorkoutVideo', () => {
     await expect(
       getWorkoutVideo('unknown-video'),
     ).rejects.toThrow('Could not load workout video: HTTP 404')
+  })
+})
+
+describe('getWorkoutVideos', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('loads the available workout videos', async () => {
+    const videos = [
+      {
+        id: 'cycling-alpen-01',
+        title: 'Alpen',
+        description: 'Trainingsvideo Alpen',
+        url: '/videos/cycling/alpen.mp4',
+        durationSeconds: 3600,
+      },
+    ]
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => videos,
+    })
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await getWorkoutVideos()
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/workout-videos')
+    expect(result).toEqual(videos)
+  })
+
+  it('throws when the catalog cannot be loaded', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+      }),
+    )
+
+    await expect(getWorkoutVideos()).rejects.toThrow(
+      'Could not load workout videos: HTTP 503',
+    )
   })
 })
