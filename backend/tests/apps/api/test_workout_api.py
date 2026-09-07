@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 import apps.api.main as api_main
 from adapters.persistence.in_memory_workout_repository import InMemoryWorkoutRepository
 from application.workout.service import WorkoutService
+from domains.workout.session import DEFAULT_VIDEO_ID
 
 client = TestClient(api_main.app)
 
