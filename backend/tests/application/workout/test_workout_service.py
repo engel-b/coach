@@ -1,7 +1,9 @@
 from datetime import UTC, datetime
+
 import pytest
 
 from adapters.persistence.in_memory_workout_repository import InMemoryWorkoutRepository
+from adapters.persistence.in_memory_workout_video_repository import InMemoryWorkoutVideoRepository
 from application.workout.service import InvalidWorkoutVideoError, WorkoutService
 from domains.training.recommendation import (
     TrainingRecommendation,
@@ -180,7 +182,7 @@ def test_start_with_same_selected_video_resumes_previous_position() -> None:
 
     first_workout = service.start(
         person_id=1,
-        recommendation=RECOMMENDATION,
+        recommendation=create_recommendation(),
         video_id="cycling-alpen-01",
     )
 
@@ -193,7 +195,7 @@ def test_start_with_same_selected_video_resumes_previous_position() -> None:
 
     second_workout = service.start(
         person_id=1,
-        recommendation=RECOMMENDATION,
+        recommendation=create_recommendation(),
         video_id="cycling-alpen-01",
     )
 
@@ -235,7 +237,7 @@ def test_start_with_different_selected_video_starts_at_zero() -> None:
 
     first_workout = service.start(
         person_id=1,
-        recommendation=RECOMMENDATION,
+        recommendation=create_recommendation(),
         video_id="cycling-alpen-01",
     )
 
@@ -248,7 +250,7 @@ def test_start_with_different_selected_video_starts_at_zero() -> None:
 
     second_workout = service.start(
         person_id=1,
-        recommendation=RECOMMENDATION,
+        recommendation=create_recommendation(),
         video_id="cycling-kueste-01",
     )
 
@@ -283,7 +285,7 @@ def test_start_rejects_inactive_selected_video() -> None:
     ):
         service.start(
             person_id=1,
-            recommendation=RECOMMENDATION,
+            recommendation=create_recommendation(),
             video_id="cycling-old-01",
         )
 
@@ -300,6 +302,6 @@ def test_start_rejects_unknown_selected_video() -> None:
     ):
         service.start(
             person_id=1,
-            recommendation=RECOMMENDATION,
+            recommendation=create_recommendation(),
             video_id="missing-video",
         )

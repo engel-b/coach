@@ -6,24 +6,22 @@ export async function startWorkout(
   videoId?: string,
 ): Promise<Workout> {
   const response = await fetch(`/api/persons/${personId}/workouts`, {
-    method: 'POST',
+    method: "POST",
     ...(videoId !== undefined
       ? {
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({ videoId }),
         }
       : {}),
-  })
+  });
 
   if (!response.ok) {
-    throw new Error(
-      `Could not start workout: HTTP ${response.status}`,
-    )
+    throw new Error(`Could not start workout: HTTP ${response.status}`);
   }
 
-  return (await response.json()) as Workout
+  return (await response.json()) as Workout;
 }
 
 export async function getWorkoutVideo(videoId: string): Promise<WorkoutVideo> {

@@ -110,52 +110,47 @@ describe("getWorkoutVideos", () => {
   });
 });
 
-
-describe('startWorkout', () => {
+describe("startWorkout", () => {
   afterEach(() => {
-    vi.unstubAllGlobals()
-  })
+    vi.unstubAllGlobals();
+  });
 
-  it('starts without a video selection using the existing request', async () => {
+  it("starts without a video selection using the existing request", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ id: 'workout-1' }),
-    })
+      json: async () => ({ id: "workout-1" }),
+    });
 
-    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal("fetch", fetchMock);
 
-    await startWorkout(1)
+    await startWorkout(1);
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/persons/1/workouts',
-      { method: 'POST' },
-    )
-  })
+    expect(fetchMock).toHaveBeenCalledWith("/api/persons/1/workouts", {
+      method: "POST",
+    });
+  });
 
-  it('sends an explicitly selected video ID', async () => {
+  it("sends an explicitly selected video ID", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        id: 'workout-1',
-        videoId: 'cycling-kueste-01',
+        id: "workout-1",
+        videoId: "cycling-kueste-01",
       }),
-    })
+    });
 
-    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal("fetch", fetchMock);
 
-    await startWorkout(1, 'cycling-kueste-01')
+    await startWorkout(1, "cycling-kueste-01");
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/persons/1/workouts',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          videoId: 'cycling-kueste-01',
-        }),
+    expect(fetchMock).toHaveBeenCalledWith("/api/persons/1/workouts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    )
-  })
-})
+      body: JSON.stringify({
+        videoId: "cycling-kueste-01",
+      }),
+    });
+  });
+});

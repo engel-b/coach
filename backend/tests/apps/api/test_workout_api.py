@@ -1,13 +1,14 @@
-import pytest
-from fastapi.testclient import TestClient
 from datetime import UTC, datetime
 
-from adapters.persistence.in_memory_workout_video_repository import (InMemoryWorkoutVideoRepository)
-from domains.workout.video import WorkoutVideo
+import pytest
+from fastapi.testclient import TestClient
+
 import apps.api.main as api_main
 from adapters.persistence.in_memory_workout_repository import InMemoryWorkoutRepository
+from adapters.persistence.in_memory_workout_video_repository import InMemoryWorkoutVideoRepository
 from application.workout.service import WorkoutService
 from domains.workout.session import DEFAULT_VIDEO_ID
+from domains.workout.video import WorkoutVideo
 
 client = TestClient(api_main.app)
 
@@ -408,6 +409,4 @@ def test_start_workout_rejects_unknown_video(
     )
 
     assert response.status_code == 422
-    assert response.json()["detail"] == (
-        "Workout video is not available: missing-video"
-    )
+    assert response.json()["detail"] == ("Workout video is not available: missing-video")
