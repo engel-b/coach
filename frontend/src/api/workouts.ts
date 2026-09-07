@@ -1,16 +1,29 @@
 import type { Workout, WorkoutVideo } from "../workout/types";
 import type { WorkoutSummary } from "../workout/summary-types";
 
-export async function startWorkout(personId: number): Promise<Workout> {
+export async function startWorkout(
+  personId: number,
+  videoId?: string,
+): Promise<Workout> {
   const response = await fetch(`/api/persons/${personId}/workouts`, {
-    method: "POST",
-  });
+    method: 'POST',
+    ...(videoId !== undefined
+      ? {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ videoId }),
+        }
+      : {}),
+  })
 
   if (!response.ok) {
-    throw new Error(`Could not start workout: HTTP ${response.status}`);
+    throw new Error(
+      `Could not start workout: HTTP ${response.status}`,
+    )
   }
 
-  return (await response.json()) as Workout;
+  return (await response.json()) as Workout
 }
 
 export async function getWorkoutVideo(videoId: string): Promise<WorkoutVideo> {

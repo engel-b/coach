@@ -1,6 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
+from datetime import UTC, datetime
 
+from adapters.persistence.in_memory_workout_video_repository import (InMemoryWorkoutVideoRepository)
+from domains.workout.video import WorkoutVideo
 import apps.api.main as api_main
 from adapters.persistence.in_memory_workout_repository import InMemoryWorkoutRepository
 from application.workout.service import WorkoutService
@@ -346,3 +349,65 @@ def test_get_workout_summary_for_unknown_workout_returns_404() -> None:
     response = client.get("/api/workouts/does-not-exist/summary")
 
     assert response.status_code == 404
+
+
+def test_start_workout_with_selected_video(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workout_repository = InMemoryWorkoutRepository()
+    video_repository = InMemoryWorkoutVideoRepository()
+
+    video_repository.save(
+        WorkoutVideo(
+            id="cycling-kueste-01",
+            title="Küste",
+            description=None,
+            file_path="cycling/kueste.mp4",
+            duration_seconds=None,
+            active=True,
+            created_at=datetime.now(UTC),
+        )
+    )
+
+    monkeypatch.setattr(
+        api_main,
+        "workout_service",
+        WorkoutService(
+            repository=workout_repository,
+            video_repository=video_repository,
+        ),
+    )
+
+    response = client.post(
+        "/api/persons/1/workouts",
+        json={"videoId": "cycling-kueste-01"},
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+    assert body["videoId"] == "cycling-kueste-01"
+    assert body["videoPositionSeconds"] == 0.0
+
+
+def test_start_workout_rejects_unknown_video(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        api_main,
+        "workout_service",
+        WorkoutService(
+            repository=InMemoryWorkoutRepository(),
+            video_repository=InMemoryWorkoutVideoRepository(),
+        ),
+    )
+
+    response = client.post(
+        "/api/persons/1/workouts",
+        json={"videoId": "missing-video"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "Workout video is not available: missing-video"
+    )

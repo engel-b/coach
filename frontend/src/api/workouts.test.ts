@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getWorkoutVideo, getWorkoutVideos } from "./workouts";
+import { getWorkoutVideo, getWorkoutVideos, startWorkout } from "./workouts";
 
 describe("getWorkoutVideo", () => {
   afterEach(() => {
@@ -109,3 +109,53 @@ describe("getWorkoutVideos", () => {
     );
   });
 });
+
+
+describe('startWorkout', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('starts without a video selection using the existing request', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'workout-1' }),
+    })
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    await startWorkout(1)
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/persons/1/workouts',
+      { method: 'POST' },
+    )
+  })
+
+  it('sends an explicitly selected video ID', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        id: 'workout-1',
+        videoId: 'cycling-kueste-01',
+      }),
+    })
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    await startWorkout(1, 'cycling-kueste-01')
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/persons/1/workouts',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoId: 'cycling-kueste-01',
+        }),
+      },
+    )
+  })
+})
