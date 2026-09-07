@@ -20,3 +20,11 @@ export interface Workout {
   completedAt: string | null;
   phases: WorkoutPhase[];
 }
+
+export interface WorkoutVideo {
+  id: string
+  title: string
+  description: string | null
+  url: string
+  durationSeconds: number | null
+}

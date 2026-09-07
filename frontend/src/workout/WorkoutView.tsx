@@ -4,6 +4,7 @@ import {
   abortWorkout,
   checkpointWorkout,
   completeWorkout,
+  getWorkoutVideo,
 } from "../api/workouts";
 import type { DeviceState } from "../devices/types";
 import type { Person } from "../persons/types";
@@ -127,6 +128,8 @@ export function WorkoutView({
   const [finishConfirmation, setFinishConfirmation] = useState(false);
 
   const [finishing, setFinishing] = useState(false);
+
+  const [videoUrl, setVideoUrl] = useState<string | null>(null)
 
   /*
    * Die aktuelle Videoposition ist technischer Laufzeitzustand.
@@ -253,6 +256,24 @@ export function WorkoutView({
   const nativeDistanceM = bikeDevice?.distanceM ?? null;
 
   const powerW = bikeDevice?.powerW ?? null;
+
+  useEffect(() => {
+    let cancelled = false
+
+    void getWorkoutVideo(workout.videoId)
+      .then((video) => {
+        if (!cancelled) {
+          setVideoUrl(video.url)
+        }
+      })
+      .catch((error: unknown) => {
+        console.error('Could not load workout video', error)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [workout.videoId])
 
   /*
    * Die FTMS Total Distance ist ein nativer absoluter
@@ -611,15 +632,21 @@ export function WorkoutView({
       </header>
 
       <div className="workout-stage">
-        <WorkoutVideo
-          src="/videos/cycling/alpen.mp4"
-          paused={!shouldPlayWorkoutVideo(engineState) || finishConfirmation}
-          playbackRate={videoPlaybackRate}
-          initialPositionSeconds={workout.videoPositionSeconds}
-          onPositionChange={(positionSeconds) => {
-            videoPositionSecondsRef.current = positionSeconds;
-          }}
-        />
+        {videoUrl !== null ? (
+          <WorkoutVideo
+            src={videoUrl}
+            paused={!shouldPlayWorkoutVideo(engineState) || finishConfirmation}
+            playbackRate={videoPlaybackRate}
+            initialPositionSeconds={workout.videoPositionSeconds}
+            onPositionChange={(positionSeconds) => {
+              videoPositionSecondsRef.current = positionSeconds;
+            }}
+          />
+        ) : (
+          <div className="workout-video-loading">
+            Trainingsvideo wird geladen …
+          </div>
+        )}
         <div className="workout-stage-shade" />
 
         <div className="workout-phase-overlay workout-overlay-card">
