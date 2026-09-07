@@ -50,35 +50,41 @@ Workout summary
 Dashboard / history
 ```
 
+## Links
+
+* Swagger UI, interactive API documentation with "Try it out": http://127.0.0.1:8000/docs 
+* OpenAPI JSON, API contract: http://127.0.0.1:8000/openapi.json 
+* ReDoc, alternative, human readable documentation: http://127.0.0.1:8000/redoc 
+
 ## Components
 
 ``` text
 +-----------------------------+
-¦ React / TypeScript Frontend ¦
-¦ Vite                        ¦
+ï¿½ React / TypeScript Frontend ï¿½
+ï¿½ Vite                        ï¿½
 +-----------------------------+
-               ¦ REST + WebSocket
+               ï¿½ REST + WebSocket
                ?
 +-----------------------------+
-¦ FastAPI Backend             ¦
-¦                             ¦
-¦ Application Services        ¦
-¦ Domain Logic                ¦
-¦ Persistence Adapters        ¦
+ï¿½ FastAPI Backend             ï¿½
+ï¿½                             ï¿½
+ï¿½ Application Services        ï¿½
+ï¿½ Domain Logic                ï¿½
+ï¿½ Persistence Adapters        ï¿½
 +-----------------------------+
-           ¦          ¦
-           ¦          ?
-           ¦     SQLite
-           ¦     SQLAlchemy
-           ¦     Alembic
-           ¦
-           ¦ WebSocket
+           ï¿½          ï¿½
+           ï¿½          ?
+           ï¿½     SQLite
+           ï¿½     SQLAlchemy
+           ï¿½     Alembic
+           ï¿½
+           ï¿½ WebSocket
            ?
 +-----------------------------+
-¦ Device Agent                ¦
-¦ Python / Bleak              ¦
+ï¿½ Device Agent                ï¿½
+ï¿½ Python / Bleak              ï¿½
 +-----------------------------+
-               ¦ Bluetooth LE
+               ï¿½ Bluetooth LE
                ?
         Fitness devices
         e.g. HR sensor
@@ -577,13 +583,13 @@ The project follows a few deliberate rules:
 A Java/Spring comparison is roughly:
 
 ``` text
-domains/       ˜ domain model / pure business logic
-application/   ˜ application services / use cases
-adapters/      ˜ repository + infrastructure implementations
-apps/api/      ˜ REST/WebSocket application entry point
-contracts/     ˜ DTOs / wire contracts
-SQLAlchemy     ˜ JPA/Hibernate role
-Alembic        ˜ Flyway/Liquibase role
+domains/       ï¿½ domain model / pure business logic
+application/   ï¿½ application services / use cases
+adapters/      ï¿½ repository + infrastructure implementations
+apps/api/      ï¿½ REST/WebSocket application entry point
+contracts/     ï¿½ DTOs / wire contracts
+SQLAlchemy     ï¿½ JPA/Hibernate role
+Alembic        ï¿½ Flyway/Liquibase role
 ```
 
 ## Current capabilities

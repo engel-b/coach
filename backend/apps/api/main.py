@@ -9,10 +9,9 @@ from adapters.persistence.sqlalchemy_person_profile_repository import (SqlAlchem
 from adapters.persistence.sqlalchemy_person_repository import (SqlAlchemyPersonRepository)
 from adapters.persistence.sqlalchemy_workout_repository import (SqlAlchemyWorkoutRepository)
 from adapters.persistence.sqlalchemy_workout_video_repository import (SqlAlchemyWorkoutVideoRepository)
-from application.check_in.service import (
-    CheckInService,
-    InvalidCheckInError,
-)
+from adapters.persistence.sqlalchemy_person_profile_writer import (SqlAlchemyPersonProfileWriter)
+from application.person.management_service import (PersonManagementService, PersonNotFoundError)
+from application.check_in.service import (CheckInService, InvalidCheckInError)
 from application.person.profile_service import PersonProfileService
 from application.person.service import PersonService
 from application.telemetry.broadcaster import TelemetryBroadcaster
@@ -40,11 +39,14 @@ from contracts.workout import (
     WorkoutResponse,
     WorkoutSummaryResponse,
 )
+from contracts.person_profile import (PersonProfileRequest, PersonProfileResponse)
 from contracts.workout_mapper import to_workout_response, to_workout_summary_response
 from contracts.workout_video import WorkoutVideoResponse, to_workout_video_response
 from domains.training.heart_rate import get_max_heart_rate
 from domains.training.recommendation import TrainingRecommendation
 from domains.training.recommendation_engine import TrainingRecommendationEngine
+
+from domains.person.profile import PersonProfile
 
 logging.basicConfig(
     level=logging.INFO,
@@ -70,6 +72,9 @@ person_service = PersonService(repository=person_repository)
 
 person_profile_repository = SqlAlchemyPersonProfileRepository()
 person_profile_service = PersonProfileService(repository=person_profile_repository)
+
+person_profile_writer = SqlAlchemyPersonProfileWriter()
+person_management_service = PersonManagementService(person_repository=person_repository, profile_writer=person_profile_writer)
 
 training_recommendation_engine = TrainingRecommendationEngine()
 workout_repository = SqlAlchemyWorkoutRepository()
@@ -267,6 +272,85 @@ async def create_check_in(
     )
 
 
+@app.get(
+    "/api/persons/{person_id}/profile",
+    response_model=PersonProfileResponse,
+    response_model_by_alias=True,
+    tags=["Persons"],
+    summary="Personenprofil abrufen",
+)
+async def get_person_profile(person_id: int) -> PersonProfileResponse:
+    person = person_service.get_person(person_id)
+    if person is None:
+        raise HTTPException(status_code=404, detail="Person not found")
+
+    profile = person_profile_service.get_profile(person_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="Person profile not found")
+
+    return PersonProfileResponse(
+        person_id=person.id,
+        display_name=person.display_name,
+        date_of_birth=profile.date_of_birth,
+        height_cm=profile.height_cm,
+        training_goal=profile.training_goal,
+        max_heart_rate_bpm=profile.max_heart_rate_bpm,
+        start_weight_kg=profile.start_weight_kg,
+        target_weight_kg=profile.target_weight_kg,
+    )
+
+
+@app.put(
+    "/api/persons/{person_id}/profile",
+    response_model=PersonProfileResponse,
+    response_model_by_alias=True,
+    tags=["Persons"],
+    summary="Personenprofil bearbeiten",
+)
+async def update_person_profile(
+    person_id: int,
+    request: PersonProfileRequest,
+) -> PersonProfileResponse:
+    person = person_service.get_person(person_id)
+    if person is None:
+        raise HTTPException(status_code=404, detail="Person not found")
+
+    # Zuerst das Profil speichern. Die Person-ID bleibt unverändert.
+    profile = PersonProfile(
+        person_id=person_id,
+        date_of_birth=request.date_of_birth,
+        height_cm=request.height_cm,
+        training_goal=request.training_goal,
+        max_heart_rate_bpm=request.max_heart_rate_bpm,
+        start_weight_kg=request.start_weight_kg,
+        target_weight_kg=request.target_weight_kg,
+    )
+    try:
+        updated_person, saved_profile = (
+            person_management_service.update_profile(
+                person_id=person_id,
+                display_name=request.display_name,
+                profile=profile,
+            )
+        )
+    except PersonNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail="Person not found",
+        ) from exc
+
+    return PersonProfileResponse(
+        person_id=updated_person.id,
+        display_name=updated_person.display_name,
+        date_of_birth=saved_profile.date_of_birth,
+        height_cm=saved_profile.height_cm,
+        training_goal=saved_profile.training_goal,
+        max_heart_rate_bpm=saved_profile.max_heart_rate_bpm,
+        start_weight_kg=saved_profile.start_weight_kg,
+        target_weight_kg=saved_profile.target_weight_kg,
+    )
+
+    
 @app.get(
     "/api/persons/{person_id}/check-ins/latest",
     response_model=CheckInResponse | None,

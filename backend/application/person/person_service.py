@@ -18,3 +18,4 @@ class PersonService:
 
     def get_person(self, person_id: int) -> Person | None:
         return self._repository.get(person_id)
+        
