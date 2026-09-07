@@ -34,8 +34,10 @@ function App() {
   const [workout, setWorkout] = useState<Workout | null>(null);
   const [checkInActive, setCheckInActive] = useState(false);
   const [devices, setDevices] = useState<DeviceState[]>([]);
-  const [workoutStartLoading, setWorkoutStartLoading] = useState(false)
-  const [workoutStartError, setWorkoutStartError] = useState<string | null>(null)
+  const [workoutStartLoading, setWorkoutStartLoading] = useState(false);
+  const [workoutStartError, setWorkoutStartError] = useState<string | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
 
   /*
@@ -150,25 +152,25 @@ function App() {
 
   async function handleStartWorkout(videoId: string): Promise<void> {
     if (activePerson === null || workoutStartLoading) {
-      return
+      return;
     }
 
-    setWorkoutStartLoading(true)
-    setWorkoutStartError(null)
+    setWorkoutStartLoading(true);
+    setWorkoutStartError(null);
 
     try {
-      const startedWorkout = await startWorkout(activePerson.id, videoId)
+      const startedWorkout = await startWorkout(activePerson.id, videoId);
 
-      setWorkout(startedWorkout)
+      setWorkout(startedWorkout);
     } catch (startError) {
       const message =
         startError instanceof Error
           ? startError.message
-          : 'Training konnte nicht gestartet werden'
+          : "Training konnte nicht gestartet werden";
 
-      setWorkoutStartError(message)
+      setWorkoutStartError(message);
     } finally {
-      setWorkoutStartLoading(false)
+      setWorkoutStartLoading(false);
     }
   }
 
@@ -349,7 +351,7 @@ function App() {
           startLoading={workoutStartLoading}
           startError={workoutStartError}
           onClearStartError={() => {
-            setWorkoutStartError(null)
+            setWorkoutStartError(null);
           }}
           onBack={() => {
             setCheckIn(null);

@@ -15,9 +15,9 @@ interface TrainingRecommendationViewProps {
   recommendation: TrainingRecommendation;
   onStart: (videoId: string) => void;
   onBack: () => void;
-  startLoading: boolean
-  startError: string | null
-  onClearStartError: () => void
+  startLoading: boolean;
+  startError: string | null;
+  onClearStartError: () => void;
 }
 
 function workoutTitle(type: WorkoutType): string {
@@ -268,11 +268,11 @@ export function TrainingRecommendationView({
           disabled={selectedVideoId === null || startLoading}
           onClick={() => {
             if (selectedVideoId !== null && !startLoading) {
-              onStart(selectedVideoId)
+              onStart(selectedVideoId);
             }
           }}
         >
-          {startLoading ? 'Training wird gestartet …' : 'Training starten'}
+          {startLoading ? "Training wird gestartet …" : "Training starten"}
         </button>
       </footer>
     </section>
