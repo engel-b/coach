@@ -1,9 +1,20 @@
-import type { Workout } from "../workout/types";
+import type { Workout, WorkoutVideo } from "../workout/types";
 import type { WorkoutSummary } from "../workout/summary-types";
 
-export async function startWorkout(personId: number): Promise<Workout> {
+export async function startWorkout(
+  personId: number,
+  videoId?: string,
+): Promise<Workout> {
   const response = await fetch(`/api/persons/${personId}/workouts`, {
     method: "POST",
+    ...(videoId !== undefined
+      ? {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ videoId }),
+        }
+      : {}),
   });
 
   if (!response.ok) {
@@ -11,6 +22,28 @@ export async function startWorkout(personId: number): Promise<Workout> {
   }
 
   return (await response.json()) as Workout;
+}
+
+export async function getWorkoutVideo(videoId: string): Promise<WorkoutVideo> {
+  const response = await fetch(
+    `/api/workout-videos/${encodeURIComponent(videoId)}`,
+  );
+
+  if (!response.ok) {
+    throw new Error(`Could not load workout video: HTTP ${response.status}`);
+  }
+
+  return (await response.json()) as WorkoutVideo;
+}
+
+export async function getWorkoutVideos(): Promise<WorkoutVideo[]> {
+  const response = await fetch("/api/workout-videos");
+
+  if (!response.ok) {
+    throw new Error(`Could not load workout videos: HTTP ${response.status}`);
+  }
+
+  return (await response.json()) as WorkoutVideo[];
 }
 
 export async function checkpointWorkout(

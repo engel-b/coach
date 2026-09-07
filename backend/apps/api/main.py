@@ -10,6 +10,9 @@ from adapters.persistence.sqlalchemy_check_in_repository import (
 from adapters.persistence.sqlalchemy_workout_repository import (
     SqlAlchemyWorkoutRepository,
 )
+from adapters.persistence.sqlalchemy_workout_video_repository import (
+    SqlAlchemyWorkoutVideoRepository,
+)
 from application.check_in.service import (
     CheckInService,
     InvalidCheckInError,
@@ -20,10 +23,12 @@ from application.telemetry.broadcaster import TelemetryBroadcaster
 from application.telemetry.service import TelemetryService
 from application.workout.service import (
     InvalidWorkoutDurationError,
+    InvalidWorkoutVideoError,
     WorkoutAlreadyFinishedError,
     WorkoutNotFoundError,
     WorkoutService,
 )
+from application.workout.video_catalog_service import VideoCatalogService, WorkoutVideoNotFoundError
 from contracts.check_in import CheckInRequest, CheckInResponse
 from contracts.device import DeviceResponse
 from contracts.person import PersonResponse
@@ -34,11 +39,13 @@ from contracts.training import (
 )
 from contracts.workout import (
     FinishWorkoutRequest,
+    StartWorkoutRequest,
     WorkoutCheckpointRequest,
     WorkoutResponse,
     WorkoutSummaryResponse,
 )
 from contracts.workout_mapper import to_workout_response, to_workout_summary_response
+from contracts.workout_video import WorkoutVideoResponse, to_workout_video_response
 from domains.training.heart_rate import get_max_heart_rate
 from domains.training.recommendation import TrainingRecommendation
 from domains.training.recommendation_engine import TrainingRecommendationEngine
@@ -66,7 +73,14 @@ person_service = PersonService()
 person_profile_service = PersonProfileService()
 training_recommendation_engine = TrainingRecommendationEngine()
 workout_repository = SqlAlchemyWorkoutRepository()
-workout_service = WorkoutService(repository=workout_repository)
+workout_video_repository = SqlAlchemyWorkoutVideoRepository()
+
+workout_service = WorkoutService(
+    repository=workout_repository, video_repository=workout_video_repository
+)
+
+video_catalog_service = VideoCatalogService(repository=workout_video_repository)
+video_catalog_service = VideoCatalogService(repository=workout_video_repository)
 check_in_repository = SqlAlchemyCheckInRepository()
 check_in_service = CheckInService(repository=check_in_repository)
 telemetry_broadcaster = TelemetryBroadcaster()
@@ -393,6 +407,7 @@ async def workout_history(
 )
 async def start_workout(
     person_id: int,
+    request: StartWorkoutRequest | None = None,
 ) -> WorkoutResponse:
     person = person_service.get_person(person_id)
 
@@ -404,12 +419,57 @@ async def start_workout(
 
     recommendation = create_training_recommendation(person_id)
 
-    workout = workout_service.start(
-        person_id=person_id,
-        recommendation=recommendation,
-    )
+    try:
+        workout = workout_service.start(
+            person_id=person_id,
+            recommendation=recommendation,
+            video_id=request.video_id if request is not None else None,
+        )
+    except InvalidWorkoutVideoError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc),
+        ) from exc
 
     return to_workout_response(workout)
+
+
+@app.get(
+    "/api/workout-videos",
+    response_model=list[WorkoutVideoResponse],
+    response_model_by_alias=True,
+)
+async def get_workout_videos() -> list[WorkoutVideoResponse]:
+    """
+    Liefert alle aktiven Trainingsvideos.
+    """
+
+    videos = video_catalog_service.get_available()
+
+    return [to_workout_video_response(video) for video in videos]
+
+
+@app.get(
+    "/api/workout-videos/{video_id}",
+    response_model=WorkoutVideoResponse,
+    response_model_by_alias=True,
+)
+async def get_workout_video(
+    video_id: str,
+) -> WorkoutVideoResponse:
+    """
+    Liefert die Metadaten eines einzelnen Trainingsvideos.
+    """
+
+    try:
+        video = video_catalog_service.get(video_id)
+    except WorkoutVideoNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        ) from exc
+
+    return to_workout_video_response(video)
 
 
 @app.post(

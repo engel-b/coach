@@ -1365,3 +1365,66 @@ h1 {
 .workout-summary-row strong {
   font-size: 1.25rem;
 }
+
+.workout-video-selection {
+  margin-top: 2rem;
+}
+
+.workout-video-options {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.workout-video-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 1.25rem 1.5rem;
+  border: 2px solid transparent;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.06);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    transform 120ms ease;
+}
+
+.workout-video-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.workout-video-option:active {
+  transform: scale(0.99);
+}
+
+.workout-video-option.selected {
+  border-color: currentColor;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.workout-video-option-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.workout-video-option-description {
+  margin-top: 0.35rem;
+  font-size: 0.95rem;
+  opacity: 0.75;
+}
+
+.video-selection-error {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.recommendation-actions .primary-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

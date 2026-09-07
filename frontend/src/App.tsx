@@ -23,26 +23,21 @@ import { WorkoutView } from "./workout/WorkoutView";
 
 function App() {
   const [persons, setPersons] = useState<Person[]>([]);
-
   const [activePerson, setActivePerson] = useState<Person | null>(null);
-
   const [checkIn, setCheckIn] = useState<CheckIn | null>(null);
-
   const [recommendation, setRecommendation] =
     useState<TrainingRecommendation | null>(null);
-
   const [recommendationLoading, setRecommendationLoading] = useState(false);
-
   const [recommendationError, setRecommendationError] = useState<string | null>(
     null,
   );
-
   const [workout, setWorkout] = useState<Workout | null>(null);
-
   const [checkInActive, setCheckInActive] = useState(false);
-
   const [devices, setDevices] = useState<DeviceState[]>([]);
-
+  const [workoutStartLoading, setWorkoutStartLoading] = useState(false);
+  const [workoutStartError, setWorkoutStartError] = useState<string | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
 
   /*
@@ -124,39 +119,6 @@ function App() {
   }, []);
 
   /*
-   * WebSocket-Verbindung zum Backend aktivieren.
-   *
-   * useTelemetry kümmert sich ausschließlich um die
-   * Verbindung und das Einlesen der Nachrichten.
-   * Die fachliche Verarbeitung erfolgt oben im Callback.
-   */
-  useTelemetry({
-    onMessage: handleTelemetryMessage,
-    onConnected: loadDeviceSnapshot,
-  });
-
-  /*
-   * Personen einmal beim Start laden.
-   */
-  useEffect(() => {
-    async function loadPersons(): Promise<void> {
-      try {
-        const result = await getPersons();
-
-        setPersons(result);
-        setError(null);
-      } catch (loadError) {
-        const message =
-          loadError instanceof Error ? loadError.message : "Unknown error";
-
-        setError(message);
-      }
-    }
-
-    void loadPersons();
-  }, []);
-
-  /*
    * Geräte einmal beim Start als Snapshot laden.
    *
    * Danach werden Änderungen nicht mehr gepollt,
@@ -188,14 +150,28 @@ function App() {
     void loadDevices();
   }, []);
 
-  async function handleStartWorkout(): Promise<void> {
-    if (activePerson === null) {
+  async function handleStartWorkout(videoId: string): Promise<void> {
+    if (activePerson === null || workoutStartLoading) {
       return;
     }
 
-    const startedWorkout = await startWorkout(activePerson.id);
+    setWorkoutStartLoading(true);
+    setWorkoutStartError(null);
 
-    setWorkout(startedWorkout);
+    try {
+      const startedWorkout = await startWorkout(activePerson.id, videoId);
+
+      setWorkout(startedWorkout);
+    } catch (startError) {
+      const message =
+        startError instanceof Error
+          ? startError.message
+          : "Training konnte nicht gestartet werden";
+
+      setWorkoutStartError(message);
+    } finally {
+      setWorkoutStartLoading(false);
+    }
   }
 
   async function handleCheckInComplete(
@@ -372,12 +348,17 @@ function App() {
         <TrainingRecommendationView
           person={activePerson}
           recommendation={recommendation}
+          startLoading={workoutStartLoading}
+          startError={workoutStartError}
+          onClearStartError={() => {
+            setWorkoutStartError(null);
+          }}
           onBack={() => {
             setCheckIn(null);
             setRecommendation(null);
           }}
-          onStart={() => {
-            void handleStartWorkout();
+          onStart={(videoId) => {
+            void handleStartWorkout(videoId);
           }}
         />
       </main>

@@ -1,7 +1,10 @@
 from datetime import UTC, datetime
 
+import pytest
+
 from adapters.persistence.in_memory_workout_repository import InMemoryWorkoutRepository
-from application.workout.service import WorkoutService
+from adapters.persistence.in_memory_workout_video_repository import InMemoryWorkoutVideoRepository
+from application.workout.service import InvalidWorkoutVideoError, WorkoutService
 from domains.training.recommendation import (
     TrainingRecommendation,
     WorkoutPhase,
@@ -9,6 +12,7 @@ from domains.training.recommendation import (
     WorkoutType,
 )
 from domains.workout.session import WorkoutSession, WorkoutStatus
+from domains.workout.video import WorkoutVideo
 
 
 def create_recommendation() -> TrainingRecommendation:
@@ -153,3 +157,151 @@ def test_workout_can_be_aborted() -> None:
     assert aborted.elapsed_seconds == 723
     assert aborted.distance_m == 4321
     assert aborted.completed_at is not None
+
+
+def test_start_with_same_selected_video_resumes_previous_position() -> None:
+    workout_repository = InMemoryWorkoutRepository()
+    video_repository = InMemoryWorkoutVideoRepository()
+
+    video_repository.save(
+        WorkoutVideo(
+            id="cycling-alpen-01",
+            title="Alpen",
+            description="Trainingsvideo Alpen",
+            file_path="cycling/alpen.mp4",
+            duration_seconds=3600,
+            active=True,
+            created_at=datetime.now(UTC),
+        )
+    )
+
+    service = WorkoutService(
+        repository=workout_repository,
+        video_repository=video_repository,
+    )
+
+    first_workout = service.start(
+        person_id=1,
+        recommendation=create_recommendation(),
+        video_id="cycling-alpen-01",
+    )
+
+    service.checkpoint(
+        first_workout.id,
+        elapsed_seconds=60,
+        distance_m=500,
+        video_position_seconds=87.5,
+    )
+
+    second_workout = service.start(
+        person_id=1,
+        recommendation=create_recommendation(),
+        video_id="cycling-alpen-01",
+    )
+
+    assert second_workout.video_id == "cycling-alpen-01"
+    assert second_workout.video_position_seconds == 87.5
+
+
+def test_start_with_different_selected_video_starts_at_zero() -> None:
+    workout_repository = InMemoryWorkoutRepository()
+    video_repository = InMemoryWorkoutVideoRepository()
+
+    video_repository.save(
+        WorkoutVideo(
+            id="cycling-alpen-01",
+            title="Alpen",
+            description=None,
+            file_path="cycling/alpen.mp4",
+            duration_seconds=None,
+            active=True,
+            created_at=datetime.now(UTC),
+        )
+    )
+    video_repository.save(
+        WorkoutVideo(
+            id="cycling-kueste-01",
+            title="Küste",
+            description=None,
+            file_path="cycling/kueste.mp4",
+            duration_seconds=None,
+            active=True,
+            created_at=datetime.now(UTC),
+        )
+    )
+
+    service = WorkoutService(
+        repository=workout_repository,
+        video_repository=video_repository,
+    )
+
+    first_workout = service.start(
+        person_id=1,
+        recommendation=create_recommendation(),
+        video_id="cycling-alpen-01",
+    )
+
+    service.checkpoint(
+        first_workout.id,
+        elapsed_seconds=60,
+        distance_m=500,
+        video_position_seconds=87.5,
+    )
+
+    second_workout = service.start(
+        person_id=1,
+        recommendation=create_recommendation(),
+        video_id="cycling-kueste-01",
+    )
+
+    assert second_workout.video_id == "cycling-kueste-01"
+    assert second_workout.video_position_seconds == 0.0
+
+
+def test_start_rejects_inactive_selected_video() -> None:
+    workout_repository = InMemoryWorkoutRepository()
+    video_repository = InMemoryWorkoutVideoRepository()
+
+    video_repository.save(
+        WorkoutVideo(
+            id="cycling-old-01",
+            title="Altes Video",
+            description=None,
+            file_path="cycling/old.mp4",
+            duration_seconds=None,
+            active=False,
+            created_at=datetime.now(UTC),
+        )
+    )
+
+    service = WorkoutService(
+        repository=workout_repository,
+        video_repository=video_repository,
+    )
+
+    with pytest.raises(
+        InvalidWorkoutVideoError,
+        match="Workout video is not available: cycling-old-01",
+    ):
+        service.start(
+            person_id=1,
+            recommendation=create_recommendation(),
+            video_id="cycling-old-01",
+        )
+
+
+def test_start_rejects_unknown_selected_video() -> None:
+    service = WorkoutService(
+        repository=InMemoryWorkoutRepository(),
+        video_repository=InMemoryWorkoutVideoRepository(),
+    )
+
+    with pytest.raises(
+        InvalidWorkoutVideoError,
+        match="Workout video is not available: missing-video",
+    ):
+        service.start(
+            person_id=1,
+            recommendation=create_recommendation(),
+            video_id="missing-video",
+        )

@@ -4,6 +4,7 @@ import {
   abortWorkout,
   checkpointWorkout,
   completeWorkout,
+  getWorkoutVideo,
 } from "../api/workouts";
 import type { DeviceState } from "../devices/types";
 import type { Person } from "../persons/types";
@@ -23,6 +24,11 @@ import {
   applyNativeDistanceSample,
   createWorkoutDistanceState,
 } from "./workoutDistance";
+
+type VideoLoadState =
+  | { status: "loading"; videoId: string }
+  | { status: "ready"; videoId: string; url: string }
+  | { status: "error"; videoId: string; message: string };
 
 interface WorkoutViewProps {
   person: Person;
@@ -127,6 +133,13 @@ export function WorkoutView({
   const [finishConfirmation, setFinishConfirmation] = useState(false);
 
   const [finishing, setFinishing] = useState(false);
+
+  const [videoLoadState, setVideoLoadState] = useState<VideoLoadState>({
+    status: "loading",
+    videoId: workout.videoId,
+  });
+
+  const [videoLoadAttempt, setVideoLoadAttempt] = useState(0);
 
   /*
    * Die aktuelle Videoposition ist technischer Laufzeitzustand.
@@ -253,6 +266,45 @@ export function WorkoutView({
   const nativeDistanceM = bikeDevice?.distanceM ?? null;
 
   const powerW = bikeDevice?.powerW ?? null;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const timer = window.setTimeout(() => {
+      setVideoLoadState({
+        status: "loading",
+        videoId: workout.videoId,
+      });
+    }, 0);
+
+    void getWorkoutVideo(workout.videoId)
+      .then((video) => {
+        if (!cancelled) {
+          setVideoLoadState({
+            status: "ready",
+            videoId: workout.videoId,
+            url: video.url,
+          });
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setVideoLoadState({
+            status: "error",
+            videoId: workout.videoId,
+            message:
+              error instanceof Error
+                ? error.message
+                : "Unbekannter Fehler beim Laden des Trainingsvideos",
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [workout.videoId, videoLoadAttempt]);
 
   /*
    * Die FTMS Total Distance ist ein nativer absoluter
@@ -611,15 +663,37 @@ export function WorkoutView({
       </header>
 
       <div className="workout-stage">
-        <WorkoutVideo
-          src="/videos/cycling/alpen.mp4"
-          paused={!shouldPlayWorkoutVideo(engineState) || finishConfirmation}
-          playbackRate={videoPlaybackRate}
-          initialPositionSeconds={workout.videoPositionSeconds}
-          onPositionChange={(positionSeconds) => {
-            videoPositionSecondsRef.current = positionSeconds;
-          }}
-        />
+        {videoLoadState.videoId === workout.videoId &&
+        videoLoadState.status === "ready" ? (
+          <WorkoutVideo
+            key={workout.videoId}
+            src={videoLoadState.url}
+            paused={!shouldPlayWorkoutVideo(engineState) || finishConfirmation}
+            playbackRate={videoPlaybackRate}
+            initialPositionSeconds={workout.videoPositionSeconds}
+            onPositionChange={(positionSeconds) => {
+              videoPositionSecondsRef.current = positionSeconds;
+            }}
+          />
+        ) : videoLoadState.videoId === workout.videoId &&
+          videoLoadState.status === "error" ? (
+          <div className="workout-video-loading" role="alert">
+            <p>Das Trainingsvideo konnte nicht geladen werden.</p>
+            <p>{videoLoadState.message}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setVideoLoadAttempt((attempt) => attempt + 1);
+              }}
+            >
+              Erneut versuchen
+            </button>
+          </div>
+        ) : (
+          <div className="workout-video-loading" role="status">
+            Trainingsvideo wird geladen …
+          </div>
+        )}
         <div className="workout-stage-shade" />
 
         <div className="workout-phase-overlay workout-overlay-card">
