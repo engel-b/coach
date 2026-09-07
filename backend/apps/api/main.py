@@ -4,15 +4,11 @@ from datetime import UTC, datetime
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
-from adapters.persistence.sqlalchemy_check_in_repository import (
-    SqlAlchemyCheckInRepository,
-)
-from adapters.persistence.sqlalchemy_workout_repository import (
-    SqlAlchemyWorkoutRepository,
-)
-from adapters.persistence.sqlalchemy_workout_video_repository import (
-    SqlAlchemyWorkoutVideoRepository,
-)
+from adapters.persistence.sqlalchemy_check_in_repository import (SqlAlchemyCheckInRepository)
+from adapters.persistence.sqlalchemy_person_profile_repository import (SqlAlchemyPersonProfileRepository)
+from adapters.persistence.sqlalchemy_person_repository import (SqlAlchemyPersonRepository)
+from adapters.persistence.sqlalchemy_workout_repository import (SqlAlchemyWorkoutRepository)
+from adapters.persistence.sqlalchemy_workout_video_repository import (SqlAlchemyWorkoutVideoRepository)
 from application.check_in.service import (
     CheckInService,
     InvalidCheckInError,
@@ -69,8 +65,12 @@ app = FastAPI(
 # Später lösen wir die Objekterzeugung über einen kleinen
 # Application Container / Dependency Wiring sauberer.
 telemetry_service = TelemetryService()
-person_service = PersonService()
-person_profile_service = PersonProfileService()
+person_repository = SqlAlchemyPersonRepository()
+person_service = PersonService(repository=person_repository)
+
+person_profile_repository = SqlAlchemyPersonProfileRepository()
+person_profile_service = PersonProfileService(repository=person_profile_repository)
+
 training_recommendation_engine = TrainingRecommendationEngine()
 workout_repository = SqlAlchemyWorkoutRepository()
 workout_video_repository = SqlAlchemyWorkoutVideoRepository()

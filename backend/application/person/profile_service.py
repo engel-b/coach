@@ -1,45 +1,17 @@
-from datetime import date
-
-from domains.person.profile import PersonProfile, TrainingGoal
+from domains.person.profile import PersonProfile
+from domains.person.profile_repository import PersonProfileRepository
 
 
 class PersonProfileService:
     """
-    Liefert momentan statisch konfigurierte Personenprofile.
-
-    Später wird die Datenquelle durch Persistenz ersetzt.
+    Application Service für die trainingsrelevanten Personenprofile.
     """
 
-    def __init__(self) -> None:
-        self._profiles: dict[int, PersonProfile] = {
-            1: PersonProfile(
-                person_id=1,
-                date_of_birth=date(1980, 1, 1),
-                height_cm=180,
-                training_goal=TrainingGoal.GENERAL_FITNESS,
-            ),
-            2: PersonProfile(
-                person_id=2,
-                date_of_birth=date(1980, 1, 1),
-                height_cm=180,
-                training_goal=TrainingGoal.GENERAL_FITNESS,
-            ),
-            3: PersonProfile(
-                person_id=3,
-                date_of_birth=date(1980, 1, 1),
-                height_cm=180,
-                training_goal=TrainingGoal.GENERAL_FITNESS,
-            ),
-            4: PersonProfile(
-                person_id=4,
-                date_of_birth=date(1980, 1, 1),
-                height_cm=180,
-                training_goal=TrainingGoal.GENERAL_FITNESS,
-            ),
-        }
+    def __init__(self, repository: PersonProfileRepository) -> None:
+        self._repository = repository
 
     def get_profile(
         self,
         person_id: int,
     ) -> PersonProfile | None:
-        return self._profiles.get(person_id)
+        return self._repository.get(person_id)
