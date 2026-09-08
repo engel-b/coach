@@ -15,6 +15,18 @@ router = APIRouter()
 async def device_agent_websocket(
     websocket: WebSocket,
 ) -> None:
+    """
+    Eingehende Telemetrieverbindung des lokalen Device Agents.
+
+    Der Device Agent sendet JSON-Textnachrichten im Format
+    TelemetryMessage. Jede gültige Nachricht wird an den
+    TelemetryService übergeben und anschließend an die verbundenen
+    Frontend-Clients verteilt.
+
+    Ungültige Nachrichten werden protokolliert und verworfen.
+    Die Verbindung bleibt dabei bestehen.
+    """
+
     await websocket.accept()
 
     logger.info("Device Agent connected")
@@ -56,6 +68,18 @@ async def device_agent_websocket(
 async def telemetry_websocket(
     websocket: WebSocket,
 ) -> None:
+    """
+    Ausgehende Telemetrieverbindung für Frontend-Clients.
+
+    Nach dem Verbindungsaufbau registriert sich der Client beim
+    TelemetryBroadcaster und empfängt die vom Device Agent
+    verarbeiteten Telemetriemeldungen als JSON-Textnachrichten.
+
+    Eingehende Textnachrichten werden lediglich entgegengenommen.
+    Bei einer regulären Trennung wird der Client aus dem
+    Broadcaster entfernt.
+    """
+
     await wiring.telemetry_broadcaster.connect(websocket)
 
     logger.info("Frontend telemetry client connected")

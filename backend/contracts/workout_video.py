@@ -5,12 +5,28 @@ from domains.workout.video_path import validate_workout_video_path
 
 
 class WorkoutVideoResponse(BaseModel):
-    id: str
-    title: str
-    description: str | None
-    url: str
+    """Metadaten eines Trainingsvideos aus dem Katalog."""
+
+    id: str = Field(
+        description="Stabile ID des Videos, unabhängig vom Dateinamen.",
+        examples=["cycling-alpen-01"],
+    )
+    title: str = Field(
+        description="Anzeigename des Trainingsvideos.",
+        examples=["Alpen"],
+    )
+    description: str | None = Field(
+        description="Optionale Beschreibung des Videos.",
+        examples=["Eine virtuelle Radtour durch die Alpen."],
+    )
+    url: str = Field(
+        description="Relative URL zur MP4-Datei des Trainingsvideos.",
+        examples=["/videos/cycling/alpen.mp4"],
+    )
     duration_seconds: float | None = Field(
         serialization_alias="durationSeconds",
+        description="Optionale Gesamtdauer des Videos in Sekunden.",
+        examples=[3600.0],
     )
 
     model_config = ConfigDict(

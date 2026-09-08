@@ -10,6 +10,15 @@ router = APIRouter()
     "/api/devices",
     response_model=list[DeviceResponse],
     response_model_by_alias=True,
+    summary="Bekannte Geräte abrufen",
+    description=(
+        "Liefert den aktuellen Zustand aller dem Backend bekannten "
+        "Trainingsgeräte. Dazu gehören Verbindungsstatus, Zeitpunkt "
+        "der letzten Meldung und die zuletzt verfügbaren Messwerte.\n\n"
+        "Nicht jedes Gerät unterstützt alle Messwerte. Nicht verfügbare "
+        "Werte werden als null zurückgegeben. Die Antwort verwendet "
+        "camelCase-Feldnamen."
+    ),
 )
 async def devices() -> list[DeviceResponse]:
     """

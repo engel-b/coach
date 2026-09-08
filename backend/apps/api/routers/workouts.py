@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, Path, Query
 
 from application.workout.service import (
     InvalidWorkoutDurationError,
@@ -20,13 +22,40 @@ from contracts.workout_mapper import (
     to_workout_summary_response,
 )
 
-router = APIRouter()
+router = APIRouter(tags=["Workouts"])
+
+
+PersonId = Annotated[
+    int,
+    Path(
+        title="Personen-ID",
+        description="Stabile numerische ID der Person.",
+    ),
+]
+
+WorkoutId = Annotated[
+    str,
+    Path(
+        title="Workout-ID",
+        description="Eindeutige ID der gespeicherten Trainingseinheit.",
+    ),
+]
 
 
 @router.get(
     "/api/persons/{person_id}/workouts",
     response_model=list[WorkoutResponse],
     response_model_by_alias=True,
+    summary="Trainingshistorie abrufen",
+    description=(
+        "Liefert die gespeicherten Workouts einer Person. Die Anzahl "
+        "kann über den Parameter limit auf 1 bis 100 Einträge begrenzt "
+        "werden. Ohne Angabe werden höchstens 20 Einträge geliefert."
+    ),
+    responses={
+        404: {"description": "Die Person wurde nicht gefunden."},
+        422: {"description": "Der Parameter limit liegt außerhalb des erlaubten Bereichs."},
+    },
 )
 async def workout_history(
     person_id: int,
@@ -58,6 +87,21 @@ async def workout_history(
     "/api/persons/{person_id}/workouts",
     response_model=WorkoutResponse,
     response_model_by_alias=True,
+    summary="Workout starten",
+    description=(
+        "Erstellt eine neue Trainingseinheit auf Basis der aktuellen "
+        "Trainingsempfehlung. Dafür müssen ein Personenprofil und ein "
+        "Check-in vorhanden sein.\n\n"
+        "Der Request-Body ist optional. Ohne explizite Videoauswahl wird "
+        "das zuletzt verwendete Video der Person mit seiner gespeicherten "
+        "Position fortgesetzt oder das Standardvideo verwendet. Wird "
+        "ein anderes Video ausgewählt, beginnt dieses bei Position 0."
+    ),
+    responses={
+        404: {"description": "Die Person oder ihr Profil wurde nicht gefunden."},
+        409: {"description": "Es liegt noch kein Check-in für die Person vor."},
+        422: {"description": "Die ausgewählte Video-ID ist ungültig oder nicht verfügbar."},
+    },
 )
 async def start_workout(
     person_id: int,
@@ -92,6 +136,18 @@ async def start_workout(
     "/api/workouts/{workout_id}/checkpoint",
     response_model=WorkoutResponse,
     response_model_by_alias=True,
+    summary="Workout-Zwischenstand speichern",
+    description=(
+        "Speichert die absolvierte aktive Trainingszeit, die gefahrene "
+        "Distanz und die aktuelle Videoposition. Checkpoints sind nur "
+        "für laufende Workouts zulässig. Die gespeicherte Videoposition "
+        "wird für die spätere Fortsetzung verwendet."
+    ),
+    responses={
+        404: {"description": "Das Workout wurde nicht gefunden."},
+        409: {"description": "Das Workout ist bereits abgeschlossen oder abgebrochen."},
+        422: {"description": "Die übermittelten Zwischenstandswerte sind ungültig."},
+    },
 )
 async def checkpoint_workout(
     workout_id: str,
@@ -127,6 +183,18 @@ async def checkpoint_workout(
     "/api/workouts/{workout_id}/complete",
     response_model=WorkoutResponse,
     response_model_by_alias=True,
+    summary="Workout regulär abschließen",
+    description=(
+        "Markiert ein laufendes Workout als abgeschlossen und speichert "
+        "die tatsächlich absolvierte Trainingszeit sowie die Distanz. "
+        "Die Videoposition wird aus dem zuletzt gespeicherten Checkpoint "
+        "übernommen."
+    ),
+    responses={
+        404: {"description": "Das Workout wurde nicht gefunden."},
+        409: {"description": "Das Workout wurde bereits beendet."},
+        422: {"description": "Die übermittelten Abschlusswerte sind ungültig."},
+    },
 )
 async def complete_workout(
     workout_id: str,
@@ -161,6 +229,17 @@ async def complete_workout(
     "/api/workouts/{workout_id}/abort",
     response_model=WorkoutResponse,
     response_model_by_alias=True,
+    summary="Workout abbrechen",
+    description=(
+        "Beendet ein Workout vorzeitig und speichert die bis dahin "
+        "absolvierte Trainingszeit und Distanz. Ein abgebrochenes "
+        "Workout bleibt in der Trainingshistorie erhalten."
+    ),
+    responses={
+        404: {"description": "Das Workout wurde nicht gefunden."},
+        409: {"description": "Das Workout wurde bereits beendet."},
+        422: {"description": "Die übermittelten Abschlusswerte sind ungültig."},
+    },
 )
 async def abort_workout(
     workout_id: str,
@@ -195,6 +274,14 @@ async def abort_workout(
     "/api/workouts/{workout_id}/summary",
     response_model=WorkoutSummaryResponse,
     response_model_by_alias=True,
+    summary="Workout-Zusammenfassung abrufen",
+    description=(
+        "Liefert die geplante und tatsächlich absolvierte Trainingszeit, "
+        "die Distanz, den Erfüllungsgrad und den Status eines Workouts."
+    ),
+    responses={
+        404: {"description": "Das Workout wurde nicht gefunden."},
+    },
 )
 async def workout_summary(
     workout_id: str,
