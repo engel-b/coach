@@ -33,30 +33,21 @@ class CreatePersonRequest(BaseModel):
         examples=[172],
     )
     training_goal: TrainingGoal = Field(
-        description=(
-            "Trainingsziel: allgemeine Fitness, Muskelaufbau, "
-            "Abnehmen oder Ausdauer."
-        ),
+        description=("Trainingsziel: allgemeine Fitness, Muskelaufbau, Abnehmen oder Ausdauer."),
         examples=["general_fitness"],
     )
     max_heart_rate_bpm: int | None = Field(
         default=None,
         ge=100,
         le=230,
-        description=(
-            "Optionaler, individuell bekannter Maximalpuls "
-            "in Schlägen pro Minute."
-        ),
+        description=("Optionaler, individuell bekannter Maximalpuls in Schlägen pro Minute."),
         examples=[190],
     )
     start_weight_kg: float | None = Field(
         default=None,
         gt=0,
         le=500,
-        description=(
-            "Startgewicht in Kilogramm. Für das Trainingsziel "
-            "Abnehmen erforderlich."
-        ),
+        description=("Startgewicht in Kilogramm. Für das Trainingsziel Abnehmen erforderlich."),
         examples=[92.5],
     )
     target_weight_kg: float | None = Field(
@@ -64,8 +55,7 @@ class CreatePersonRequest(BaseModel):
         gt=0,
         le=500,
         description=(
-            "Zielgewicht in Kilogramm. Für Abnehmen erforderlich "
-            "und kleiner als das Startgewicht."
+            "Zielgewicht in Kilogramm. Für Abnehmen erforderlich und kleiner als das Startgewicht."
         ),
         examples=[82.0],
     )
@@ -74,13 +64,9 @@ class CreatePersonRequest(BaseModel):
     def validate_weight_goal(self) -> Self:
         if self.training_goal == TrainingGoal.WEIGHT_LOSS:
             if self.start_weight_kg is None or self.target_weight_kg is None:
-                raise ValueError(
-                    "Für Abnehmen sind Start- und Zielgewicht erforderlich."
-                )
+                raise ValueError("Für Abnehmen sind Start- und Zielgewicht erforderlich.")
 
             if self.target_weight_kg >= self.start_weight_kg:
-                raise ValueError(
-                    "Das Zielgewicht muss unter dem Startgewicht liegen."
-                )
+                raise ValueError("Das Zielgewicht muss unter dem Startgewicht liegen.")
 
         return self

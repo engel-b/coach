@@ -35,10 +35,7 @@ class PersonProfileRequest(BaseModel):
         examples=[175],
     )
     training_goal: TrainingGoal = Field(
-        description=(
-            "Trainingsziel: allgemeine Fitness, Muskelaufbau, "
-            "Abnehmen oder Ausdauer."
-        ),
+        description=("Trainingsziel: allgemeine Fitness, Muskelaufbau, Abnehmen oder Ausdauer."),
         examples=["general_fitness"],
     )
     max_heart_rate_bpm: int | None = Field(
@@ -79,13 +76,9 @@ class PersonProfileRequest(BaseModel):
     def validate_weight_goal(self) -> "PersonProfileRequest":
         if self.training_goal == TrainingGoal.WEIGHT_LOSS:
             if self.start_weight_kg is None or self.target_weight_kg is None:
-                raise ValueError(
-                    "Für Abnehmen sind Start- und Zielgewicht erforderlich."
-                )
+                raise ValueError("Für Abnehmen sind Start- und Zielgewicht erforderlich.")
             if self.target_weight_kg >= self.start_weight_kg:
-                raise ValueError(
-                    "Das Zielgewicht muss unter dem Startgewicht liegen."
-                )
+                raise ValueError("Das Zielgewicht muss unter dem Startgewicht liegen.")
         return self
 
 

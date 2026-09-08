@@ -37,8 +37,7 @@ PersonId = Annotated[
     responses={
         404: {
             "description": (
-                "Die Person oder das erforderliche Personenprofil "
-                "wurde nicht gefunden."
+                "Die Person oder das erforderliche Personenprofil wurde nicht gefunden."
             ),
         },
         409: {

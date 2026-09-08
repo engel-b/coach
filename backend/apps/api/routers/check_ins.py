@@ -30,17 +30,13 @@ PersonId = Annotated[
     ),
     responses={
         400: {
-            "description": (
-                "Die Angaben verletzen eine fachliche Validierungsregel."
-            ),
+            "description": ("Die Angaben verletzen eine fachliche Validierungsregel."),
         },
         404: {
             "description": "Die Person wurde nicht gefunden.",
         },
         422: {
-            "description": (
-                "Die Anfrage entspricht nicht dem erwarteten JSON-Schema."
-            ),
+            "description": ("Die Anfrage entspricht nicht dem erwarteten JSON-Schema."),
         },
     },
 )

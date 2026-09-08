@@ -19,17 +19,11 @@ class WorkoutPhaseResponse(BaseModel):
         examples=[5],
     )
     target_heart_rate_min: int = Field(
-        description=(
-            "Untere Grenze des empfohlenen Zielpulsbereichs "
-            "in Schlägen pro Minute."
-        ),
+        description=("Untere Grenze des empfohlenen Zielpulsbereichs in Schlägen pro Minute."),
         examples=[110],
     )
     target_heart_rate_max: int = Field(
-        description=(
-            "Obere Grenze des empfohlenen Zielpulsbereichs "
-            "in Schlägen pro Minute."
-        ),
+        description=("Obere Grenze des empfohlenen Zielpulsbereichs in Schlägen pro Minute."),
         examples=[130],
     )
 
@@ -52,12 +46,8 @@ class TrainingRecommendationResponse(BaseModel):
     )
     reason: str = Field(
         description="Fachliche Begründung für die Empfehlung.",
-        examples=[
-            "Die aktuelle Tagesform eignet sich für eine moderate Trainingseinheit."
-        ],
+        examples=["Die aktuelle Tagesform eignet sich für eine moderate Trainingseinheit."],
     )
     phases: list[WorkoutPhaseResponse] = Field(
-        description=(
-            "Geordnete Trainingsphasen mit Dauer und Zielpulsbereich."
-        ),
+        description=("Geordnete Trainingsphasen mit Dauer und Zielpulsbereich."),
     )
