@@ -60,6 +60,9 @@ async def create_check_in(
             muscle_soreness=request.muscle_soreness,
             stress=request.stress,
             available_training_minutes=(request.available_training_minutes),
+            current_weight_kg=request.current_weight_kg,
+            sleep_hours=request.sleep_hours,
+            steps=request.steps,
         )
     except InvalidCheckInError as exc:
         raise HTTPException(
@@ -75,6 +78,9 @@ async def create_check_in(
         muscle_soreness=check_in.muscle_soreness,
         stress=check_in.stress,
         available_training_minutes=(check_in.available_training_minutes),
+        current_weight_kg=check_in.current_weight_kg,
+        sleep_hours=check_in.sleep_hours,
+        steps=check_in.steps,
     )
 
 
@@ -118,4 +124,7 @@ async def latest_check_in(
         muscle_soreness=check_in.muscle_soreness,
         stress=check_in.stress,
         available_training_minutes=(check_in.available_training_minutes),
+        current_weight_kg=check_in.current_weight_kg,
+        sleep_hours=check_in.sleep_hours,
+        steps=check_in.steps,
     )

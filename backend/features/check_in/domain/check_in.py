@@ -30,3 +30,7 @@ class CheckIn:
     stress: int
 
     available_training_minutes: int
+
+    current_weight_kg: float | None = None
+    sleep_hours: float | None = None
+    steps: int | None = None

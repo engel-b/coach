@@ -25,6 +25,9 @@ class SqlAlchemyCheckInRepository:
                 muscle_soreness=check_in.muscle_soreness,
                 stress=check_in.stress,
                 available_training_minutes=(check_in.available_training_minutes),
+                current_weight_kg=check_in.current_weight_kg,
+                sleep_hours=check_in.sleep_hours,
+                steps=check_in.steps,
             )
 
             session.add(model)
@@ -54,5 +57,8 @@ class SqlAlchemyCheckInRepository:
                 recovery=model.recovery,
                 muscle_soreness=model.muscle_soreness,
                 stress=model.stress,
-                available_training_minutes=(model.available_training_minutes),
+                available_training_minutes=model.available_training_minutes,
+                current_weight_kg=model.current_weight_kg,
+                sleep_hours=model.sleep_hours,
+                steps=model.steps,
             )
