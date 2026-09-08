@@ -226,6 +226,7 @@ def test_future_birth_date_is_rejected(
     saved = profile_api.get("/api/persons/1/profile").json()
     assert saved["displayName"] == "Person 1"
 
+
 def test_post_person_creates_person_and_profile(
     profile_api: TestClient,
 ) -> None:
@@ -249,9 +250,7 @@ def test_post_person_creates_person_and_profile(
     assert created["personId"] == 2
     assert created["displayName"] == "Person 5"
 
-    profile_response = profile_api.get(
-        f"/api/persons/{created['personId']}/profile"
-    )
+    profile_response = profile_api.get(f"/api/persons/{created['personId']}/profile")
 
     assert profile_response.status_code == 200
     assert profile_response.json() == created
@@ -269,6 +268,7 @@ def test_post_person_creates_person_and_profile(
             "displayName": "Person 5",
         },
     ]
+
 
 def test_post_person_rejects_invalid_weight_loss_profile(
     profile_api: TestClient,

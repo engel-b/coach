@@ -25,7 +25,6 @@ class PersonManagementService:
         self._person_repository = person_repository
         self._profile_writer = profile_writer
 
-
     def create_person(
         self,
         *,
@@ -60,7 +59,6 @@ class PersonManagementService:
             start_weight_kg=start_weight_kg,
             target_weight_kg=target_weight_kg,
         )
-
 
     def update_profile(
         self,

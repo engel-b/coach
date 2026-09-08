@@ -22,9 +22,7 @@ class PersonProfileWriter(Protocol):
         max_heart_rate_bpm: int | None,
         start_weight_kg: float | None,
         target_weight_kg: float | None,
-    ) -> tuple[Person, PersonProfile]:
-        ...
-
+    ) -> tuple[Person, PersonProfile]: ...
 
     def save(
         self,

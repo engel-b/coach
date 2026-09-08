@@ -1,9 +1,9 @@
 from datetime import date
+from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from typing_extensions import Self
+from pydantic.alias_generators import to_camel
 
-from contracts.base import to_camel
 from domains.person.profile import TrainingGoal
 
 
@@ -38,17 +38,10 @@ class CreatePersonRequest(BaseModel):
     @model_validator(mode="after")
     def validate_weight_goal(self) -> Self:
         if self.training_goal == TrainingGoal.WEIGHT_LOSS:
-            if (
-                self.start_weight_kg is None
-                or self.target_weight_kg is None
-            ):
-                raise ValueError(
-                    "Für Abnehmen sind Start- und Zielgewicht erforderlich."
-                )
+            if self.start_weight_kg is None or self.target_weight_kg is None:
+                raise ValueError("Für Abnehmen sind Start- und Zielgewicht erforderlich.")
 
             if self.target_weight_kg >= self.start_weight_kg:
-                raise ValueError(
-                    "Das Zielgewicht muss unter dem Startgewicht liegen."
-                )
+                raise ValueError("Das Zielgewicht muss unter dem Startgewicht liegen.")
 
         return self
