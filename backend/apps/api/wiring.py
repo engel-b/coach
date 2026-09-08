@@ -1,14 +1,5 @@
-from adapters.persistence.sqlalchemy_workout_repository import (
-    SqlAlchemyWorkoutRepository,
-)
-from adapters.persistence.sqlalchemy_workout_video_repository import (
-    SqlAlchemyWorkoutVideoRepository,
-)
 from application.telemetry.broadcaster import TelemetryBroadcaster
 from application.telemetry.service import TelemetryService
-from application.workout.service import WorkoutService
-from application.workout.video_catalog_service import VideoCatalogService
-from domains.training.recommendation_engine import TrainingRecommendationEngine
 from features.check_in.persistence.sqlalchemy_check_in_repository import (
     SqlAlchemyCheckInRepository,
 )
@@ -25,6 +16,15 @@ from features.person.persistence.sqlalchemy_person_repository import (
 from features.person.service.management_service import PersonManagementService
 from features.person.service.person_service import PersonService
 from features.person.service.profile_service import PersonProfileService
+from features.training.domain.recommendation_engine import TrainingRecommendationEngine
+from features.workout.persistence.sqlalchemy_workout_repository import (
+    SqlAlchemyWorkoutRepository,
+)
+from features.workout.persistence.sqlalchemy_workout_video_repository import (
+    SqlAlchemyWorkoutVideoRepository,
+)
+from features.workout.service.service import WorkoutService
+from features.workout.service.video_catalog_service import VideoCatalogService
 
 # Composition Root der HTTP-Anwendung.
 #

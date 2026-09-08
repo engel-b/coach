@@ -1,11 +1,11 @@
 from datetime import date
 
-from domains.training.heart_rate import (
+from features.person.domain.profile import PersonProfile, TrainingGoal
+from features.training.domain.heart_rate import (
     calculate_age,
     estimate_max_heart_rate,
     get_max_heart_rate,
 )
-from features.person.domain.profile import PersonProfile, TrainingGoal
 
 
 def test_age_after_birthday() -> None:

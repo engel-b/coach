@@ -1,161 +1,90 @@
-from pathlib import Path
+#!/usr/bin/env python3
+"""One-time, preflighted Training/Workout package migration."""
 import ast
+import json
 import subprocess
+import sys
+from pathlib import Path
 
 ROOT = Path("backend")
+MOVES = json.loads('{"adapters/persistence/in_memory_workout_repository.py": "features/workout/persistence/in_memory_workout_repository.py", "adapters/persistence/in_memory_workout_video_repository.py": "features/workout/persistence/in_memory_workout_video_repository.py", "adapters/persistence/sqlalchemy_workout_repository.py": "features/workout/persistence/sqlalchemy_workout_repository.py", "adapters/persistence/sqlalchemy_workout_video_repository.py": "features/workout/persistence/sqlalchemy_workout_video_repository.py", "adapters/persistence/workout_model.py": "features/workout/persistence/workout_model.py", "adapters/persistence/workout_video_model.py": "features/workout/persistence/workout_video_model.py", "application/workout/service.py": "features/workout/service/service.py", "application/workout/video_catalog_service.py": "features/workout/service/video_catalog_service.py", "apps/api/recommendation.py": "features/training/api/recommendation.py", "apps/api/routers/training.py": "features/training/api/router.py", "apps/api/routers/workout_videos.py": "features/workout/api/videos_router.py", "apps/api/routers/workouts.py": "features/workout/api/router.py", "contracts/training.py": "features/training/api/contracts/training.py", "contracts/workout.py": "features/workout/api/contracts/workout.py", "contracts/workout_mapper.py": "features/workout/api/contracts/workout_mapper.py", "contracts/workout_video.py": "features/workout/api/contracts/workout_video.py", "domains/training/heart_rate.py": "features/training/domain/heart_rate.py", "domains/training/recommendation.py": "features/training/domain/recommendation.py", "domains/training/recommendation_engine.py": "features/training/domain/recommendation_engine.py", "domains/workout/repository.py": "features/workout/domain/repository.py", "domains/workout/session.py": "features/workout/domain/session.py", "domains/workout/summary.py": "features/workout/domain/summary.py", "domains/workout/video.py": "features/workout/domain/video.py", "domains/workout/video_path.py": "features/workout/domain/video_path.py", "domains/workout/video_repository.py": "features/workout/domain/video_repository.py", "tests/adapters/persistence/test_workout_video_repository.py": "tests/features/workout/persistence/test_workout_video_repository.py", "tests/application/workout/test_workout_service.py": "tests/features/workout/service/test_workout_service.py", "tests/apps/api/test_workout_api.py": "tests/features/workout/api/test_workout_api.py", "tests/apps/api/test_workout_video_api.py": "tests/features/workout/api/test_workout_video_api.py", "tests/domains/workout/test_workout_mapper.py": "tests/features/workout/domain/test_workout_mapper.py", "tests/domains/workout/test_workout_summary.py": "tests/features/workout/domain/test_workout_summary.py", "tests/domains/workout/test_workout_video_path.py": "tests/features/workout/domain/test_workout_video_path.py"}')
+IMPORTS = json.loads('{"adapters.persistence.in_memory_workout_repository": "features.workout.persistence.in_memory_workout_repository", "adapters.persistence.in_memory_workout_video_repository": "features.workout.persistence.in_memory_workout_video_repository", "adapters.persistence.sqlalchemy_workout_repository": "features.workout.persistence.sqlalchemy_workout_repository", "adapters.persistence.sqlalchemy_workout_video_repository": "features.workout.persistence.sqlalchemy_workout_video_repository", "adapters.persistence.workout_model": "features.workout.persistence.workout_model", "adapters.persistence.workout_video_model": "features.workout.persistence.workout_video_model", "application.workout.service": "features.workout.service.service", "application.workout.video_catalog_service": "features.workout.service.video_catalog_service", "apps.api.recommendation": "features.training.api.recommendation", "apps.api.routers.training": "features.training.api.router", "apps.api.routers.workout_videos": "features.workout.api.videos_router", "apps.api.routers.workouts": "features.workout.api.router", "contracts.training": "features.training.api.contracts.training", "contracts.workout": "features.workout.api.contracts.workout", "contracts.workout_mapper": "features.workout.api.contracts.workout_mapper", "contracts.workout_video": "features.workout.api.contracts.workout_video", "domains.training.heart_rate": "features.training.domain.heart_rate", "domains.training.recommendation": "features.training.domain.recommendation", "domains.training.recommendation_engine": "features.training.domain.recommendation_engine", "domains.workout.repository": "features.workout.domain.repository", "domains.workout.session": "features.workout.domain.session", "domains.workout.summary": "features.workout.domain.summary", "domains.workout.video": "features.workout.domain.video", "domains.workout.video_path": "features.workout.domain.video_path", "domains.workout.video_repository": "features.workout.domain.video_repository"}')
 
-MOVES = {
-    "domains/check_in/check_in.py":
-        "features/check_in/domain/check_in.py",
-    "domains/check_in/repository.py":
-        "features/check_in/domain/repository.py",
-    "application/check_in/service.py":
-        "features/check_in/service/service.py",
-    "contracts/check_in.py":
-        "features/check_in/api/contracts/check_in.py",
-    "apps/api/routers/check_ins.py":
-        "features/check_in/api/router.py",
-    "adapters/persistence/check_in_model.py":
-        "features/check_in/persistence/check_in_model.py",
-    "adapters/persistence/in_memory_check_in_repository.py":
-        "features/check_in/persistence/in_memory_check_in_repository.py",
-    "adapters/persistence/sqlalchemy_check_in_repository.py":
-        "features/check_in/persistence/sqlalchemy_check_in_repository.py",
-    "tests/application/check_in/test_check_in_service.py":
-        "tests/features/check_in/service/test_check_in_service.py",
-}
+def module_name(path):
+    return path[:-3].replace("/", ".")
 
-IMPORTS = {
-    "domains.check_in.check_in":
-        "features.check_in.domain.check_in",
-    "domains.check_in.repository":
-        "features.check_in.domain.repository",
-    "application.check_in.service":
-        "features.check_in.service.service",
-    "contracts.check_in":
-        "features.check_in.api.contracts.check_in",
-    "apps.api.routers.check_ins":
-        "features.check_in.api.router",
-    "adapters.persistence.check_in_model":
-        "features.check_in.persistence.check_in_model",
-    "adapters.persistence.in_memory_check_in_repository":
-        "features.check_in.persistence.in_memory_check_in_repository",
-    "adapters.persistence.sqlalchemy_check_in_repository":
-        "features.check_in.persistence.sqlalchemy_check_in_repository",
-}
-
-
-def git_mv(source: Path, target: Path) -> None:
-    target.parent.mkdir(parents=True, exist_ok=True)
-    subprocess.run(
-        ["git", "mv", str(source), str(target)],
-        check=True,
-    )
-
-
-def replace_module(name: str) -> str:
-    """Ersetzt einen vollständigen Modulpfad oder dessen Untermodul."""
-    for old, new in sorted(
-        IMPORTS.items(),
-        key=lambda item: len(item[0]),
-        reverse=True,
-    ):
-        if name == old:
-            return new
-        if name.startswith(old + "."):
+def translate(name):
+    for old, new in sorted(IMPORTS.items(), key=lambda x: -len(x[0])):
+        if name == old or name.startswith(old + "."):
             return new + name[len(old):]
     return name
 
-
-def rewrite_imports(path: Path) -> None:
-    original = path.read_text(encoding="utf-8")
-    tree = ast.parse(original, filename=str(path))
-
-    replacements: list[tuple[int, int, str]] = []
-    lines = original.splitlines(keepends=True)
-
+def rewrite(text, path):
+    tree = ast.parse(text, filename=str(path))
+    lines = text.splitlines(keepends=True)
+    offsets = [0]
+    for line in lines:
+        offsets.append(offsets[-1] + len(line))
+    edits = []
     for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom):
-            if node.level != 0 or node.module is None:
-                continue
-
+        if isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
             old = node.module
-            new = replace_module(old)
-            if new == old:
-                continue
-
-            line_index = node.lineno - 1
-            line = lines[line_index]
-            prefix = "from "
-            start = line.find(prefix) + len(prefix)
-            end = line.find(" import ", start)
-
-            if start < len(prefix) or end < 0:
-                raise RuntimeError(f"Import nicht eindeutig: {path}:{node.lineno}")
-
-            replacements.append(
-                (node.lineno, start, new)
-            )
-
+            new = translate(old)
+            if new != old:
+                line = lines[node.lineno - 1]
+                prefix = line[:node.col_offset]
+                segment = line[node.col_offset:]
+                if not segment.startswith("from " + old + " import"):
+                    raise RuntimeError(f"Unsupported import: {path}:{node.lineno}")
+                start = offsets[node.lineno - 1] + node.col_offset + 5
+                edits.append((start, start + len(old), new))
         elif isinstance(node, ast.Import):
-            # In diesem Projekt werden die betroffenen Module über
-            # 'from ... import ...' eingebunden. Andere Importformen
-            # werden nicht automatisch verändert.
-            continue
+            start = offsets[node.lineno - 1] + node.col_offset
+            end = offsets[node.end_lineno - 1] + node.end_col_offset
+            segment = text[start:end]
+            # Replace complete dotted names only, preserving aliases.
+            import re
+            pattern = r"(?<![\\w.])(" + "|".join(
+                re.escape(x) for x in sorted(IMPORTS, key=len, reverse=True)
+            ) + r")(?![\\w.])"
+            updated = re.sub(pattern, lambda m: translate(m.group(0)), segment)
+            if updated != segment:
+                edits.append((start, end, updated))
+    for start, end, value in sorted(edits, reverse=True):
+        text = text[:start] + value + text[end:]
+    ast.parse(text, filename=str(path))
+    return text
 
-    for line_number, start, new in sorted(replacements, reverse=True):
-        index = line_number - 1
-        line = lines[index]
-        end = line.find(" import ", start)
-        lines[index] = line[:start] + new + line[end:]
-
-    updated = "".join(lines)
-
-    if updated != original:
-        path.write_text(updated, encoding="utf-8")
-        print(f"Importe aktualisiert: {path}")
-
-
-def main() -> None:
-    if not ROOT.is_dir():
-        raise SystemExit("Bitte im Projektroot ausführen.")
-
-    # Vor dem ersten git mv alle Pfade prüfen.
-    for source_name, target_name in MOVES.items():
-        source = ROOT / source_name
-        target = ROOT / target_name
-
-        if not source.is_file():
-            raise SystemExit(f"Quelldatei fehlt: {source}")
-        if target.exists():
-            raise SystemExit(f"Ziel existiert bereits: {target}")
-
-    for source_name, target_name in MOVES.items():
-        git_mv(ROOT / source_name, ROOT / target_name)
-
-    packages = [
-        "features/check_in",
-        "features/check_in/domain",
-        "features/check_in/service",
-        "features/check_in/api",
-        "features/check_in/api/contracts",
-        "features/check_in/persistence",
-        "tests/features/check_in",
-        "tests/features/check_in/service",
-    ]
-
-    for package in packages:
-        directory = ROOT / package
-        directory.mkdir(parents=True, exist_ok=True)
-        (directory / "__init__.py").touch(exist_ok=True)
-
+def main():
+    for source, target in MOVES.items():
+        if not (ROOT / source).is_file() or (ROOT / target).exists():
+            raise SystemExit(f"Missing source or occupied target: {source} -> {target}")
+    changes = {}
     for path in ROOT.rglob("*.py"):
-        if ".venv" in path.parts or "__pycache__" in path.parts:
+        if any(x in path.parts for x in (".venv", "__pycache__")):
             continue
-        rewrite_imports(path)
-
-    print("Check-in-Umzug abgeschlossen. Bitte make check ausführen.")
-
+        original = path.read_text(encoding="utf-8")
+        updated = rewrite(original, path)
+        if updated != original:
+            changes[path] = updated
+    # Validate every rewritten file before moving anything.
+    for path, text in changes.items():
+        ast.parse(text, filename=str(path))
+    for source, target in MOVES.items():
+        destination = ROOT / target
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["git", "mv", str(ROOT / source), str(destination)], check=True)
+    for path, text in changes.items():
+        destination = ROOT / MOVES.get(str(path.relative_to(ROOT)), str(path.relative_to(ROOT)))
+        destination.write_text(text, encoding="utf-8")
+    for target in MOVES.values():
+        directory = (ROOT / target).parent
+        while directory != ROOT:
+            if directory.is_relative_to(ROOT / "features") or directory.is_relative_to(ROOT / "tests/features"):
+                (directory / "__init__.py").touch(exist_ok=True)
+            directory = directory.parent
+    print(f"Moved {len(MOVES)} files; updated {len(changes)} import-bearing files.")
+    print("Next: make format && make check")
 
 if __name__ == "__main__":
     main()
