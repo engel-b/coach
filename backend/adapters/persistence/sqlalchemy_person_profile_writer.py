@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from datetime import date
 
 from sqlalchemy.orm import Session
 
@@ -6,7 +7,7 @@ from adapters.persistence.database import create_session
 from adapters.persistence.person_model import PersonModel, PersonProfileModel
 from domains.person.person import Person
 from domains.person.person_profile_writer import PersonProfileWriter
-from domains.person.profile import PersonProfile
+from domains.person.profile import PersonProfile, TrainingGoal
 
 
 class SqlAlchemyPersonProfileWriter(PersonProfileWriter):
@@ -15,6 +16,60 @@ class SqlAlchemyPersonProfileWriter(PersonProfileWriter):
         session_factory: Callable[[], Session] = create_session,
     ) -> None:
         self._session_factory = session_factory
+
+
+def create(
+    self,
+    *,
+    display_name: str,
+    date_of_birth: date,
+    height_cm: int,
+    training_goal: TrainingGoal,
+    max_heart_rate_bpm: int | None,
+    start_weight_kg: float | None,
+    target_weight_kg: float | None,
+) -> tuple[Person, PersonProfile]:
+    with self._session_factory() as session:
+        person_model = PersonModel(
+            display_name=display_name,
+        )
+
+        session.add(person_model)
+        session.flush()
+
+        # flush() schreibt den INSERT innerhalb derselben Transaktion,
+        # ohne zu committen. Danach steht die automatisch erzeugte ID fest.
+        person_id = person_model.id
+
+        profile_model = PersonProfileModel(
+            person_id=person_id,
+            date_of_birth=date_of_birth,
+            height_cm=height_cm,
+            training_goal=training_goal.value,
+            max_heart_rate_bpm=max_heart_rate_bpm,
+            start_weight_kg=start_weight_kg,
+            target_weight_kg=target_weight_kg,
+        )
+
+        session.add(profile_model)
+        session.commit()
+
+        return (
+            Person(
+                id=person_id,
+                display_name=display_name,
+            ),
+            PersonProfile(
+                person_id=person_id,
+                date_of_birth=date_of_birth,
+                height_cm=height_cm,
+                training_goal=training_goal,
+                max_heart_rate_bpm=max_heart_rate_bpm,
+                start_weight_kg=start_weight_kg,
+                target_weight_kg=target_weight_kg,
+            ),
+        )
+        
 
     def save(
         self,

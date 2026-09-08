@@ -31,6 +31,7 @@ from application.workout.video_catalog_service import VideoCatalogService, Worko
 from contracts.check_in import CheckInRequest, CheckInResponse
 from contracts.device import DeviceResponse
 from contracts.person import PersonResponse
+from contracts.person_create import CreatePersonRequest
 from contracts.person_profile import PersonProfileRequest, PersonProfileResponse
 from contracts.telemetry import TelemetryMessage
 from contracts.training import (
@@ -231,6 +232,45 @@ async def persons() -> list[PersonResponse]:
         )
         for person in person_service.get_persons()
     ]
+
+
+@app.post(
+    "/api/persons",
+    response_model=PersonProfileResponse,
+    response_model_by_alias=True,
+    status_code=201,
+    tags=["Persons"],
+    summary="Person anlegen",
+)
+async def create_person(
+    request: CreatePersonRequest,
+) -> PersonProfileResponse:
+    try:
+        person, profile = person_management_service.create_person(
+            display_name=request.display_name,
+            date_of_birth=request.date_of_birth,
+            height_cm=request.height_cm,
+            training_goal=request.training_goal,
+            max_heart_rate_bpm=request.max_heart_rate_bpm,
+            start_weight_kg=request.start_weight_kg,
+            target_weight_kg=request.target_weight_kg,
+        )
+    except InvalidPersonProfileError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc),
+        ) from exc
+
+    return PersonProfileResponse(
+        person_id=person.id,
+        display_name=person.display_name,
+        date_of_birth=profile.date_of_birth,
+        height_cm=profile.height_cm,
+        training_goal=profile.training_goal,
+        max_heart_rate_bpm=profile.max_heart_rate_bpm,
+        start_weight_kg=profile.start_weight_kg,
+        target_weight_kg=profile.target_weight_kg,
+    )
 
 
 @app.post(
