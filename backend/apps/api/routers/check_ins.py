@@ -1,16 +1,48 @@
-from fastapi import APIRouter, HTTPException
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, Path
 
 from application.check_in.service import InvalidCheckInError
 from apps.api import wiring
 from contracts.check_in import CheckInRequest, CheckInResponse
 
-router = APIRouter()
+router = APIRouter(tags=["Check-ins"])
+
+
+PersonId = Annotated[
+    int,
+    Path(
+        title="Personen-ID",
+        description="Stabile numerische ID der Person.",
+    ),
+]
 
 
 @router.post(
     "/api/persons/{person_id}/check-ins",
     response_model=CheckInResponse,
     response_model_by_alias=True,
+    summary="Check-in erfassen",
+    description=(
+        "Erfasst die aktuelle Tagesform und die verfügbare Trainingszeit "
+        "einer Person. Der Check-in wird mit einem Zeitstempel gespeichert "
+        "und kann anschließend für eine Trainingsempfehlung verwendet werden."
+    ),
+    responses={
+        400: {
+            "description": (
+                "Die Angaben verletzen eine fachliche Validierungsregel."
+            ),
+        },
+        404: {
+            "description": "Die Person wurde nicht gefunden.",
+        },
+        422: {
+            "description": (
+                "Die Anfrage entspricht nicht dem erwarteten JSON-Schema."
+            ),
+        },
+    },
 )
 async def create_check_in(
     person_id: int,
@@ -54,6 +86,17 @@ async def create_check_in(
     "/api/persons/{person_id}/check-ins/latest",
     response_model=CheckInResponse | None,
     response_model_by_alias=True,
+    summary="Letzten Check-in abrufen",
+    description=(
+        "Liefert den zuletzt gespeicherten Check-in einer Person. "
+        "Wenn die Person existiert, aber noch keinen Check-in hat, "
+        "wird HTTP 200 mit dem JSON-Wert null zurückgegeben."
+    ),
+    responses={
+        404: {
+            "description": "Die Person wurde nicht gefunden.",
+        },
+    },
 )
 async def latest_check_in(
     person_id: int,
