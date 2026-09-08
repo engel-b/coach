@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import UTC, datetime
 from math import isfinite
 
 from domains.person.profile import PersonProfile, TrainingGoal
@@ -11,7 +11,9 @@ class InvalidPersonProfileError(ValueError):
 def validate_person_profile(profile: PersonProfile) -> None:
     """Prüft fachliche Regeln unabhängig von HTTP und Datenbank."""
 
-    if profile.date_of_birth > date.today():
+    today = datetime.now(UTC).date()
+
+    if profile.date_of_birth > today:
         raise InvalidPersonProfileError(
             "Das Geburtsdatum darf nicht in der Zukunft liegen."
         )
@@ -21,21 +23,25 @@ def validate_person_profile(profile: PersonProfile) -> None:
             "Die Größe muss zwischen 100 und 250 cm liegen."
         )
 
-    if profile.max_heart_rate_bpm is not None:
-        if not 100 <= profile.max_heart_rate_bpm <= 230:
-            raise InvalidPersonProfileError(
-                "Der Maximalpuls muss zwischen 100 und 230 liegen."
-            )
+    if (
+        profile.max_heart_rate_bpm is not None
+        and not 100 <= profile.max_heart_rate_bpm <= 230
+    ):
+        raise InvalidPersonProfileError(
+            "Der Maximalpuls muss zwischen 100 und 230 liegen."
+        )
 
     for weight in (
         profile.start_weight_kg,
         profile.target_weight_kg,
     ):
-        if weight is not None:
-            if not isfinite(weight) or not 0 < weight <= 500:
-                raise InvalidPersonProfileError(
-                    "Gewichte müssen größer als 0 und höchstens 500 kg sein."
-                )
+        if (
+            weight is not None
+            and (not isfinite(weight) or not 0 < weight <= 500)
+        ):
+            raise InvalidPersonProfileError(
+                "Gewichte müssen größer als 0 und höchstens 500 kg sein."
+            )
 
     if profile.training_goal == TrainingGoal.WEIGHT_LOSS:
         if (
