@@ -8,6 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import apps.api.main as api_main
+import apps.api.wiring as api_wiring
 from adapters.persistence.database import Base
 from adapters.persistence.sqlalchemy_person_profile_repository import (
     SqlAlchemyPersonProfileRepository,
@@ -60,17 +61,17 @@ def profile_api(
     )
 
     monkeypatch.setattr(
-        api_main,
+        api_wiring,
         "person_service",
         PersonService(repository=person_repository),
     )
     monkeypatch.setattr(
-        api_main,
+        api_wiring,
         "person_profile_service",
         PersonProfileService(repository=profile_repository),
     )
     monkeypatch.setattr(
-        api_main,
+        api_wiring,
         "person_management_service",
         PersonManagementService(
             person_repository=person_repository,

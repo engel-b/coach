@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import apps.api.main as api_main
+import apps.api.wiring as api_wiring
 from adapters.persistence.in_memory_workout_video_repository import (
     InMemoryWorkoutVideoRepository,
 )
@@ -44,7 +45,7 @@ def isolated_video_catalog(
     )
 
     monkeypatch.setattr(
-        api_main,
+        api_wiring,
         "video_catalog_service",
         VideoCatalogService(repository=repository),
     )

@@ -1,0 +1,167 @@
+from fastapi import APIRouter, HTTPException
+
+from apps.api import wiring
+from application.person.management_service import PersonNotFoundError
+from contracts.person import PersonResponse
+from contracts.person_create import CreatePersonRequest
+from contracts.person_profile import (
+    PersonProfileRequest,
+    PersonProfileResponse,
+)
+from domains.person.profile import PersonProfile
+from domains.person.profile_validation import InvalidPersonProfileError
+
+
+router = APIRouter()
+
+
+@router.get(
+    "/api/persons",
+    response_model=list[PersonResponse],
+    response_model_by_alias=True,
+)
+async def persons() -> list[PersonResponse]:
+    return [
+        PersonResponse(
+            id=person.id,
+            display_name=person.display_name,
+        )
+        for person in wiring.person_service.get_persons()
+    ]
+
+
+@router.post(
+    "/api/persons",
+    response_model=PersonProfileResponse,
+    response_model_by_alias=True,
+    status_code=201,
+    tags=["Persons"],
+    summary="Person anlegen",
+)
+async def create_person(
+    request: CreatePersonRequest,
+) -> PersonProfileResponse:
+    try:
+        person, profile = wiring.person_management_service.create_person(
+            display_name=request.display_name,
+            date_of_birth=request.date_of_birth,
+            height_cm=request.height_cm,
+            training_goal=request.training_goal,
+            max_heart_rate_bpm=request.max_heart_rate_bpm,
+            start_weight_kg=request.start_weight_kg,
+            target_weight_kg=request.target_weight_kg,
+        )
+    except InvalidPersonProfileError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc),
+        ) from exc
+
+    return PersonProfileResponse(
+        person_id=person.id,
+        display_name=person.display_name,
+        date_of_birth=profile.date_of_birth,
+        height_cm=profile.height_cm,
+        training_goal=profile.training_goal,
+        max_heart_rate_bpm=profile.max_heart_rate_bpm,
+        start_weight_kg=profile.start_weight_kg,
+        target_weight_kg=profile.target_weight_kg,
+    )
+
+
+@router.get(
+    "/api/persons/{person_id}/profile",
+    response_model=PersonProfileResponse,
+    response_model_by_alias=True,
+    tags=["Persons"],
+    summary="Personenprofil abrufen",
+)
+async def get_person_profile(
+    person_id: int,
+) -> PersonProfileResponse:
+    person = wiring.person_service.get_person(person_id)
+
+    if person is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Person not found",
+        )
+
+    profile = wiring.person_profile_service.get_profile(person_id)
+
+    if profile is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Person profile not found",
+        )
+
+    return PersonProfileResponse(
+        person_id=person.id,
+        display_name=person.display_name,
+        date_of_birth=profile.date_of_birth,
+        height_cm=profile.height_cm,
+        training_goal=profile.training_goal,
+        max_heart_rate_bpm=profile.max_heart_rate_bpm,
+        start_weight_kg=profile.start_weight_kg,
+        target_weight_kg=profile.target_weight_kg,
+    )
+
+
+@router.put(
+    "/api/persons/{person_id}/profile",
+    response_model=PersonProfileResponse,
+    response_model_by_alias=True,
+    tags=["Persons"],
+    summary="Personenprofil bearbeiten",
+)
+async def update_person_profile(
+    person_id: int,
+    request: PersonProfileRequest,
+) -> PersonProfileResponse:
+    person = wiring.person_service.get_person(person_id)
+
+    if person is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Person not found",
+        )
+
+    profile = PersonProfile(
+        person_id=person_id,
+        date_of_birth=request.date_of_birth,
+        height_cm=request.height_cm,
+        training_goal=request.training_goal,
+        max_heart_rate_bpm=request.max_heart_rate_bpm,
+        start_weight_kg=request.start_weight_kg,
+        target_weight_kg=request.target_weight_kg,
+    )
+
+    try:
+        updated_person, saved_profile = (
+            wiring.person_management_service.update_profile(
+                person_id=person_id,
+                display_name=request.display_name,
+                profile=profile,
+            )
+        )
+    except PersonNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail="Person not found",
+        ) from exc
+    except InvalidPersonProfileError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc),
+        ) from exc
+
+    return PersonProfileResponse(
+        person_id=updated_person.id,
+        display_name=updated_person.display_name,
+        date_of_birth=saved_profile.date_of_birth,
+        height_cm=saved_profile.height_cm,
+        training_goal=saved_profile.training_goal,
+        max_heart_rate_bpm=saved_profile.max_heart_rate_bpm,
+        start_weight_kg=saved_profile.start_weight_kg,
+        target_weight_kg=saved_profile.target_weight_kg,
+    )

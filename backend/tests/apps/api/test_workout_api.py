@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import apps.api.main as api_main
+import apps.api.wiring as api_wiring
 from adapters.persistence.in_memory_check_in_repository import InMemoryCheckInRepository
 from adapters.persistence.in_memory_workout_repository import InMemoryWorkoutRepository
 from adapters.persistence.in_memory_workout_video_repository import InMemoryWorkoutVideoRepository
@@ -55,22 +56,22 @@ def isolated_workout_service(
     profile_repository.get.side_effect = get_profile
 
     monkeypatch.setattr(
-        api_main,
+        api_wiring,
         "person_service",
         PersonService(repository=person_repository),
     )
     monkeypatch.setattr(
-        api_main,
+        api_wiring,
         "person_profile_service",
         PersonProfileService(repository=profile_repository),
     )
     monkeypatch.setattr(
-        api_main,
+        api_wiring,
         "check_in_service",
         CheckInService(repository=InMemoryCheckInRepository()),
     )
     monkeypatch.setattr(
-        api_main,
+        api_wiring,
         "workout_service",
         WorkoutService(repository=InMemoryWorkoutRepository()),
     )
