@@ -161,9 +161,9 @@ function ProfileForm({
             placeholder="optional"
           />
           <span className="field-hint">
-            Optional. Trage deinen gemessenen oder ärztlich bestimmten Maximalpuls
-            ein. Wenn du keinen Wert kennst, lass das Feld leer. Der Coach
-            verwendet dann einen altersbasierten Schätzwert.
+            Optional. Trage deinen gemessenen oder ärztlich bestimmten
+            Maximalpuls ein. Wenn du keinen Wert kennst, lass das Feld leer. Der
+            Coach verwendet dann einen altersbasierten Schätzwert.
           </span>
         </label>
 

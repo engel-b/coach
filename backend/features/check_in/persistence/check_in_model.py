@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, Float
+from sqlalchemy import DateTime, Float, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from adapters.persistence.database import Base
@@ -75,4 +75,3 @@ class CheckInModel(Base):
         Integer,
         nullable=True,
     )
-    

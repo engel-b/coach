@@ -53,6 +53,7 @@ class CheckInRequest(BaseModel):
         examples=[8450],
     )
 
+
 class CheckInResponse(BaseModel):
     """Gespeicherter Check-in einschließlich Person und Zeitstempel."""
 
@@ -110,4 +111,3 @@ class CheckInResponse(BaseModel):
         description="Optional erfasste Schrittzahl.",
         examples=[8450],
     )
-    
