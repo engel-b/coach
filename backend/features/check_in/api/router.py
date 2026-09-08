@@ -2,9 +2,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Path
 
-from application.check_in.service import InvalidCheckInError
 from apps.api import wiring
-from contracts.check_in import CheckInRequest, CheckInResponse
+from features.check_in.api.contracts.check_in import CheckInRequest, CheckInResponse
+from features.check_in.service.service import InvalidCheckInError
 
 router = APIRouter(tags=["Check-ins"])
 

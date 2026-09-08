@@ -1,8 +1,8 @@
 from sqlalchemy import select
 
-from adapters.persistence.check_in_model import CheckInModel
 from adapters.persistence.database import create_session
-from domains.check_in.check_in import CheckIn
+from features.check_in.domain.check_in import CheckIn
+from features.check_in.persistence.check_in_model import CheckInModel
 
 
 class SqlAlchemyCheckInRepository:

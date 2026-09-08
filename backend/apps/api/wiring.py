@@ -1,18 +1,18 @@
-from adapters.persistence.sqlalchemy_check_in_repository import (
-    SqlAlchemyCheckInRepository,
-)
 from adapters.persistence.sqlalchemy_workout_repository import (
     SqlAlchemyWorkoutRepository,
 )
 from adapters.persistence.sqlalchemy_workout_video_repository import (
     SqlAlchemyWorkoutVideoRepository,
 )
-from application.check_in.service import CheckInService
 from application.telemetry.broadcaster import TelemetryBroadcaster
 from application.telemetry.service import TelemetryService
 from application.workout.service import WorkoutService
 from application.workout.video_catalog_service import VideoCatalogService
 from domains.training.recommendation_engine import TrainingRecommendationEngine
+from features.check_in.persistence.sqlalchemy_check_in_repository import (
+    SqlAlchemyCheckInRepository,
+)
+from features.check_in.service.service import CheckInService
 from features.person.persistence.sqlalchemy_person_profile_repository import (
     SqlAlchemyPersonProfileRepository,
 )

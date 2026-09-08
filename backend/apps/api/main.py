@@ -2,13 +2,13 @@ import logging
 
 from fastapi import FastAPI
 
-from apps.api.routers.check_ins import router as check_ins_router
 from apps.api.routers.devices import router as devices_router
 from apps.api.routers.health import router as health_router
 from apps.api.routers.telemetry import router as telemetry_router
 from apps.api.routers.training import router as training_router
 from apps.api.routers.workout_videos import router as workout_videos_router
 from apps.api.routers.workouts import router as workouts_router
+from features.check_in.api.router import router as check_ins_router
 from features.person.api.router import router as persons_router
 
 logging.basicConfig(

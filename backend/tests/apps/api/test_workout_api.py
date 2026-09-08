@@ -6,13 +6,13 @@ from fastapi.testclient import TestClient
 
 import apps.api.main as api_main
 import apps.api.wiring as api_wiring
-from adapters.persistence.in_memory_check_in_repository import InMemoryCheckInRepository
 from adapters.persistence.in_memory_workout_repository import InMemoryWorkoutRepository
 from adapters.persistence.in_memory_workout_video_repository import InMemoryWorkoutVideoRepository
-from application.check_in.service import CheckInService
 from application.workout.service import WorkoutService
 from domains.workout.session import DEFAULT_VIDEO_ID
 from domains.workout.video import WorkoutVideo
+from features.check_in.persistence.in_memory_check_in_repository import InMemoryCheckInRepository
+from features.check_in.service.service import CheckInService
 from features.person.domain.person import Person
 from features.person.domain.profile import PersonProfile, TrainingGoal
 from features.person.service.person_service import PersonService

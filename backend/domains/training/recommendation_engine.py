@@ -1,10 +1,10 @@
-from domains.check_in.check_in import CheckIn
 from domains.training.recommendation import (
     TrainingRecommendation,
     WorkoutPhase,
     WorkoutPhaseType,
     WorkoutType,
 )
+from features.check_in.domain.check_in import CheckIn
 
 
 class TrainingRecommendationEngine:

@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from domains.check_in.check_in import CheckIn
+from features.check_in.domain.check_in import CheckIn
 
 
 class CheckInRepository(Protocol):

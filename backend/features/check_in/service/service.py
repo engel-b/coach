@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
-from domains.check_in.check_in import CheckIn
-from domains.check_in.repository import CheckInRepository
+from features.check_in.domain.check_in import CheckIn
+from features.check_in.domain.repository import CheckInRepository
 
 
 class InvalidCheckInError(ValueError):

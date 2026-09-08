@@ -1,9 +1,9 @@
 import pytest
 
-from adapters.persistence.in_memory_check_in_repository import (
+from features.check_in.persistence.in_memory_check_in_repository import (
     InMemoryCheckInRepository,
 )
-from application.check_in.service import (
+from features.check_in.service.service import (
     CheckInService,
     InvalidCheckInError,
 )
