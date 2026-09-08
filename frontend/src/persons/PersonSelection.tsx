@@ -5,6 +5,7 @@ import type { Person } from "./types";
 interface PersonSelectionProps {
   persons: Person[];
   onSelect: (person: Person) => void;
+  onCreate: () => void;
 }
 
 /**
@@ -21,7 +22,7 @@ interface PersonSelectionProps {
  * Ein späterer USB-Nummernblock sendet dieselben KeyboardEvents.
  * Deshalb funktioniert er ohne Änderung dieser Komponente.
  */
-export function PersonSelection({ persons, onSelect }: PersonSelectionProps) {
+export function PersonSelection({ persons, onSelect, onCreate }: PersonSelectionProps) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
       /*
@@ -69,6 +70,11 @@ export function PersonSelection({ persons, onSelect }: PersonSelectionProps) {
             <span className="person-name">{person.displayName}</span>
           </button>
         ))}
+      </div>
+      <div className="person-selection-actions">
+        <button type="button" className="secondary-action" onClick={onCreate}>
+          + Person hinzufügen
+        </button>
       </div>
     </section>
   );

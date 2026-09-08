@@ -27,6 +27,24 @@ export async function getPersonProfile(
   return (await response.json()) as PersonProfile;
 }
 
+export async function createPerson(
+  request: UpdatePersonProfileRequest,
+): Promise<PersonProfile> {
+  const response = await fetch("/api/persons", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(response, "Person konnte nicht angelegt werden");
+  }
+
+  return (await response.json()) as PersonProfile;
+}
+
 export async function updatePersonProfile(
   personId: number,
   request: UpdatePersonProfileRequest,

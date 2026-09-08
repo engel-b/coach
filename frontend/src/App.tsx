@@ -26,6 +26,7 @@ function App() {
   const [persons, setPersons] = useState<Person[]>([]);
   const [activePerson, setActivePerson] = useState<Person | null>(null);
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
+  const [personCreateOpen, setPersonCreateOpen] = useState(false);
   const [checkIn, setCheckIn] = useState<CheckIn | null>(null);
   const [recommendation, setRecommendation] =
     useState<TrainingRecommendation | null>(null);
@@ -152,6 +153,11 @@ function App() {
     void loadDevices();
   }, []);
 
+  function handlePersonCreated(createdPerson: Person): void {
+    setPersons((currentPersons) => [...currentPersons, createdPerson]);
+    setPersonCreateOpen(false);
+  }
+
   function handleProfileSaved(updatedPerson: Person): void {
     // Die Personenauswahl erhält den neuen Namen.
     setPersons((currentPersons) =>
@@ -222,14 +228,31 @@ function App() {
    * Solange keine Person gewählt wurde, zeigen wir
    * ausschließlich die Personenauswahl.
    */
-  if (activePerson === null) {
+   if (activePerson === null) {
     return (
       <main className="app">
-        {error !== null && (
-          <div className="error-message">Backend nicht erreichbar: {error}</div>
-        )}
+        {personCreateOpen ? (
+          <PersonProfileEditor
+            key="create"
+            person={null}
+            onSaved={handlePersonCreated}
+            onCancel={() => setPersonCreateOpen(false)}
+          />
+        ) : (
+          <>
+            {error !== null && (
+              <div className="error-message">
+                Backend nicht erreichbar: {error}
+              </div>
+            )}
 
-        <PersonSelection persons={persons} onSelect={setActivePerson} />
+            <PersonSelection
+              persons={persons}
+              onSelect={setActivePerson}
+              onCreate={() => setPersonCreateOpen(true)}
+            />
+          </>
+        )}
       </main>
     );
   }
