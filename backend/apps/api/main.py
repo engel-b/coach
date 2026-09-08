@@ -86,7 +86,6 @@ workout_service = WorkoutService(
 )
 
 video_catalog_service = VideoCatalogService(repository=workout_video_repository)
-video_catalog_service = VideoCatalogService(repository=workout_video_repository)
 check_in_repository = SqlAlchemyCheckInRepository()
 check_in_service = CheckInService(repository=check_in_repository)
 telemetry_broadcaster = TelemetryBroadcaster()

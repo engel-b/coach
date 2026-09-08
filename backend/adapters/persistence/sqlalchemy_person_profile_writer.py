@@ -22,6 +22,9 @@ class SqlAlchemyPersonProfileWriter(PersonProfileWriter):
         profile: PersonProfile,
     ) -> tuple[Person, PersonProfile]:
         with self._session_factory() as session:
+            if person.id != profile.person_id:
+                raise ValueError(               "Person ID and profile person ID must match.")
+                
             person_model = session.get(PersonModel, person.id)
 
             if person_model is None:
