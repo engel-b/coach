@@ -7,12 +7,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from adapters.persistence.database import Base
-from adapters.persistence.person_model import PersonModel, PersonProfileModel
-from adapters.persistence.sqlalchemy_person_profile_writer import (
-    SqlAlchemyPersonProfileWriter,
-)
 from features.person.domain.person import Person
 from features.person.domain.profile import PersonProfile, TrainingGoal
+from features.person.persistence.person_model import PersonModel, PersonProfileModel
+from features.person.persistence.sqlalchemy_person_profile_writer import (
+    SqlAlchemyPersonProfileWriter,
+)
 
 
 @pytest.fixture

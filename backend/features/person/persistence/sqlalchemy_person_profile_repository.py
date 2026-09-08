@@ -3,9 +3,9 @@ from collections.abc import Callable
 from sqlalchemy.orm import Session
 
 from adapters.persistence.database import create_session
-from adapters.persistence.person_model import PersonProfileModel
 from features.person.domain.profile import PersonProfile, TrainingGoal
 from features.person.domain.profile_repository import PersonProfileRepository
+from features.person.persistence.person_model import PersonProfileModel
 
 
 class SqlAlchemyPersonProfileRepository(PersonProfileRepository):

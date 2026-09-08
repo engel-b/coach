@@ -1,15 +1,6 @@
 from adapters.persistence.sqlalchemy_check_in_repository import (
     SqlAlchemyCheckInRepository,
 )
-from adapters.persistence.sqlalchemy_person_profile_repository import (
-    SqlAlchemyPersonProfileRepository,
-)
-from adapters.persistence.sqlalchemy_person_profile_writer import (
-    SqlAlchemyPersonProfileWriter,
-)
-from adapters.persistence.sqlalchemy_person_repository import (
-    SqlAlchemyPersonRepository,
-)
 from adapters.persistence.sqlalchemy_workout_repository import (
     SqlAlchemyWorkoutRepository,
 )
@@ -22,6 +13,15 @@ from application.telemetry.service import TelemetryService
 from application.workout.service import WorkoutService
 from application.workout.video_catalog_service import VideoCatalogService
 from domains.training.recommendation_engine import TrainingRecommendationEngine
+from features.person.persistence.sqlalchemy_person_profile_repository import (
+    SqlAlchemyPersonProfileRepository,
+)
+from features.person.persistence.sqlalchemy_person_profile_writer import (
+    SqlAlchemyPersonProfileWriter,
+)
+from features.person.persistence.sqlalchemy_person_repository import (
+    SqlAlchemyPersonRepository,
+)
 from features.person.service.management_service import PersonManagementService
 from features.person.service.person_service import PersonService
 from features.person.service.profile_service import PersonProfileService

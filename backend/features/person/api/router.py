@@ -3,9 +3,9 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Path
 
 from apps.api import wiring
-from contracts.person import PersonResponse
-from contracts.person_create import CreatePersonRequest
-from contracts.person_profile import (
+from features.person.api.contracts.person import PersonResponse
+from features.person.api.contracts.person_create import CreatePersonRequest
+from features.person.api.contracts.person_profile import (
     PersonProfileRequest,
     PersonProfileResponse,
 )

@@ -4,9 +4,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from adapters.persistence.database import create_session
-from adapters.persistence.person_model import PersonModel
 from features.person.domain.person import Person
 from features.person.domain.person_repository import PersonRepository
+from features.person.persistence.person_model import PersonModel
 
 
 class SqlAlchemyPersonRepository(PersonRepository):

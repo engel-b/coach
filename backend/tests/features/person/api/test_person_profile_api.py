@@ -10,17 +10,17 @@ from sqlalchemy.orm import sessionmaker
 import apps.api.main as api_main
 import apps.api.wiring as api_wiring
 from adapters.persistence.database import Base
-from adapters.persistence.sqlalchemy_person_profile_repository import (
-    SqlAlchemyPersonProfileRepository,
-)
-from adapters.persistence.sqlalchemy_person_profile_writer import (
-    SqlAlchemyPersonProfileWriter,
-)
-from adapters.persistence.sqlalchemy_person_repository import (
-    SqlAlchemyPersonRepository,
-)
 from features.person.domain.person import Person
 from features.person.domain.profile import PersonProfile, TrainingGoal
+from features.person.persistence.sqlalchemy_person_profile_repository import (
+    SqlAlchemyPersonProfileRepository,
+)
+from features.person.persistence.sqlalchemy_person_profile_writer import (
+    SqlAlchemyPersonProfileWriter,
+)
+from features.person.persistence.sqlalchemy_person_repository import (
+    SqlAlchemyPersonRepository,
+)
 from features.person.service.management_service import PersonManagementService
 from features.person.service.person_service import PersonService
 from features.person.service.profile_service import PersonProfileService
