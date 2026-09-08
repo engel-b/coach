@@ -21,8 +21,7 @@ OPENAPI_TAGS = [
     {
         "name": "Persons",
         "description": (
-            "Personen anlegen, auflisten und ihre Stammdaten sowie "
-            "Trainingsprofile verwalten."
+            "Personen anlegen, auflisten und ihre Stammdaten sowie Trainingsprofile verwalten."
         ),
     },
     {
@@ -48,15 +47,12 @@ OPENAPI_TAGS = [
     },
     {
         "name": "Workout Videos",
-        "description": (
-            "Verfügbare Trainingsvideos und ihre Metadaten abrufen."
-        ),
+        "description": ("Verfügbare Trainingsvideos und ihre Metadaten abrufen."),
     },
     {
         "name": "Devices",
         "description": (
-            "Aktuellen Verbindungsstatus und Telemetriedaten der "
-            "bekannten Trainingsgeräte abrufen."
+            "Aktuellen Verbindungsstatus und Telemetriedaten der bekannten Trainingsgeräte abrufen."
         ),
     },
     {

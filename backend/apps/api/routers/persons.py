@@ -13,7 +13,9 @@ from contracts.person_profile import (
 from domains.person.profile import PersonProfile
 from domains.person.profile_validation import InvalidPersonProfileError
 
-router = APIRouter(tags=["Persons"],)
+router = APIRouter(
+    tags=["Persons"],
+)
 
 
 PersonId = Annotated[
@@ -171,8 +173,7 @@ async def get_person_profile(
         },
         422: {
             "description": (
-                "Die Profilangaben sind ungültig oder verletzen "
-                "eine fachliche Validierungsregel."
+                "Die Profilangaben sind ungültig oder verletzen eine fachliche Validierungsregel."
             ),
         },
     },
