@@ -1,20 +1,17 @@
 #!/usr/bin/env python3
-"""One-time, preflighted Training/Workout package migration."""
+"""Move the remaining device/telemetry code without changing behavior."""
 import ast
 import json
+import re
 import subprocess
-import sys
 from pathlib import Path
 
 ROOT = Path("backend")
-MOVES = json.loads('{"adapters/persistence/in_memory_workout_repository.py": "features/workout/persistence/in_memory_workout_repository.py", "adapters/persistence/in_memory_workout_video_repository.py": "features/workout/persistence/in_memory_workout_video_repository.py", "adapters/persistence/sqlalchemy_workout_repository.py": "features/workout/persistence/sqlalchemy_workout_repository.py", "adapters/persistence/sqlalchemy_workout_video_repository.py": "features/workout/persistence/sqlalchemy_workout_video_repository.py", "adapters/persistence/workout_model.py": "features/workout/persistence/workout_model.py", "adapters/persistence/workout_video_model.py": "features/workout/persistence/workout_video_model.py", "application/workout/service.py": "features/workout/service/service.py", "application/workout/video_catalog_service.py": "features/workout/service/video_catalog_service.py", "apps/api/recommendation.py": "features/training/api/recommendation.py", "apps/api/routers/training.py": "features/training/api/router.py", "apps/api/routers/workout_videos.py": "features/workout/api/videos_router.py", "apps/api/routers/workouts.py": "features/workout/api/router.py", "contracts/training.py": "features/training/api/contracts/training.py", "contracts/workout.py": "features/workout/api/contracts/workout.py", "contracts/workout_mapper.py": "features/workout/api/contracts/workout_mapper.py", "contracts/workout_video.py": "features/workout/api/contracts/workout_video.py", "domains/training/heart_rate.py": "features/training/domain/heart_rate.py", "domains/training/recommendation.py": "features/training/domain/recommendation.py", "domains/training/recommendation_engine.py": "features/training/domain/recommendation_engine.py", "domains/workout/repository.py": "features/workout/domain/repository.py", "domains/workout/session.py": "features/workout/domain/session.py", "domains/workout/summary.py": "features/workout/domain/summary.py", "domains/workout/video.py": "features/workout/domain/video.py", "domains/workout/video_path.py": "features/workout/domain/video_path.py", "domains/workout/video_repository.py": "features/workout/domain/video_repository.py", "tests/adapters/persistence/test_workout_video_repository.py": "tests/features/workout/persistence/test_workout_video_repository.py", "tests/application/workout/test_workout_service.py": "tests/features/workout/service/test_workout_service.py", "tests/apps/api/test_workout_api.py": "tests/features/workout/api/test_workout_api.py", "tests/apps/api/test_workout_video_api.py": "tests/features/workout/api/test_workout_video_api.py", "tests/domains/workout/test_workout_mapper.py": "tests/features/workout/domain/test_workout_mapper.py", "tests/domains/workout/test_workout_summary.py": "tests/features/workout/domain/test_workout_summary.py", "tests/domains/workout/test_workout_video_path.py": "tests/features/workout/domain/test_workout_video_path.py"}')
-IMPORTS = json.loads('{"adapters.persistence.in_memory_workout_repository": "features.workout.persistence.in_memory_workout_repository", "adapters.persistence.in_memory_workout_video_repository": "features.workout.persistence.in_memory_workout_video_repository", "adapters.persistence.sqlalchemy_workout_repository": "features.workout.persistence.sqlalchemy_workout_repository", "adapters.persistence.sqlalchemy_workout_video_repository": "features.workout.persistence.sqlalchemy_workout_video_repository", "adapters.persistence.workout_model": "features.workout.persistence.workout_model", "adapters.persistence.workout_video_model": "features.workout.persistence.workout_video_model", "application.workout.service": "features.workout.service.service", "application.workout.video_catalog_service": "features.workout.service.video_catalog_service", "apps.api.recommendation": "features.training.api.recommendation", "apps.api.routers.training": "features.training.api.router", "apps.api.routers.workout_videos": "features.workout.api.videos_router", "apps.api.routers.workouts": "features.workout.api.router", "contracts.training": "features.training.api.contracts.training", "contracts.workout": "features.workout.api.contracts.workout", "contracts.workout_mapper": "features.workout.api.contracts.workout_mapper", "contracts.workout_video": "features.workout.api.contracts.workout_video", "domains.training.heart_rate": "features.training.domain.heart_rate", "domains.training.recommendation": "features.training.domain.recommendation", "domains.training.recommendation_engine": "features.training.domain.recommendation_engine", "domains.workout.repository": "features.workout.domain.repository", "domains.workout.session": "features.workout.domain.session", "domains.workout.summary": "features.workout.domain.summary", "domains.workout.video": "features.workout.domain.video", "domains.workout.video_path": "features.workout.domain.video_path", "domains.workout.video_repository": "features.workout.domain.video_repository"}')
-
-def module_name(path):
-    return path[:-3].replace("/", ".")
+MOVES = json.loads('{"adapters/bluetooth/discovery.py": "features/telemetry/adapters/bluetooth/discovery.py", "adapters/bluetooth/ftms/adapter.py": "features/telemetry/adapters/bluetooth/ftms/adapter.py", "adapters/bluetooth/ftms/constants.py": "features/telemetry/adapters/bluetooth/ftms/constants.py", "adapters/bluetooth/ftms/parser.py": "features/telemetry/adapters/bluetooth/ftms/parser.py", "adapters/bluetooth/heart_rate/adapter.py": "features/telemetry/adapters/bluetooth/heart_rate/adapter.py", "adapters/bluetooth/heart_rate/constants.py": "features/telemetry/adapters/bluetooth/heart_rate/constants.py", "adapters/bluetooth/heart_rate/parser.py": "features/telemetry/adapters/bluetooth/heart_rate/parser.py", "adapters/websocket/backend_client.py": "features/telemetry/adapters/websocket/backend_client.py", "application/telemetry/broadcaster.py": "features/telemetry/service/broadcaster.py", "application/telemetry/models.py": "features/telemetry/service/models.py", "application/telemetry/service.py": "features/telemetry/service/service.py", "apps/api/routers/devices.py": "features/telemetry/api/devices_router.py", "apps/api/routers/telemetry.py": "features/telemetry/api/router.py", "contracts/device.py": "features/telemetry/api/contracts/device.py", "contracts/telemetry.py": "features/telemetry/api/contracts/telemetry.py", "domains/health/device.py": "features/telemetry/domain/health/device.py", "domains/health/device_events.py": "features/telemetry/domain/health/device_events.py", "domains/health/heart_rate.py": "features/telemetry/domain/health/heart_rate.py", "domains/health/heart_rate_source.py": "features/telemetry/domain/health/heart_rate_source.py", "domains/telemetry/bike.py": "features/telemetry/domain/telemetry/bike.py", "domains/telemetry/bike_source.py": "features/telemetry/domain/telemetry/bike_source.py", "tests/adapters/bluetooth/ftms/test_bike_adapter.py": "tests/features/telemetry/adapters/bluetooth/ftms/test_bike_adapter.py", "tests/adapters/bluetooth/ftms/test_indoor_bike_parser.py": "tests/features/telemetry/adapters/bluetooth/ftms/test_indoor_bike_parser.py", "tests/adapters/bluetooth/heart_rate/test_device.py": "tests/features/telemetry/adapters/bluetooth/heart_rate/test_device.py", "tests/adapters/bluetooth/heart_rate/test_heart_rate.py": "tests/features/telemetry/adapters/bluetooth/heart_rate/test_heart_rate.py", "tests/adapters/bluetooth/heart_rate/test_heart_rate_parser.py": "tests/features/telemetry/adapters/bluetooth/heart_rate/test_heart_rate_parser.py", "tests/adapters/bluetooth/test_discovery.py": "tests/features/telemetry/adapters/bluetooth/test_discovery.py", "tests/application/telemetry/test_telemetry_service.py": "tests/features/telemetry/service/test_telemetry_service.py", "tests/domains/telemetry/test_bike_telemetry.py": "tests/features/telemetry/domain/test_bike_telemetry.py"}')
+IMPORTS = json.loads('{"adapters.bluetooth": "features.telemetry.adapters.bluetooth", "adapters.bluetooth.discovery": "features.telemetry.adapters.bluetooth.discovery", "adapters.bluetooth.ftms.adapter": "features.telemetry.adapters.bluetooth.ftms.adapter", "adapters.bluetooth.ftms.constants": "features.telemetry.adapters.bluetooth.ftms.constants", "adapters.bluetooth.ftms.parser": "features.telemetry.adapters.bluetooth.ftms.parser", "adapters.bluetooth.heart_rate.adapter": "features.telemetry.adapters.bluetooth.heart_rate.adapter", "adapters.bluetooth.heart_rate.constants": "features.telemetry.adapters.bluetooth.heart_rate.constants", "adapters.bluetooth.heart_rate.parser": "features.telemetry.adapters.bluetooth.heart_rate.parser", "adapters.websocket": "features.telemetry.adapters.websocket", "adapters.websocket.backend_client": "features.telemetry.adapters.websocket.backend_client", "application.telemetry": "features.telemetry.service", "application.telemetry.broadcaster": "features.telemetry.service.broadcaster", "application.telemetry.models": "features.telemetry.service.models", "application.telemetry.service": "features.telemetry.service.service", "apps.api.routers.devices": "features.telemetry.api.devices_router", "apps.api.routers.telemetry": "features.telemetry.api.router", "contracts.device": "features.telemetry.api.contracts.device", "contracts.telemetry": "features.telemetry.api.contracts.telemetry", "domains.health": "features.telemetry.domain.health", "domains.health.device": "features.telemetry.domain.health.device", "domains.health.device_events": "features.telemetry.domain.health.device_events", "domains.health.heart_rate": "features.telemetry.domain.health.heart_rate", "domains.health.heart_rate_source": "features.telemetry.domain.health.heart_rate_source", "domains.telemetry": "features.telemetry.domain.telemetry", "domains.telemetry.bike": "features.telemetry.domain.telemetry.bike", "domains.telemetry.bike_source": "features.telemetry.domain.telemetry.bike_source"}')
 
 def translate(name):
-    for old, new in sorted(IMPORTS.items(), key=lambda x: -len(x[0])):
+    for old, new in sorted(IMPORTS.items(), key=lambda item: -len(item[0])):
         if name == old or name.startswith(old + "."):
             return new + name[len(old):]
     return name
@@ -31,9 +28,7 @@ def rewrite(text, path):
             old = node.module
             new = translate(old)
             if new != old:
-                line = lines[node.lineno - 1]
-                prefix = line[:node.col_offset]
-                segment = line[node.col_offset:]
+                segment = lines[node.lineno - 1][node.col_offset:]
                 if not segment.startswith("from " + old + " import"):
                     raise RuntimeError(f"Unsupported import: {path}:{node.lineno}")
                 start = offsets[node.lineno - 1] + node.col_offset + 5
@@ -42,11 +37,9 @@ def rewrite(text, path):
             start = offsets[node.lineno - 1] + node.col_offset
             end = offsets[node.end_lineno - 1] + node.end_col_offset
             segment = text[start:end]
-            # Replace complete dotted names only, preserving aliases.
-            import re
-            pattern = r"(?<![\\w.])(" + "|".join(
+            pattern = r"(?<![\w.])(" + "|".join(
                 re.escape(x) for x in sorted(IMPORTS, key=len, reverse=True)
-            ) + r")(?![\\w.])"
+            ) + r")(?![\w.])"
             updated = re.sub(pattern, lambda m: translate(m.group(0)), segment)
             if updated != segment:
                 edits.append((start, end, updated))
@@ -56,6 +49,8 @@ def rewrite(text, path):
     return text
 
 def main():
+    if not ROOT.is_dir():
+        raise SystemExit("Run from the repository root.")
     for source, target in MOVES.items():
         if not (ROOT / source).is_file() or (ROOT / target).exists():
             raise SystemExit(f"Missing source or occupied target: {source} -> {target}")
@@ -67,15 +62,13 @@ def main():
         updated = rewrite(original, path)
         if updated != original:
             changes[path] = updated
-    # Validate every rewritten file before moving anything.
-    for path, text in changes.items():
-        ast.parse(text, filename=str(path))
     for source, target in MOVES.items():
         destination = ROOT / target
         destination.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run(["git", "mv", str(ROOT / source), str(destination)], check=True)
     for path, text in changes.items():
-        destination = ROOT / MOVES.get(str(path.relative_to(ROOT)), str(path.relative_to(ROOT)))
+        relative = str(path.relative_to(ROOT))
+        destination = ROOT / MOVES.get(relative, relative)
         destination.write_text(text, encoding="utf-8")
     for target in MOVES.values():
         directory = (ROOT / target).parent
@@ -83,8 +76,8 @@ def main():
             if directory.is_relative_to(ROOT / "features") or directory.is_relative_to(ROOT / "tests/features"):
                 (directory / "__init__.py").touch(exist_ok=True)
             directory = directory.parent
-    print(f"Moved {len(MOVES)} files; updated {len(changes)} import-bearing files.")
-    print("Next: make format && make check")
+    print(f"Moved {len(MOVES)} files; updated {len(changes)} files.")
+    print("Run: make format && make check")
 
 if __name__ == "__main__":
     main()
