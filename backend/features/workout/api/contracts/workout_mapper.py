@@ -1,0 +1,54 @@
+from features.workout.api.contracts.workout import (
+    WorkoutPhaseResponse,
+    WorkoutResponse,
+    WorkoutSummaryResponse,
+)
+from features.workout.domain.session import WorkoutSession
+from features.workout.domain.summary import WorkoutSummary
+
+
+def to_workout_response(
+    workout: WorkoutSession,
+) -> WorkoutResponse:
+    """
+    Übersetzt unser Domain-Modell in den HTTP-Contract.
+
+    Dadurch bleibt die Domain unabhängig von FastAPI/Pydantic,
+    während main.py nicht jedes einzelne Feld kennen muss.
+
+    Vergleichbar mit einem Mapper/Assembler in einer Java-Anwendung.
+    """
+
+    return WorkoutResponse(
+        id=workout.id,
+        person_id=workout.person_id,
+        started_at=workout.started_at,
+        status=workout.status.value,
+        total_duration_minutes=workout.total_duration_minutes,
+        elapsed_seconds=workout.elapsed_seconds,
+        distance_m=workout.distance_m,
+        video_id=workout.video_id,
+        video_position_seconds=workout.video_position_seconds,
+        completed_at=workout.completed_at,
+        phases=[
+            WorkoutPhaseResponse(
+                phase_type=phase.phase_type.value,
+                duration_minutes=phase.duration_minutes,
+                target_heart_rate_min=phase.target_heart_rate_min,
+                target_heart_rate_max=phase.target_heart_rate_max,
+            )
+            for phase in workout.phases
+        ],
+    )
+
+
+def to_workout_summary_response(
+    summary: WorkoutSummary,
+) -> WorkoutSummaryResponse:
+    return WorkoutSummaryResponse(
+        planned_seconds=summary.planned_seconds,
+        elapsed_seconds=summary.elapsed_seconds,
+        distance_m=summary.distance_m,
+        completion_percent=summary.completion_percent,
+        status=summary.status.value,
+    )

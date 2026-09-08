@@ -1,0 +1,53 @@
+from pydantic import BaseModel, ConfigDict, Field
+from pydantic.alias_generators import to_camel
+
+
+class WorkoutPhaseResponse(BaseModel):
+    """Eine Phase der empfohlenen Trainingseinheit."""
+
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
+
+    phase_type: str = Field(
+        description="Fachlicher Typ der Trainingsphase.",
+        examples=["warmup"],
+    )
+    duration_minutes: int = Field(
+        description="Geplante Dauer dieser Phase in Minuten.",
+        examples=[5],
+    )
+    target_heart_rate_min: int = Field(
+        description=("Untere Grenze des empfohlenen Zielpulsbereichs in Schlägen pro Minute."),
+        examples=[110],
+    )
+    target_heart_rate_max: int = Field(
+        description=("Obere Grenze des empfohlenen Zielpulsbereichs in Schlägen pro Minute."),
+        examples=[130],
+    )
+
+
+class TrainingRecommendationResponse(BaseModel):
+    """Individuelle Empfehlung für eine Trainingseinheit."""
+
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
+
+    workout_type: str = Field(
+        description="Fachlicher Typ des empfohlenen Workouts.",
+        examples=["endurance"],
+    )
+    total_duration_minutes: int = Field(
+        description="Geplante Gesamtdauer des Workouts in Minuten.",
+        examples=[45],
+    )
+    reason: str = Field(
+        description="Fachliche Begründung für die Empfehlung.",
+        examples=["Die aktuelle Tagesform eignet sich für eine moderate Trainingseinheit."],
+    )
+    phases: list[WorkoutPhaseResponse] = Field(
+        description=("Geordnete Trainingsphasen mit Dauer und Zielpulsbereich."),
+    )

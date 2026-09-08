@@ -2,13 +2,13 @@ import asyncio
 import logging
 import signal
 
-from adapters.bluetooth.discovery import BleDiscoveryCoordinator
-from adapters.bluetooth.ftms.adapter import FtmsBikeAdapter
-from adapters.bluetooth.heart_rate.adapter import BleHeartRateAdapter
-from adapters.websocket.backend_client import BackendWebSocketClient
 from apps.device_agent.lifecycle import run_device_worker
-from contracts.telemetry import TelemetryMessage
-from domains.health.device_events import DeviceStatusChanged
+from features.telemetry.adapters.bluetooth.discovery import BleDiscoveryCoordinator
+from features.telemetry.adapters.bluetooth.ftms.adapter import FtmsBikeAdapter
+from features.telemetry.adapters.bluetooth.heart_rate.adapter import BleHeartRateAdapter
+from features.telemetry.adapters.websocket.backend_client import BackendWebSocketClient
+from features.telemetry.api.contracts.telemetry import TelemetryMessage
+from features.telemetry.domain.health.device_events import DeviceStatusChanged
 
 logging.basicConfig(
     level=logging.INFO,
