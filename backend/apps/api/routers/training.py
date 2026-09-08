@@ -7,7 +7,6 @@ from contracts.training import (
     WorkoutPhaseResponse,
 )
 
-
 router = APIRouter()
 
 
@@ -31,20 +30,14 @@ async def training_recommendation(
 
     return TrainingRecommendationResponse(
         workout_type=recommendation.workout_type.value,
-        total_duration_minutes=(
-            recommendation.total_duration_minutes
-        ),
+        total_duration_minutes=(recommendation.total_duration_minutes),
         reason=recommendation.reason,
         phases=[
             WorkoutPhaseResponse(
                 phase_type=phase.phase_type.value,
                 duration_minutes=phase.duration_minutes,
-                target_heart_rate_min=(
-                    phase.target_heart_rate_min
-                ),
-                target_heart_rate_max=(
-                    phase.target_heart_rate_max
-                ),
+                target_heart_rate_min=(phase.target_heart_rate_min),
+                target_heart_rate_max=(phase.target_heart_rate_max),
             )
             for phase in recommendation.phases
         ],

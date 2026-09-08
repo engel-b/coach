@@ -419,7 +419,7 @@ def test_start_workout_with_selected_video(
     )
 
     monkeypatch.setattr(
-        api_main,
+        api_wiring,
         "workout_service",
         WorkoutService(
             repository=workout_repository,
@@ -445,7 +445,7 @@ def test_start_workout_rejects_unknown_video(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        api_main,
+        api_wiring,
         "workout_service",
         WorkoutService(
             repository=InMemoryWorkoutRepository(),

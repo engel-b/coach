@@ -1,14 +1,13 @@
 from fastapi import APIRouter, HTTPException
 
-from apps.api import wiring
 from application.workout.video_catalog_service import (
     WorkoutVideoNotFoundError,
 )
+from apps.api import wiring
 from contracts.workout_video import (
     WorkoutVideoResponse,
     to_workout_video_response,
 )
-
 
 router = APIRouter()
 
@@ -21,10 +20,7 @@ router = APIRouter()
 async def get_workout_videos() -> list[WorkoutVideoResponse]:
     videos = wiring.video_catalog_service.get_available()
 
-    return [
-        to_workout_video_response(video)
-        for video in videos
-    ]
+    return [to_workout_video_response(video) for video in videos]
 
 
 @router.get(

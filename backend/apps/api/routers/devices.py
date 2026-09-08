@@ -3,7 +3,6 @@ from fastapi import APIRouter
 from apps.api import wiring
 from contracts.device import DeviceResponse
 
-
 router = APIRouter()
 
 

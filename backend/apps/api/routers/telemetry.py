@@ -6,7 +6,6 @@ from pydantic import ValidationError
 from apps.api import wiring
 from contracts.telemetry import TelemetryMessage
 
-
 logger = logging.getLogger(__name__)
 
 router = APIRouter()

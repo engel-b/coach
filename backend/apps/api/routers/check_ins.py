@@ -1,9 +1,8 @@
 from fastapi import APIRouter, HTTPException
 
-from apps.api import wiring
 from application.check_in.service import InvalidCheckInError
+from apps.api import wiring
 from contracts.check_in import CheckInRequest, CheckInResponse
-
 
 router = APIRouter()
 
@@ -32,9 +31,7 @@ async def create_check_in(
             recovery=request.recovery,
             muscle_soreness=request.muscle_soreness,
             stress=request.stress,
-            available_training_minutes=(
-                request.available_training_minutes
-            ),
+            available_training_minutes=(request.available_training_minutes),
         )
     except InvalidCheckInError as exc:
         raise HTTPException(
@@ -49,9 +46,7 @@ async def create_check_in(
         recovery=check_in.recovery,
         muscle_soreness=check_in.muscle_soreness,
         stress=check_in.stress,
-        available_training_minutes=(
-            check_in.available_training_minutes
-        ),
+        available_training_minutes=(check_in.available_training_minutes),
     )
 
 
@@ -83,7 +78,5 @@ async def latest_check_in(
         recovery=check_in.recovery,
         muscle_soreness=check_in.muscle_soreness,
         stress=check_in.stress,
-        available_training_minutes=(
-            check_in.available_training_minutes
-        ),
+        available_training_minutes=(check_in.available_training_minutes),
     )

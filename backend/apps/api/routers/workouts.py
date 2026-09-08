@@ -1,13 +1,13 @@
 from fastapi import APIRouter, HTTPException
 
-from apps.api import wiring
-from apps.api.recommendation import create_training_recommendation
 from application.workout.service import (
     InvalidWorkoutDurationError,
     InvalidWorkoutVideoError,
     WorkoutAlreadyFinishedError,
     WorkoutNotFoundError,
 )
+from apps.api import wiring
+from apps.api.recommendation import create_training_recommendation
 from contracts.workout import (
     FinishWorkoutRequest,
     StartWorkoutRequest,
@@ -19,7 +19,6 @@ from contracts.workout_mapper import (
     to_workout_response,
     to_workout_summary_response,
 )
-
 
 router = APIRouter()
 
@@ -52,10 +51,7 @@ async def workout_history(
         limit=limit,
     )
 
-    return [
-        to_workout_response(workout)
-        for workout in workouts
-    ]
+    return [to_workout_response(workout) for workout in workouts]
 
 
 @router.post(
@@ -81,11 +77,7 @@ async def start_workout(
         workout = wiring.workout_service.start(
             person_id=person_id,
             recommendation=recommendation,
-            video_id=(
-                request.video_id
-                if request is not None
-                else None
-            ),
+            video_id=(request.video_id if request is not None else None),
         )
     except InvalidWorkoutVideoError as exc:
         raise HTTPException(
@@ -110,9 +102,7 @@ async def checkpoint_workout(
             workout_id,
             elapsed_seconds=request.elapsed_seconds,
             distance_m=request.distance_m,
-            video_position_seconds=(
-                request.video_position_seconds
-            ),
+            video_position_seconds=(request.video_position_seconds),
         )
     except WorkoutNotFoundError as exc:
         raise HTTPException(
@@ -210,9 +200,7 @@ async def workout_summary(
     workout_id: str,
 ) -> WorkoutSummaryResponse:
     try:
-        summary = wiring.workout_service.get_summary(
-            workout_id
-        )
+        summary = wiring.workout_service.get_summary(workout_id)
     except WorkoutNotFoundError as exc:
         raise HTTPException(
             status_code=404,

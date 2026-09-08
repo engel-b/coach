@@ -26,7 +26,6 @@ from application.workout.service import WorkoutService
 from application.workout.video_catalog_service import VideoCatalogService
 from domains.training.recommendation_engine import TrainingRecommendationEngine
 
-
 # Composition Root der HTTP-Anwendung.
 #
 # Die Objekte leben aktuell für die gesamte Laufzeit des Backend-Prozesses.

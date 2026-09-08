@@ -13,7 +13,6 @@ from apps.api.routers.workout_videos import (
 )
 from apps.api.routers.workouts import router as workouts_router
 
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",

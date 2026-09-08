@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
-from apps.api import wiring
 from application.person.management_service import PersonNotFoundError
+from apps.api import wiring
 from contracts.person import PersonResponse
 from contracts.person_create import CreatePersonRequest
 from contracts.person_profile import (
@@ -10,7 +10,6 @@ from contracts.person_profile import (
 )
 from domains.person.profile import PersonProfile
 from domains.person.profile_validation import InvalidPersonProfileError
-
 
 router = APIRouter()
 
@@ -137,12 +136,10 @@ async def update_person_profile(
     )
 
     try:
-        updated_person, saved_profile = (
-            wiring.person_management_service.update_profile(
-                person_id=person_id,
-                display_name=request.display_name,
-                profile=profile,
-            )
+        updated_person, saved_profile = wiring.person_management_service.update_profile(
+            person_id=person_id,
+            display_name=request.display_name,
+            profile=profile,
         )
     except PersonNotFoundError as exc:
         raise HTTPException(
