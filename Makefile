@@ -57,7 +57,7 @@ check-backend:
 	cd backend && \
 	. .venv/bin/activate && \
 	python -m ruff check . && \
-	python -m mypy apps application domains adapters contracts && \
+	python -m mypy apps features adapters && \
 	python -m pytest
 
 check-frontend:
