@@ -66,7 +66,8 @@ function createWeightPoints(checkIns: CheckIn[]): CheckIn[] {
     .filter((checkIn) => checkIn.currentWeightKg !== null)
     .sort(
       (left, right) =>
-        new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime(),
+        new Date(left.timestamp).getTime() -
+        new Date(right.timestamp).getTime(),
     );
 }
 
@@ -94,8 +95,7 @@ function WeightChart({ checkIns }: { checkIns: CheckIn[] }) {
 
   const path = points
     .map((point, index) => {
-      const x =
-        points.length === 1 ? 50 : (index / (points.length - 1)) * 100;
+      const x = points.length === 1 ? 50 : (index / (points.length - 1)) * 100;
       const weight = point.currentWeightKg as number;
       const y = 100 - ((weight - chartMinimum) / chartRange) * 100;
 
@@ -405,8 +405,8 @@ export function PersonDashboard({
           <div className="dashboard-coach-recommendation">
             <span>Empfehlung für heute</span>
             <strong>
-              Starte den Check-in, damit ich dein Training passend zur
-              aktuellen Tagesform empfehlen kann.
+              Starte den Check-in, damit ich dein Training passend zur aktuellen
+              Tagesform empfehlen kann.
             </strong>
           </div>
         </aside>
@@ -451,7 +451,9 @@ export function PersonDashboard({
         </div>
 
         {loading ? (
-          <div className="dashboard-card-loading">Trainings werden geladen …</div>
+          <div className="dashboard-card-loading">
+            Trainings werden geladen …
+          </div>
         ) : data.workouts.length === 0 ? (
           <div className="dashboard-chart-empty">
             <strong>Noch keine Trainings vorhanden.</strong>
