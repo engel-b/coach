@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer
+from sqlalchemy import DateTime, Float, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from adapters.persistence.database import Base
@@ -59,4 +59,19 @@ class CheckInModel(Base):
     available_training_minutes: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
+    )
+
+    current_weight_kg: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
+    )
+
+    sleep_hours: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
+    )
+
+    steps: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
     )

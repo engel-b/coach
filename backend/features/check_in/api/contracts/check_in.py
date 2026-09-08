@@ -32,6 +32,26 @@ class CheckInRequest(BaseModel):
         description="Heute verfügbare Trainingszeit in Minuten.",
         examples=[45],
     )
+    current_weight_kg: float | None = Field(
+        default=None,
+        gt=0,
+        le=500,
+        description="Optional gemessenes aktuelles Körpergewicht in Kilogramm.",
+        examples=[82.4],
+    )
+    sleep_hours: float | None = Field(
+        default=None,
+        ge=0,
+        le=24,
+        description="Optional erfasste Schlafdauer in Stunden.",
+        examples=[7.5],
+    )
+    steps: int | None = Field(
+        default=None,
+        ge=0,
+        description="Optional erfasste Schrittzahl.",
+        examples=[8450],
+    )
 
 
 class CheckInResponse(BaseModel):
@@ -70,4 +90,24 @@ class CheckInResponse(BaseModel):
     available_training_minutes: int = Field(
         description="Verfügbare Trainingszeit in Minuten.",
         examples=[45],
+    )
+    current_weight_kg: float | None = Field(
+        default=None,
+        gt=0,
+        le=500,
+        description="Optional gemessenes aktuelles Körpergewicht in Kilogramm.",
+        examples=[82.4],
+    )
+    sleep_hours: float | None = Field(
+        default=None,
+        ge=0,
+        le=24,
+        description="Optional erfasste Schlafdauer in Stunden.",
+        examples=[7.5],
+    )
+    steps: int | None = Field(
+        default=None,
+        ge=0,
+        description="Optional erfasste Schrittzahl.",
+        examples=[8450],
     )

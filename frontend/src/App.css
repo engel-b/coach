@@ -1503,3 +1503,69 @@ h1 {
   font-size: 0.85rem;
   line-height: 1.4;
 }
+
+.check-in-health-fields {
+  display: grid;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 720px;
+  margin: 1.5rem auto;
+}
+
+.check-in-sleep-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.check-in-number-control {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.check-in-number-control label {
+  font-weight: 600;
+}
+
+.check-in-number-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.check-in-number-row input {
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0.75rem;
+  font-size: 1.2rem;
+  text-align: center;
+  border: 1px solid #888;
+  border-radius: 0.5rem;
+}
+
+.check-in-number-row input:focus {
+  outline: 2px solid #4b8bd6;
+  outline-offset: 2px;
+}
+
+.check-in-number-row button {
+  min-width: 48px;
+  min-height: 52px;
+  font-size: 1.4rem;
+}
+
+.check-in-number-unit {
+  min-width: 3.5rem;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  .check-in-sleep-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .check-in-number-row {
+    flex-wrap: wrap;
+  }
+}

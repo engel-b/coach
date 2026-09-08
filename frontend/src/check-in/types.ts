@@ -4,6 +4,9 @@ export interface CheckInRequest {
   muscleSoreness: number;
   stress: number;
   availableTrainingMinutes: number;
+  currentWeightKg: number | null;
+  sleepHours: number | null;
+  steps: number | null;
 }
 
 export interface CheckIn extends CheckInRequest {
