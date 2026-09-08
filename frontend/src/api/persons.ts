@@ -1,8 +1,10 @@
-import type { Person } from "../persons/types";
+import type {
+  Person,
+  PersonProfile,
+  UpdatePersonProfileRequest,
+} from "../persons/types";
+import { readApiError } from "./apiError";
 
-/**
- * Lädt die verfügbaren Personen vom Backend.
- */
 export async function getPersons(): Promise<Person[]> {
   const response = await fetch("/api/persons");
 
@@ -11,4 +13,38 @@ export async function getPersons(): Promise<Person[]> {
   }
 
   return (await response.json()) as Person[];
+}
+
+export async function getPersonProfile(
+  personId: number,
+): Promise<PersonProfile> {
+  const response = await fetch(`/api/persons/${personId}/profile`);
+
+  if (!response.ok) {
+    throw await readApiError(response, "Profil konnte nicht geladen werden");
+  }
+
+  return (await response.json()) as PersonProfile;
+}
+
+export async function updatePersonProfile(
+  personId: number,
+  request: UpdatePersonProfileRequest,
+): Promise<PersonProfile> {
+  const response = await fetch(`/api/persons/${personId}/profile`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    throw await readApiError(
+      response,
+      "Profil konnte nicht gespeichert werden",
+    );
+  }
+
+  return (await response.json()) as PersonProfile;
 }

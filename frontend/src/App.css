@@ -1428,3 +1428,55 @@ h1 {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.person-profile-editor {
+  width: min(48rem, 100%);
+  margin: 0 auto;
+}
+
+.person-profile-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.person-profile-form label {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.person-profile-form label > span {
+  font-weight: 700;
+}
+
+.person-profile-form input,
+.person-profile-form select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.75rem;
+  font: inherit;
+}
+
+.person-profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.dashboard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.person-profile-actions {
+  flex-wrap: wrap;
+}
+
+.person-profile-editor .error-message {
+  white-space: pre-line;
+}

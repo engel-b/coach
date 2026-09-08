@@ -1,12 +1,19 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
+from unittest.mock import Mock
 
 import pytest
 from fastapi.testclient import TestClient
 
 import apps.api.main as api_main
+from adapters.persistence.in_memory_check_in_repository import InMemoryCheckInRepository
 from adapters.persistence.in_memory_workout_repository import InMemoryWorkoutRepository
 from adapters.persistence.in_memory_workout_video_repository import InMemoryWorkoutVideoRepository
+from application.check_in.service import CheckInService
+from application.person.person_service import PersonService
+from application.person.profile_service import PersonProfileService
 from application.workout.service import WorkoutService
+from domains.person.person import Person
+from domains.person.profile import PersonProfile, TrainingGoal
 from domains.workout.session import DEFAULT_VIDEO_ID
 from domains.workout.video import WorkoutVideo
 
@@ -14,18 +21,58 @@ client = TestClient(api_main.app)
 
 
 @pytest.fixture(autouse=True)
-def isolated_workout_service() -> None:
-    """
-    Jeder API-Test bekommt ein frisches Workout-Repository.
+def isolated_workout_service(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Isoliert alle Persistenzzugriffe des Workout-API-Durchstichs."""
 
-    Die HTTP-Routen selbst bleiben unverändert aktiv.
-    Nur die Workout-Persistenz wird für den einzelnen Test
-    durch eine isolierte InMemory-Instanz ersetzt.
-    """
-    repository = InMemoryWorkoutRepository()
+    person = Person(id=1, display_name="Person 1")
 
-    api_main.workout_service = WorkoutService(
-        repository=repository,
+    profile = PersonProfile(
+        person_id=1,
+        date_of_birth=date(1980, 1, 1),
+        height_cm=180,
+        training_goal=TrainingGoal.GENERAL_FITNESS,
+    )
+
+    person_repository = Mock()
+
+    def get_person(person_id: int) -> Person | None:
+        if person_id == 1:
+            return person
+        return None
+
+    person_repository.get.side_effect = get_person
+    person_repository.get_all.return_value = [person]
+
+    profile_repository = Mock()
+
+    def get_profile(person_id: int) -> PersonProfile | None:
+        if person_id == 1:
+            return profile
+        return None
+
+    profile_repository.get.side_effect = get_profile
+
+    monkeypatch.setattr(
+        api_main,
+        "person_service",
+        PersonService(repository=person_repository),
+    )
+    monkeypatch.setattr(
+        api_main,
+        "person_profile_service",
+        PersonProfileService(repository=profile_repository),
+    )
+    monkeypatch.setattr(
+        api_main,
+        "check_in_service",
+        CheckInService(repository=InMemoryCheckInRepository()),
+    )
+    monkeypatch.setattr(
+        api_main,
+        "workout_service",
+        WorkoutService(repository=InMemoryWorkoutRepository()),
     )
 
 
@@ -379,6 +426,8 @@ def test_start_workout_with_selected_video(
         ),
     )
 
+    create_check_in(1)
+
     response = client.post(
         "/api/persons/1/workouts",
         json={"videoId": "cycling-kueste-01"},
@@ -402,6 +451,8 @@ def test_start_workout_rejects_unknown_video(
             video_repository=InMemoryWorkoutVideoRepository(),
         ),
     )
+
+    create_check_in(1)
 
     response = client.post(
         "/api/persons/1/workouts",

@@ -1,27 +1,42 @@
-from application.person.service import PersonService
+from unittest.mock import Mock
+
+from application.person.person_service import PersonService
+from domains.person.person import Person
 
 
-def test_four_persons_are_available() -> None:
-    service = PersonService()
+def test_persons_are_returned_from_repository() -> None:
+    repository = Mock()
+    repository.get_all.return_value = [
+        Person(id=1, display_name="Person 1"),
+        Person(id=2, display_name="Person 2"),
+    ]
 
-    persons = service.get_persons()
+    service = PersonService(repository=repository)
 
-    assert len(persons) == 4
+    assert service.get_persons() == repository.get_all.return_value
+    repository.get_all.assert_called_once_with()
 
 
 def test_person_can_be_found_by_id() -> None:
-    service = PersonService()
+    repository = Mock()
+    repository.get.return_value = Person(
+        id=2,
+        display_name="Person 2",
+    )
+
+    service = PersonService(repository=repository)
 
     person = service.get_person(2)
 
-    assert person is not None
-    assert person.id == 2
-    assert person.display_name == "Steffi"
+    assert person == Person(id=2, display_name="Person 2")
+    repository.get.assert_called_once_with(2)
 
 
 def test_unknown_person_returns_none() -> None:
-    service = PersonService()
+    repository = Mock()
+    repository.get.return_value = None
 
-    person = service.get_person(999)
+    service = PersonService(repository=repository)
 
-    assert person is None
+    assert service.get_person(999) is None
+    repository.get.assert_called_once_with(999)
