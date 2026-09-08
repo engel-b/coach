@@ -17,14 +17,14 @@ from adapters.persistence.sqlalchemy_workout_video_repository import (
     SqlAlchemyWorkoutVideoRepository,
 )
 from application.check_in.service import CheckInService
-from application.person.management_service import PersonManagementService
-from application.person.person_service import PersonService
-from application.person.profile_service import PersonProfileService
 from application.telemetry.broadcaster import TelemetryBroadcaster
 from application.telemetry.service import TelemetryService
 from application.workout.service import WorkoutService
 from application.workout.video_catalog_service import VideoCatalogService
 from domains.training.recommendation_engine import TrainingRecommendationEngine
+from features.person.service.management_service import PersonManagementService
+from features.person.service.person_service import PersonService
+from features.person.service.profile_service import PersonProfileService
 
 # Composition Root der HTTP-Anwendung.
 #

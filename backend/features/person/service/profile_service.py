@@ -1,5 +1,5 @@
-from domains.person.profile import PersonProfile
-from domains.person.profile_repository import PersonProfileRepository
+from features.person.domain.profile import PersonProfile
+from features.person.domain.profile_repository import PersonProfileRepository
 
 
 class PersonProfileService:

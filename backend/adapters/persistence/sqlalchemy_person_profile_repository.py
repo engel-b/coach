@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 
 from adapters.persistence.database import create_session
 from adapters.persistence.person_model import PersonProfileModel
-from domains.person.profile import PersonProfile, TrainingGoal
-from domains.person.profile_repository import PersonProfileRepository
+from features.person.domain.profile import PersonProfile, TrainingGoal
+from features.person.domain.profile_repository import PersonProfileRepository
 
 
 class SqlAlchemyPersonProfileRepository(PersonProfileRepository):

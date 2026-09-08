@@ -1,6 +1,6 @@
 from datetime import date
 
-from domains.person.profile import PersonProfile, TrainingGoal
+from features.person.domain.profile import PersonProfile, TrainingGoal
 
 
 def test_existing_profile_remains_compatible() -> None:

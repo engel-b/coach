@@ -1,10 +1,10 @@
 from datetime import date
 
-from domains.person.person import Person
-from domains.person.person_profile_writer import PersonProfileWriter
-from domains.person.person_repository import PersonRepository
-from domains.person.profile import PersonProfile, TrainingGoal
-from domains.person.profile_validation import validate_person_profile
+from features.person.domain.person import Person
+from features.person.domain.person_profile_writer import PersonProfileWriter
+from features.person.domain.person_repository import PersonRepository
+from features.person.domain.profile import PersonProfile, TrainingGoal
+from features.person.domain.profile_validation import validate_person_profile
 
 
 class PersonNotFoundError(Exception):

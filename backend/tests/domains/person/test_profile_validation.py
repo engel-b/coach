@@ -3,8 +3,8 @@ from datetime import date
 
 import pytest
 
-from domains.person.profile import PersonProfile, TrainingGoal
-from domains.person.profile_validation import (
+from features.person.domain.profile import PersonProfile, TrainingGoal
+from features.person.domain.profile_validation import (
     InvalidPersonProfileError,
     validate_person_profile,
 )

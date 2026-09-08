@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 
-from application.person.person_service import PersonService
-from domains.person.person import Person
+from features.person.domain.person import Person
+from features.person.service.person_service import PersonService
 
 
 def test_persons_are_returned_from_repository() -> None:

@@ -1,6 +1,6 @@
 from datetime import date
 
-from domains.person.profile import PersonProfile
+from features.person.domain.profile import PersonProfile
 
 
 def calculate_age(

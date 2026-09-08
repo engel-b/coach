@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from math import isfinite
 
-from domains.person.profile import PersonProfile, TrainingGoal
+from features.person.domain.profile import PersonProfile, TrainingGoal
 
 
 class InvalidPersonProfileError(ValueError):

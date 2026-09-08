@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 
 from adapters.persistence.database import create_session
 from adapters.persistence.person_model import PersonModel
-from domains.person.person import Person
-from domains.person.person_repository import PersonRepository
+from features.person.domain.person import Person
+from features.person.domain.person_repository import PersonRepository
 
 
 class SqlAlchemyPersonRepository(PersonRepository):

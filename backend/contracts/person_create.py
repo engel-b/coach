@@ -4,7 +4,7 @@ from typing import Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic.alias_generators import to_camel
 
-from domains.person.profile import TrainingGoal
+from features.person.domain.profile import TrainingGoal
 
 
 class CreatePersonRequest(BaseModel):

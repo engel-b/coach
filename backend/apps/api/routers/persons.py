@@ -2,7 +2,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Path
 
-from application.person.management_service import PersonNotFoundError
 from apps.api import wiring
 from contracts.person import PersonResponse
 from contracts.person_create import CreatePersonRequest
@@ -10,8 +9,9 @@ from contracts.person_profile import (
     PersonProfileRequest,
     PersonProfileResponse,
 )
-from domains.person.profile import PersonProfile
-from domains.person.profile_validation import InvalidPersonProfileError
+from features.person.domain.profile import PersonProfile
+from features.person.domain.profile_validation import InvalidPersonProfileError
+from features.person.service.management_service import PersonNotFoundError
 
 router = APIRouter(
     tags=["Persons"],

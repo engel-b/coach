@@ -19,11 +19,11 @@ from adapters.persistence.sqlalchemy_person_profile_writer import (
 from adapters.persistence.sqlalchemy_person_repository import (
     SqlAlchemyPersonRepository,
 )
-from application.person.management_service import PersonManagementService
-from application.person.person_service import PersonService
-from application.person.profile_service import PersonProfileService
-from domains.person.person import Person
-from domains.person.profile import PersonProfile, TrainingGoal
+from features.person.domain.person import Person
+from features.person.domain.profile import PersonProfile, TrainingGoal
+from features.person.service.management_service import PersonManagementService
+from features.person.service.person_service import PersonService
+from features.person.service.profile_service import PersonProfileService
 
 
 @pytest.fixture

@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from domains.person.person import Person
+from features.person.domain.person import Person
 
 
 class PersonRepository(Protocol):

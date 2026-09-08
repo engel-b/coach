@@ -5,9 +5,9 @@ from sqlalchemy.orm import Session
 
 from adapters.persistence.database import create_session
 from adapters.persistence.person_model import PersonModel, PersonProfileModel
-from domains.person.person import Person
-from domains.person.person_profile_writer import PersonProfileWriter
-from domains.person.profile import PersonProfile, TrainingGoal
+from features.person.domain.person import Person
+from features.person.domain.person_profile_writer import PersonProfileWriter
+from features.person.domain.profile import PersonProfile, TrainingGoal
 
 
 class SqlAlchemyPersonProfileWriter(PersonProfileWriter):

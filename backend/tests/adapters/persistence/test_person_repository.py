@@ -14,8 +14,8 @@ from adapters.persistence.sqlalchemy_person_profile_repository import (
 from adapters.persistence.sqlalchemy_person_repository import (
     SqlAlchemyPersonRepository,
 )
-from domains.person.person import Person
-from domains.person.profile import PersonProfile, TrainingGoal
+from features.person.domain.person import Person
+from features.person.domain.profile import PersonProfile, TrainingGoal
 
 
 @pytest.fixture

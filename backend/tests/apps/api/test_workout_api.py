@@ -10,13 +10,13 @@ from adapters.persistence.in_memory_check_in_repository import InMemoryCheckInRe
 from adapters.persistence.in_memory_workout_repository import InMemoryWorkoutRepository
 from adapters.persistence.in_memory_workout_video_repository import InMemoryWorkoutVideoRepository
 from application.check_in.service import CheckInService
-from application.person.person_service import PersonService
-from application.person.profile_service import PersonProfileService
 from application.workout.service import WorkoutService
-from domains.person.person import Person
-from domains.person.profile import PersonProfile, TrainingGoal
 from domains.workout.session import DEFAULT_VIDEO_ID
 from domains.workout.video import WorkoutVideo
+from features.person.domain.person import Person
+from features.person.domain.profile import PersonProfile, TrainingGoal
+from features.person.service.person_service import PersonService
+from features.person.service.profile_service import PersonProfileService
 
 client = TestClient(api_main.app)
 

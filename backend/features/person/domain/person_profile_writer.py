@@ -1,8 +1,8 @@
 from datetime import date
 from typing import Protocol
 
-from domains.person.person import Person
-from domains.person.profile import PersonProfile, TrainingGoal
+from features.person.domain.person import Person
+from features.person.domain.profile import PersonProfile, TrainingGoal
 
 
 class PersonProfileWriter(Protocol):
