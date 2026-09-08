@@ -30,3 +30,20 @@ export async function getLatestCheckIn(
 
   return (await response.json()) as CheckIn | null;
 }
+
+export async function getCheckInHistory(
+  personId: number,
+  limit = 90,
+): Promise<CheckIn[]> {
+  const response = await fetch(
+    `/api/persons/${personId}/check-ins?limit=${limit}`,
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Check-in-Verlauf konnte nicht geladen werden: HTTP ${response.status}`,
+    );
+  }
+
+  return (await response.json()) as CheckIn[];
+}
