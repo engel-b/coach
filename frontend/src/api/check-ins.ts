@@ -22,13 +22,11 @@ export async function createCheckIn(
 export async function getLatestCheckIn(
   personId: number,
 ): Promise<CheckIn | null> {
-  const response = await fetch(
-    `/api/persons/${personId}/check-ins/latest`,
-  )
+  const response = await fetch(`/api/persons/${personId}/check-ins/latest`);
 
   if (!response.ok) {
-    throw new Error('Der letzte Check-in konnte nicht geladen werden.')
+    throw new Error("Der letzte Check-in konnte nicht geladen werden.");
   }
 
-  return (await response.json()) as CheckIn | null
+  return (await response.json()) as CheckIn | null;
 }

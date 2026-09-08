@@ -1,112 +1,102 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from "react";
 
-import { createCheckIn, getLatestCheckIn } from '../api/check-ins'
-import type { Person } from '../persons/types'
-import { checkInQuestions } from './questions'
-import type { CheckIn, CheckInRequest } from './types'
+import { createCheckIn, getLatestCheckIn } from "../api/check-ins";
+import type { Person } from "../persons/types";
+import { checkInQuestions } from "./questions";
+import type { CheckIn, CheckInRequest } from "./types";
 
 interface CheckInWizardProps {
-  person: Person
-  onComplete: (checkIn: CheckIn) => void
-  onCancel: () => void
+  person: Person;
+  onComplete: (checkIn: CheckIn) => void;
+  onCancel: () => void;
 }
 
-type Answers = Partial<CheckInRequest>
+type Answers = Partial<CheckInRequest>;
 
 type HealthData = {
-  weight: string
-  sleepHours: string
-  sleepMinutes: string
-  steps: string
-}
+  weight: string;
+  sleepHours: string;
+  sleepMinutes: string;
+  steps: string;
+};
 
 const EMPTY_HEALTH_DATA: HealthData = {
-  weight: '',
-  sleepHours: '',
-  sleepMinutes: '',
-  steps: '',
-}
+  weight: "",
+  sleepHours: "",
+  sleepMinutes: "",
+  steps: "",
+};
 
 function formatWeight(value: number): string {
-  return value.toFixed(1).replace('.', ',')
+  return value.toFixed(1).replace(".", ",");
 }
 
 function parseOptionalNumber(value: string): number | null {
-  const normalized = value.trim().replace(',', '.')
+  const normalized = value.trim().replace(",", ".");
 
-  if (normalized === '') {
-    return null
+  if (normalized === "") {
+    return null;
   }
 
-  const parsed = Number(normalized)
-  return Number.isFinite(parsed) ? parsed : null
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function parseOptionalInteger(value: string): number | null {
-  const normalized = value.trim()
+  const normalized = value.trim();
 
-  if (normalized === '') {
-    return null
+  if (normalized === "") {
+    return null;
   }
 
   if (!/^\d+$/.test(normalized)) {
-    return null
+    return null;
   }
 
-  const parsed = Number(normalized)
-  return Number.isSafeInteger(parsed) ? parsed : null
+  const parsed = Number(normalized);
+  return Number.isSafeInteger(parsed) ? parsed : null;
 }
 
-function healthDataFromCheckIn(
-  checkIn: CheckIn | null,
-): HealthData {
+function healthDataFromCheckIn(checkIn: CheckIn | null): HealthData {
   if (checkIn === null) {
-    return { ...EMPTY_HEALTH_DATA }
+    return { ...EMPTY_HEALTH_DATA };
   }
 
-  const sleep = checkIn.sleepHours
+  const sleep = checkIn.sleepHours;
   const totalMinutes =
-    sleep === null || sleep === undefined
-      ? null
-      : Math.round(sleep * 60)
+    sleep === null || sleep === undefined ? null : Math.round(sleep * 60);
 
   return {
     weight:
-      checkIn.currentWeightKg === null ||
-      checkIn.currentWeightKg === undefined
-        ? ''
+      checkIn.currentWeightKg === null || checkIn.currentWeightKg === undefined
+        ? ""
         : formatWeight(checkIn.currentWeightKg),
     sleepHours:
-      totalMinutes === null
-        ? ''
-        : String(Math.floor(totalMinutes / 60)),
-    sleepMinutes:
-      totalMinutes === null
-        ? ''
-        : String(totalMinutes % 60),
+      totalMinutes === null ? "" : String(Math.floor(totalMinutes / 60)),
+    sleepMinutes: totalMinutes === null ? "" : String(totalMinutes % 60),
     steps:
       checkIn.steps === null || checkIn.steps === undefined
-        ? ''
+        ? ""
         : String(checkIn.steps),
-  }
+  };
 }
 
 function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value))
+  return Math.min(max, Math.max(min, value));
 }
 
 interface NumberControlProps {
-  id: string
-  label: string
-  value: string
-  onChange: (value: string) => void
-  step: number
-  min: number
-  max: number
-  unit: string
-  placeholder?: string
-  decimals?: number
-  disabled?: boolean
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  step: number;
+  min: number;
+  max: number;
+  unit: string;
+  placeholder?: string;
+  decimals?: number;
+  disabled?: boolean;
 }
 
 function NumberControl({
@@ -122,48 +112,44 @@ function NumberControl({
   decimals = 0,
   disabled = false,
 }: NumberControlProps) {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null);
 
   function changeBy(direction: number): void {
-    const current = parseOptionalNumber(value)
-    const base = current ?? min
+    const current = parseOptionalNumber(value);
+    const base = current ?? min;
     const next = clamp(
       Math.round((base + direction * step) * 1000) / 1000,
       min,
       max,
-    )
+    );
 
-    onChange(
-      decimals === 1
-        ? formatWeight(next)
-        : String(Math.round(next)),
-    )
+    onChange(decimals === 1 ? formatWeight(next) : String(Math.round(next)));
   }
 
   useEffect(() => {
-    const input = inputRef.current
+    const input = inputRef.current;
 
     if (input === null) {
-      return
+      return;
     }
 
     function handleWheel(event: WheelEvent): void {
       if (disabled || document.activeElement !== input) {
-        return
+        return;
       }
 
-      event.preventDefault()
-      changeBy(event.deltaY < 0 ? 1 : -1)
+      event.preventDefault();
+      changeBy(event.deltaY < 0 ? 1 : -1);
     }
 
     // passive: false ist nötig, damit das Mausrad beim Bearbeiten
     // nicht gleichzeitig die gesamte Seite scrollt.
-    input.addEventListener('wheel', handleWheel, { passive: false })
+    input.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
-      input.removeEventListener('wheel', handleWheel)
-    }
-  })
+      input.removeEventListener("wheel", handleWheel);
+    };
+  });
 
   return (
     <div className="check-in-number-control">
@@ -184,16 +170,16 @@ function NumberControl({
           ref={inputRef}
           id={id}
           type="text"
-          inputMode={decimals === 1 ? 'decimal' : 'numeric'}
+          inputMode={decimals === 1 ? "decimal" : "numeric"}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === 'ArrowUp') {
-              event.preventDefault()
-              changeBy(1)
-            } else if (event.key === 'ArrowDown') {
-              event.preventDefault()
-              changeBy(-1)
+            if (event.key === "ArrowUp") {
+              event.preventDefault();
+              changeBy(1);
+            } else if (event.key === "ArrowDown") {
+              event.preventDefault();
+              changeBy(-1);
             }
           }}
           placeholder={placeholder}
@@ -214,7 +200,7 @@ function NumberControl({
         </button>
       </div>
     </div>
-  )
+  );
 }
 
 export function CheckInWizard({
@@ -222,95 +208,87 @@ export function CheckInWizard({
   onComplete,
   onCancel,
 }: CheckInWizardProps) {
-  const [step, setStep] = useState(0)
-  const [answers, setAnswers] = useState<Answers>({})
-  const [showHealthData, setShowHealthData] = useState(false)
+  const [step, setStep] = useState(0);
+  const [answers, setAnswers] = useState<Answers>({});
+  const [showHealthData, setShowHealthData] = useState(false);
   const [healthData, setHealthData] = useState<HealthData>({
     ...EMPTY_HEALTH_DATA,
-  })
-  const [loadingPrevious, setLoadingPrevious] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const savingRef = useRef(false)
+  });
+  const [loadingPrevious, setLoadingPrevious] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const savingRef = useRef(false);
 
-  const question = checkInQuestions[step]
+  const question = checkInQuestions[step];
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     async function loadPrevious(): Promise<void> {
-      setLoadingPrevious(true)
+      setLoadingPrevious(true);
 
       try {
-        const latest = await getLatestCheckIn(person.id)
+        const latest = await getLatestCheckIn(person.id);
 
         if (!cancelled) {
-          setHealthData(healthDataFromCheckIn(latest))
+          setHealthData(healthDataFromCheckIn(latest));
         }
       } catch {
         // Ein fehlender vorheriger Check-in darf den neuen nicht blockieren.
         if (!cancelled) {
-          setHealthData({ ...EMPTY_HEALTH_DATA })
+          setHealthData({ ...EMPTY_HEALTH_DATA });
         }
       } finally {
         if (!cancelled) {
-          setLoadingPrevious(false)
+          setLoadingPrevious(false);
         }
       }
     }
 
-    void loadPrevious()
+    void loadPrevious();
 
     return () => {
-      cancelled = true
-    }
-  }, [person.id])
+      cancelled = true;
+    };
+  }, [person.id]);
 
-  function updateHealthData(
-    field: keyof HealthData,
-    value: string,
-  ): void {
+  function updateHealthData(field: keyof HealthData, value: string): void {
     setHealthData((current) => ({
       ...current,
       [field]: value,
-    }))
-    setError(null)
+    }));
+    setError(null);
   }
 
   function validateHealthData(): {
-    currentWeightKg: number | null
-    sleepHours: number | null
-    steps: number | null
+    currentWeightKg: number | null;
+    sleepHours: number | null;
+    steps: number | null;
   } | null {
-    const weight = parseOptionalNumber(healthData.weight)
-    const weightEntered = healthData.weight.trim() !== ''
+    const weight = parseOptionalNumber(healthData.weight);
+    const weightEntered = healthData.weight.trim() !== "";
 
-    if (
-      weightEntered &&
-      (weight === null || weight <= 0 || weight > 500)
-    ) {
-      setError('Bitte gib ein gültiges Gewicht zwischen 0 und 500 kg ein.')
-      return null
+    if (weightEntered && (weight === null || weight <= 0 || weight > 500)) {
+      setError("Bitte gib ein gültiges Gewicht zwischen 0 und 500 kg ein.");
+      return null;
     }
 
-    const hours = parseOptionalInteger(healthData.sleepHours)
-    const minutes = parseOptionalInteger(healthData.sleepMinutes)
+    const hours = parseOptionalInteger(healthData.sleepHours);
+    const minutes = parseOptionalInteger(healthData.sleepMinutes);
     const sleepEntered =
-      healthData.sleepHours.trim() !== '' ||
-      healthData.sleepMinutes.trim() !== ''
+      healthData.sleepHours.trim() !== "" ||
+      healthData.sleepMinutes.trim() !== "";
 
     if (
       sleepEntered &&
-      ((healthData.sleepHours.trim() !== '' && hours === null) ||
-        (healthData.sleepMinutes.trim() !== '' && minutes === null))
+      ((healthData.sleepHours.trim() !== "" && hours === null) ||
+        (healthData.sleepMinutes.trim() !== "" && minutes === null))
     ) {
-      setError('Bitte gib gültige Stunden und Minuten ein.')
-      return null
+      setError("Bitte gib gültige Stunden und Minuten ein.");
+      return null;
     }
 
-    const sleepHours = sleepEntered
-      ? (hours ?? 0) + (minutes ?? 0) / 60
-      : null
+    const sleepHours = sleepEntered ? (hours ?? 0) + (minutes ?? 0) / 60 : null;
 
     if (
       sleepEntered &&
@@ -319,28 +297,27 @@ export function CheckInWizard({
         sleepHours === null ||
         sleepHours > 24)
     ) {
-      setError('Die Schlafdauer muss zwischen 0 und 24 Stunden liegen.')
-      return null
+      setError("Die Schlafdauer muss zwischen 0 und 24 Stunden liegen.");
+      return null;
     }
 
-    const steps = parseOptionalInteger(healthData.steps)
+    const steps = parseOptionalInteger(healthData.steps);
 
-    if (healthData.steps.trim() !== '' && steps === null) {
-      setError('Bitte gib eine gültige, nicht negative Schrittzahl ein.')
-      return null
+    if (healthData.steps.trim() !== "" && steps === null) {
+      setError("Bitte gib eine gültige, nicht negative Schrittzahl ein.");
+      return null;
     }
 
     return {
-      currentWeightKg:
-        weight === null ? null : Math.round(weight * 10) / 10,
+      currentWeightKg: weight === null ? null : Math.round(weight * 10) / 10,
       sleepHours,
       steps,
-    }
+    };
   }
 
   async function completeCheckIn(): Promise<void> {
     if (savingRef.current) {
-      return
+      return;
     }
 
     if (
@@ -350,14 +327,14 @@ export function CheckInWizard({
       answers.stress === undefined ||
       answers.availableTrainingMinutes === undefined
     ) {
-      setError('Der Check-in ist unvollständig.')
-      return
+      setError("Der Check-in ist unvollständig.");
+      return;
     }
 
-    const health = validateHealthData()
+    const health = validateHealthData();
 
     if (health === null) {
-      return
+      return;
     }
 
     const request: CheckInRequest = {
@@ -367,125 +344,123 @@ export function CheckInWizard({
       stress: answers.stress,
       availableTrainingMinutes: answers.availableTrainingMinutes,
       ...health,
-    }
+    };
 
-    savingRef.current = true
-    setSaving(true)
-    setError(null)
+    savingRef.current = true;
+    setSaving(true);
+    setError(null);
 
     try {
-      const result = await createCheckIn(person.id, request)
-      onComplete(result)
+      const result = await createCheckIn(person.id, request);
+      onComplete(result);
     } catch (saveError) {
       setError(
         saveError instanceof Error
           ? saveError.message
-          : 'Der Check-in konnte nicht gespeichert werden.',
-      )
-      savingRef.current = false
-      setSaving(false)
+          : "Der Check-in konnte nicht gespeichert werden.",
+      );
+      savingRef.current = false;
+      setSaving(false);
     }
   }
 
   function selectOption(index: number): void {
     if (question === undefined || savingRef.current) {
-      return
+      return;
     }
 
-    const option = question.options[index]
+    const option = question.options[index];
 
     if (option === undefined) {
-      return
+      return;
     }
 
     const newAnswers: Answers = {
       ...answers,
       [question.field]: option.value,
-    }
+    };
 
-    setAnswers(newAnswers)
-    setError(null)
+    setAnswers(newAnswers);
+    setError(null);
 
     if (step === checkInQuestions.length - 1) {
-      setShowHealthData(true)
-      return
+      setShowHealthData(true);
+      return;
     }
 
-    setStep((current) => current + 1)
+    setStep((current) => current + 1);
   }
 
   function goBack(): void {
     if (savingRef.current) {
-      return
+      return;
     }
 
     if (showHealthData) {
-      setShowHealthData(false)
-      setError(null)
-      return
+      setShowHealthData(false);
+      setError(null);
+      return;
     }
 
     if (step === 0) {
-      onCancel()
-      return
+      onCancel();
+      return;
     }
 
-    setStep((current) => current - 1)
-    setError(null)
+    setStep((current) => current - 1);
+    setError(null);
   }
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
       if (savingRef.current) {
-        return
+        return;
       }
 
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        goBack()
-        return
+      if (event.key === "Escape") {
+        event.preventDefault();
+        goBack();
+        return;
       }
 
       if (showHealthData || question === undefined) {
-        return
+        return;
       }
 
-      const target = event.target
+      const target = event.target;
 
       if (
         target instanceof HTMLElement &&
-        target.closest('input, textarea, select')
+        target.closest("input, textarea, select")
       ) {
-        return
+        return;
       }
 
-      const number = Number(event.key)
+      const number = Number(event.key);
 
       if (
-        event.key !== '' &&
+        event.key !== "" &&
         Number.isInteger(number) &&
         number >= 1 &&
         number <= question.options.length
       ) {
-        event.preventDefault()
-        selectOption(number - 1)
+        event.preventDefault();
+        selectOption(number - 1);
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  })
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  });
 
   if (showHealthData) {
     return (
       <section className="check-in">
         <header className="check-in-header">
-          <div className="eyebrow">
-            CHECK-IN · {person.displayName}
-          </div>
+          <div className="eyebrow">CHECK-IN · {person.displayName}</div>
           <div className="check-in-progress">Tagesdaten</div>
         </header>
 
@@ -493,16 +468,15 @@ export function CheckInWizard({
           className="check-in-content"
           noValidate
           onSubmit={(event) => {
-            event.preventDefault()
-            void completeCheckIn()
+            event.preventDefault();
+            void completeCheckIn();
           }}
         >
           <h1>Zusätzliche Tagesdaten</h1>
 
           <p className="check-in-description">
-            Die Werte des letzten Check-ins sind vorbelegt. Du kannst
-            sie ändern oder leer lassen, wenn du sie heute nicht erfasst
-            hast.
+            Die Werte des letzten Check-ins sind vorbelegt. Du kannst sie ändern
+            oder leer lassen, wenn du sie heute nicht erfasst hast.
           </p>
 
           {loadingPrevious && (
@@ -516,7 +490,7 @@ export function CheckInWizard({
               id="check-in-weight"
               label="Aktuelles Gewicht"
               value={healthData.weight}
-              onChange={(value) => updateHealthData('weight', value)}
+              onChange={(value) => updateHealthData("weight", value)}
               step={0.1}
               min={0.1}
               max={500}
@@ -531,9 +505,7 @@ export function CheckInWizard({
                 id="check-in-sleep-hours"
                 label="Schlaf – Stunden"
                 value={healthData.sleepHours}
-                onChange={(value) =>
-                  updateHealthData('sleepHours', value)
-                }
+                onChange={(value) => updateHealthData("sleepHours", value)}
                 step={1}
                 min={0}
                 max={24}
@@ -546,9 +518,7 @@ export function CheckInWizard({
                 id="check-in-sleep-minutes"
                 label="Schlaf – Minuten"
                 value={healthData.sleepMinutes}
-                onChange={(value) =>
-                  updateHealthData('sleepMinutes', value)
-                }
+                onChange={(value) => updateHealthData("sleepMinutes", value)}
                 step={5}
                 min={0}
                 max={59}
@@ -562,7 +532,7 @@ export function CheckInWizard({
               id="check-in-steps"
               label="Schritte"
               value={healthData.steps}
-              onChange={(value) => updateHealthData('steps', value)}
+              onChange={(value) => updateHealthData("steps", value)}
               step={100}
               min={0}
               max={1000000}
@@ -593,24 +563,22 @@ export function CheckInWizard({
               className="primary-button"
               disabled={saving || loadingPrevious}
             >
-              {saving ? 'Wird gespeichert …' : 'Check-in speichern'}
+              {saving ? "Wird gespeichert …" : "Check-in speichern"}
             </button>
           </footer>
         </form>
       </section>
-    )
+    );
   }
 
   if (question === undefined) {
-    return null
+    return null;
   }
 
   return (
     <section className="check-in">
       <header className="check-in-header">
-        <div className="eyebrow">
-          CHECK-IN · {person.displayName}
-        </div>
+        <div className="eyebrow">CHECK-IN · {person.displayName}</div>
 
         <div className="check-in-progress">
           Frage {step + 1} von {checkInQuestions.length}
@@ -620,23 +588,18 @@ export function CheckInWizard({
       <div className="check-in-content">
         <h1>{question.title}</h1>
 
-        <p className="check-in-description">
-          {question.description}
-        </p>
+        <p className="check-in-description">{question.description}</p>
 
         <div className="check-in-options">
           {question.options.map((option, index) => {
-            const selected =
-              answers[question.field] === option.value
+            const selected = answers[question.field] === option.value;
 
             return (
               <button
                 key={option.value}
                 type="button"
                 className={
-                  selected
-                    ? 'check-in-option selected'
-                    : 'check-in-option'
+                  selected ? "check-in-option selected" : "check-in-option"
                 }
                 onClick={() => selectOption(index)}
                 disabled={saving}
@@ -644,7 +607,7 @@ export function CheckInWizard({
                 <span className="option-key">{index + 1}</span>
                 <span className="option-label">{option.label}</span>
               </button>
-            )
+            );
           })}
         </div>
 
@@ -662,11 +625,11 @@ export function CheckInWizard({
           onClick={goBack}
           disabled={saving}
         >
-          {step === 0 ? 'Abbrechen' : 'Zurück'}
+          {step === 0 ? "Abbrechen" : "Zurück"}
         </button>
 
         <span>Antwort anklicken, um fortzufahren</span>
       </footer>
     </section>
-  )
+  );
 }
