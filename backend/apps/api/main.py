@@ -8,9 +8,7 @@ from apps.api.routers.health import router as health_router
 from apps.api.routers.persons import router as persons_router
 from apps.api.routers.telemetry import router as telemetry_router
 from apps.api.routers.training import router as training_router
-from apps.api.routers.workout_videos import (
-    router as workout_videos_router,
-)
+from apps.api.routers.workout_videos import router as workout_videos_router
 from apps.api.routers.workouts import router as workouts_router
 
 logging.basicConfig(
@@ -19,9 +17,68 @@ logging.basicConfig(
 )
 
 
+OPENAPI_TAGS = [
+    {
+        "name": "Persons",
+        "description": (
+            "Personen anlegen, auflisten und ihre Stammdaten sowie "
+            "Trainingsprofile verwalten."
+        ),
+    },
+    {
+        "name": "Check-ins",
+        "description": (
+            "Tagesform und verfügbare Trainingszeit erfassen und "
+            "den letzten Check-in einer Person abrufen."
+        ),
+    },
+    {
+        "name": "Training",
+        "description": (
+            "Individuelle Trainingsempfehlungen auf Basis des "
+            "Personenprofils und des letzten Check-ins erstellen."
+        ),
+    },
+    {
+        "name": "Workouts",
+        "description": (
+            "Trainings starten, Zwischenstände speichern, beenden "
+            "und die Trainingshistorie sowie Zusammenfassungen abrufen."
+        ),
+    },
+    {
+        "name": "Workout Videos",
+        "description": (
+            "Verfügbare Trainingsvideos und ihre Metadaten abrufen."
+        ),
+    },
+    {
+        "name": "Devices",
+        "description": (
+            "Aktuellen Verbindungsstatus und Telemetriedaten der "
+            "bekannten Trainingsgeräte abrufen."
+        ),
+    },
+    {
+        "name": "System",
+        "description": "Technische Endpunkte zur Zustandsprüfung des Backends.",
+    },
+]
+
+
 app = FastAPI(
     title="Health Coach API",
+    description=(
+        "Die lokale HTTP-API des Health Coach. Sie verwaltet Personen, "
+        "Check-ins, Trainingsempfehlungen, Workouts und Trainingsvideos. "
+        "Gerätetelemetrie wird zusätzlich über WebSocket-Verbindungen "
+        "übertragen.\n\n"
+        "Die API verwendet JSON mit camelCase-Feldnamen. Personen werden "
+        "über stabile numerische IDs identifiziert. Es handelt sich um "
+        "eine lokale Anwendung ohne Benutzeranmeldung."
+    ),
     version="0.1.0",
+    openapi_tags=OPENAPI_TAGS,
 )
 
 app.include_router(health_router)

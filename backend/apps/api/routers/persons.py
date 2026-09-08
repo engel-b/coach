@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, Path
 
 from application.person.management_service import PersonNotFoundError
 from apps.api import wiring
@@ -11,13 +13,31 @@ from contracts.person_profile import (
 from domains.person.profile import PersonProfile
 from domains.person.profile_validation import InvalidPersonProfileError
 
-router = APIRouter()
+router = APIRouter(tags=["Persons"],)
+
+
+PersonId = Annotated[
+    int,
+    Path(
+        title="Personen-ID",
+        description=(
+            "Stabile numerische ID der Person. Die ID bleibt auch "
+            "bei einer Änderung des Anzeigenamens erhalten."
+        ),
+        ge=1,
+    ),
+]
 
 
 @router.get(
     "/api/persons",
     response_model=list[PersonResponse],
     response_model_by_alias=True,
+    summary="Personen auflisten",
+    description=(
+        "Liefert alle angelegten Personen mit ihrer ID und ihrem "
+        "Anzeigenamen. Die Liste wird für die Personenauswahl verwendet."
+    ),
 )
 async def persons() -> list[PersonResponse]:
     return [
@@ -34,8 +54,24 @@ async def persons() -> list[PersonResponse]:
     response_model=PersonProfileResponse,
     response_model_by_alias=True,
     status_code=201,
-    tags=["Persons"],
     summary="Person anlegen",
+    description=(
+        "Legt eine neue Person zusammen mit ihrem Trainingsprofil an. "
+        "Person und Profil werden in einer gemeinsamen Datenbanktransaktion "
+        "gespeichert. Die ID wird automatisch vergeben.\n\n"
+        "Beim Trainingsziel „Abnehmen“ sind Start- und Zielgewicht "
+        "erforderlich. Das Zielgewicht muss unter dem Startgewicht liegen."
+    ),
+    responses={
+        422: {
+            "description": (
+                "Die Eingabedaten sind ungültig, beispielsweise wegen "
+                "eines fehlenden Pflichtfeldes, eines ungültigen "
+                "Geburtsdatums oder einer nicht zulässigen "
+                "Gewichtskonstellation."
+            ),
+        },
+    },
 )
 async def create_person(
     request: CreatePersonRequest,
@@ -72,8 +108,17 @@ async def create_person(
     "/api/persons/{person_id}/profile",
     response_model=PersonProfileResponse,
     response_model_by_alias=True,
-    tags=["Persons"],
     summary="Personenprofil abrufen",
+    description=(
+        "Liefert die Stammdaten und Trainingsziele einer Person. "
+        "Das Profil enthält unter anderem Geburtsdatum, Körpergröße, "
+        "Trainingsziel und optionale Gewichts- und Pulswerte."
+    ),
+    responses={
+        404: {
+            "description": "Die Person oder ihr Profil wurde nicht gefunden.",
+        },
+    },
 )
 async def get_person_profile(
     person_id: int,
@@ -110,8 +155,27 @@ async def get_person_profile(
     "/api/persons/{person_id}/profile",
     response_model=PersonProfileResponse,
     response_model_by_alias=True,
-    tags=["Persons"],
     summary="Personenprofil bearbeiten",
+    description=(
+        "Aktualisiert den Anzeigenamen und das vollständige Trainingsprofil "
+        "einer bestehenden Person. Die Personen-ID bleibt unverändert. "
+        "Alle Änderungen werden gemeinsam gespeichert.\n\n"
+        "Beim Trainingsziel „Abnehmen“ müssen Start- und Zielgewicht "
+        "vorhanden sein und das Zielgewicht muss niedriger sein. "
+        "Die aktuellen Tageswerte wie Gewicht, Schlaf und Schritte "
+        "gehören dagegen zum Check-in und nicht zum Stammdatenprofil."
+    ),
+    responses={
+        404: {
+            "description": "Die Person wurde nicht gefunden.",
+        },
+        422: {
+            "description": (
+                "Die Profilangaben sind ungültig oder verletzen "
+                "eine fachliche Validierungsregel."
+            ),
+        },
+    },
 )
 async def update_person_profile(
     person_id: int,
