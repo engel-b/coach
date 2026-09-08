@@ -1,29 +1,26 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react";
 
-import {
-  getPersonProfile,
-  updatePersonProfile,
-} from '../api/persons'
+import { getPersonProfile, updatePersonProfile } from "../api/persons";
 import type {
   Person,
   PersonProfile,
   TrainingGoal,
   UpdatePersonProfileRequest,
-} from './types'
+} from "./types";
 
 interface PersonProfileEditorProps {
-  person: Person
-  onSaved: (person: Person) => void
-  onCancel: () => void
+  person: Person;
+  onSaved: (person: Person) => void;
+  onCancel: () => void;
 }
 
 function optionalNumber(value: string): number | null {
-  if (value.trim() === '') {
-    return null
+  if (value.trim() === "") {
+    return null;
   }
 
-  const number = Number(value)
-  return Number.isFinite(number) ? number : null
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
 }
 
 export function PersonProfileEditor({
@@ -31,48 +28,48 @@ export function PersonProfileEditor({
   onSaved,
   onCancel,
 }: PersonProfileEditorProps) {
-  const [profile, setProfile] = useState<PersonProfile | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [profile, setProfile] = useState<PersonProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     async function loadProfile(): Promise<void> {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
       try {
-        const result = await getPersonProfile(person.id)
+        const result = await getPersonProfile(person.id);
 
         if (!cancelled) {
-          setProfile(result)
+          setProfile(result);
         }
       } catch (loadError) {
         if (!cancelled) {
           setError(
             loadError instanceof Error
               ? loadError.message
-              : 'Profil konnte nicht geladen werden',
-          )
+              : "Profil konnte nicht geladen werden",
+          );
         }
       } finally {
         if (!cancelled) {
-          setLoading(false)
+          setLoading(false);
         }
       }
     }
 
-    void loadProfile()
+    void loadProfile();
 
     return () => {
-      cancelled = true
-    }
-  }, [person.id])
+      cancelled = true;
+    };
+  }, [person.id]);
 
   if (loading) {
-    return <div className="loading-state">Profil wird geladen …</div>
+    return <div className="loading-state">Profil wird geladen …</div>;
   }
 
   if (error !== null && profile === null) {
@@ -82,70 +79,64 @@ export function PersonProfileEditor({
           {error}
         </div>
 
-        <button
-          type="button"
-          className="secondary-action"
-          onClick={onCancel}
-        >
+        <button type="button" className="secondary-action" onClick={onCancel}>
           Zurück
         </button>
       </section>
-    )
+    );
   }
 
   if (profile === null) {
-    return null
+    return null;
   }
 
   async function handleSubmit(
     event: React.FormEvent<HTMLFormElement>,
   ): Promise<void> {
-    event.preventDefault()
+    event.preventDefault();
 
     if (profile === null || saving) {
-      return
+      return;
     }
 
-    const formData = new FormData(event.currentTarget)
+    const formData = new FormData(event.currentTarget);
 
     const request: UpdatePersonProfileRequest = {
-      displayName: String(formData.get('displayName') ?? ''),
-      dateOfBirth: String(formData.get('dateOfBirth') ?? ''),
-      heightCm: Number(formData.get('heightCm')),
-      trainingGoal: String(
-        formData.get('trainingGoal'),
-      ) as TrainingGoal,
+      displayName: String(formData.get("displayName") ?? ""),
+      dateOfBirth: String(formData.get("dateOfBirth") ?? ""),
+      heightCm: Number(formData.get("heightCm")),
+      trainingGoal: String(formData.get("trainingGoal")) as TrainingGoal,
       maxHeartRateBpm: optionalNumber(
-        String(formData.get('maxHeartRateBpm') ?? ''),
+        String(formData.get("maxHeartRateBpm") ?? ""),
       ),
       startWeightKg: optionalNumber(
-        String(formData.get('startWeightKg') ?? ''),
+        String(formData.get("startWeightKg") ?? ""),
       ),
       targetWeightKg: optionalNumber(
-        String(formData.get('targetWeightKg') ?? ''),
+        String(formData.get("targetWeightKg") ?? ""),
       ),
-    }
+    };
 
-    setSaving(true)
-    setError(null)
+    setSaving(true);
+    setError(null);
 
     try {
-      const saved = await updatePersonProfile(person.id, request)
+      const saved = await updatePersonProfile(person.id, request);
 
-      setProfile(saved)
+      setProfile(saved);
 
       onSaved({
         id: saved.personId,
         displayName: saved.displayName,
-      })
+      });
     } catch (saveError) {
       setError(
         saveError instanceof Error
           ? saveError.message
-          : 'Profil konnte nicht gespeichert werden',
-      )
+          : "Profil konnte nicht gespeichert werden",
+      );
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
   }
 
@@ -192,10 +183,7 @@ export function PersonProfileEditor({
 
         <label>
           <span>Trainingsziel</span>
-          <select
-            name="trainingGoal"
-            defaultValue={profile.trainingGoal}
-          >
+          <select name="trainingGoal" defaultValue={profile.trainingGoal}>
             <option value="general_fitness">Fitness</option>
             <option value="muscle_gain">Muskelaufbau</option>
             <option value="weight_loss">Abnehmen</option>
@@ -210,7 +198,7 @@ export function PersonProfileEditor({
             type="number"
             min={100}
             max={230}
-            defaultValue={profile.maxHeartRateBpm ?? ''}
+            defaultValue={profile.maxHeartRateBpm ?? ""}
             placeholder="optional"
           />
         </label>
@@ -223,7 +211,7 @@ export function PersonProfileEditor({
             min="1"
             max="500"
             step="0.1"
-            defaultValue={profile.startWeightKg ?? ''}
+            defaultValue={profile.startWeightKg ?? ""}
             placeholder="optional"
           />
         </label>
@@ -236,7 +224,7 @@ export function PersonProfileEditor({
             min="1"
             max="500"
             step="0.1"
-            defaultValue={profile.targetWeightKg ?? ''}
+            defaultValue={profile.targetWeightKg ?? ""}
             placeholder="optional"
           />
         </label>
@@ -257,15 +245,11 @@ export function PersonProfileEditor({
             Abbrechen
           </button>
 
-          <button
-            type="submit"
-            className="primary-action"
-            disabled={saving}
-          >
-            {saving ? 'Wird gespeichert …' : 'Speichern'}
+          <button type="submit" className="primary-action" disabled={saving}>
+            {saving ? "Wird gespeichert …" : "Speichern"}
           </button>
         </div>
       </form>
     </section>
-  )
+  );
 }

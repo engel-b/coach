@@ -25,13 +25,9 @@ class PersonProfileRequest(BaseModel):
     def validate_weight_goal(self) -> "PersonProfileRequest":
         if self.training_goal == TrainingGoal.WEIGHT_LOSS:
             if self.start_weight_kg is None or self.target_weight_kg is None:
-                raise ValueError(
-                    "Für Abnehmen sind Start- und Zielgewicht erforderlich."
-                )
+                raise ValueError("Für Abnehmen sind Start- und Zielgewicht erforderlich.")
             if self.target_weight_kg >= self.start_weight_kg:
-                raise ValueError(
-                    "Das Zielgewicht muss unter dem Startgewicht liegen."
-                )
+                raise ValueError("Das Zielgewicht muss unter dem Startgewicht liegen.")
         return self
 
 

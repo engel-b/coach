@@ -15,4 +15,3 @@ class PersonProfileService:
         person_id: int,
     ) -> PersonProfile | None:
         return self._repository.get(person_id)
-

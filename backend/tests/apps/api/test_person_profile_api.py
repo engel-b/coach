@@ -5,11 +5,10 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 import apps.api.main as api_main
 from adapters.persistence.database import Base
-from adapters.persistence.person_model import PersonModel, PersonProfileModel
 from adapters.persistence.sqlalchemy_person_profile_repository import (
     SqlAlchemyPersonProfileRepository,
 )
@@ -20,8 +19,8 @@ from adapters.persistence.sqlalchemy_person_repository import (
     SqlAlchemyPersonRepository,
 )
 from application.person.management_service import PersonManagementService
+from application.person.person_service import PersonService
 from application.person.profile_service import PersonProfileService
-from application.person.service import PersonService
 from domains.person.person import Person
 from domains.person.profile import PersonProfile, TrainingGoal
 
@@ -137,9 +136,7 @@ def test_put_profile_updates_name_and_profile(
     # Auch die Personenliste muss den neuen Namen liefern.
     persons_response = profile_api.get("/api/persons")
     assert persons_response.status_code == 200
-    assert persons_response.json() == [
-        {"id": 1, "displayName": "Neuer Name"}
-    ]
+    assert persons_response.json() == [{"id": 1, "displayName": "Neuer Name"}]
 
 
 def test_get_unknown_person_returns_404(

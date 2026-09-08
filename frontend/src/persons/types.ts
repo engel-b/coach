@@ -10,28 +10,25 @@ export interface Person {
 }
 
 export type TrainingGoal =
-  | 'general_fitness'
-  | 'muscle_gain'
-  | 'weight_loss'
-  | 'endurance'
+  "general_fitness" | "muscle_gain" | "weight_loss" | "endurance";
 
 export interface PersonProfile {
-  personId: number
-  displayName: string
-  dateOfBirth: string
-  heightCm: number
-  trainingGoal: TrainingGoal
-  maxHeartRateBpm: number | null
-  startWeightKg: number | null
-  targetWeightKg: number | null
+  personId: number;
+  displayName: string;
+  dateOfBirth: string;
+  heightCm: number;
+  trainingGoal: TrainingGoal;
+  maxHeartRateBpm: number | null;
+  startWeightKg: number | null;
+  targetWeightKg: number | null;
 }
 
 export interface UpdatePersonProfileRequest {
-  displayName: string
-  dateOfBirth: string
-  heightCm: number
-  trainingGoal: TrainingGoal
-  maxHeartRateBpm: number | null
-  startWeightKg: number | null
-  targetWeightKg: number | null
+  displayName: string;
+  dateOfBirth: string;
+  heightCm: number;
+  trainingGoal: TrainingGoal;
+  maxHeartRateBpm: number | null;
+  startWeightKg: number | null;
+  targetWeightKg: number | null;
 }

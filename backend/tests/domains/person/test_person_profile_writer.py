@@ -96,10 +96,7 @@ def test_saves_person_name_and_profile_together(
         assert saved_profile is not None
         assert saved_profile.date_of_birth == date(1985, 5, 10)
         assert saved_profile.height_cm == 175
-        assert (
-            saved_profile.training_goal
-            == TrainingGoal.WEIGHT_LOSS.value
-        )
+        assert saved_profile.training_goal == TrainingGoal.WEIGHT_LOSS.value
         assert saved_profile.max_heart_rate_bpm == 190
         assert saved_profile.start_weight_kg == 92.5
         assert saved_profile.target_weight_kg == 82.0

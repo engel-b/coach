@@ -1,11 +1,11 @@
-import type { Person } from './types'
-import { WorkoutHistory } from '../workout/WorkoutHistory'
+import type { Person } from "./types";
+import { WorkoutHistory } from "../workout/WorkoutHistory";
 
 interface PersonDashboardProps {
-  person: Person
-  onStartCheckIn: () => void
-  onChangePerson: () => void
-  onEditProfile: () => void
+  person: Person;
+  onStartCheckIn: () => void;
+  onChangePerson: () => void;
+  onEditProfile: () => void;
 }
 
 export function PersonDashboard({
@@ -51,5 +51,5 @@ export function PersonDashboard({
         </button>
       </div>
     </section>
-  )
+  );
 }

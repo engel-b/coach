@@ -4,16 +4,20 @@ from datetime import UTC, datetime
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
-from adapters.persistence.sqlalchemy_check_in_repository import (SqlAlchemyCheckInRepository)
-from adapters.persistence.sqlalchemy_person_profile_repository import (SqlAlchemyPersonProfileRepository)
-from adapters.persistence.sqlalchemy_person_repository import (SqlAlchemyPersonRepository)
-from adapters.persistence.sqlalchemy_workout_repository import (SqlAlchemyWorkoutRepository)
-from adapters.persistence.sqlalchemy_workout_video_repository import (SqlAlchemyWorkoutVideoRepository)
-from adapters.persistence.sqlalchemy_person_profile_writer import (SqlAlchemyPersonProfileWriter)
-from application.person.management_service import (PersonManagementService, PersonNotFoundError)
-from application.check_in.service import (CheckInService, InvalidCheckInError)
+from adapters.persistence.sqlalchemy_check_in_repository import SqlAlchemyCheckInRepository
+from adapters.persistence.sqlalchemy_person_profile_repository import (
+    SqlAlchemyPersonProfileRepository,
+)
+from adapters.persistence.sqlalchemy_person_profile_writer import SqlAlchemyPersonProfileWriter
+from adapters.persistence.sqlalchemy_person_repository import SqlAlchemyPersonRepository
+from adapters.persistence.sqlalchemy_workout_repository import SqlAlchemyWorkoutRepository
+from adapters.persistence.sqlalchemy_workout_video_repository import (
+    SqlAlchemyWorkoutVideoRepository,
+)
+from application.check_in.service import CheckInService, InvalidCheckInError
+from application.person.management_service import PersonManagementService, PersonNotFoundError
+from application.person.person_service import PersonService
 from application.person.profile_service import PersonProfileService
-from application.person.service import PersonService
 from application.telemetry.broadcaster import TelemetryBroadcaster
 from application.telemetry.service import TelemetryService
 from application.workout.service import (
@@ -27,6 +31,7 @@ from application.workout.video_catalog_service import VideoCatalogService, Worko
 from contracts.check_in import CheckInRequest, CheckInResponse
 from contracts.device import DeviceResponse
 from contracts.person import PersonResponse
+from contracts.person_profile import PersonProfileRequest, PersonProfileResponse
 from contracts.telemetry import TelemetryMessage
 from contracts.training import (
     TrainingRecommendationResponse,
@@ -39,15 +44,13 @@ from contracts.workout import (
     WorkoutResponse,
     WorkoutSummaryResponse,
 )
-from contracts.person_profile import (PersonProfileRequest, PersonProfileResponse)
 from contracts.workout_mapper import to_workout_response, to_workout_summary_response
 from contracts.workout_video import WorkoutVideoResponse, to_workout_video_response
+from domains.person.profile import PersonProfile
+from domains.person.profile_validation import InvalidPersonProfileError
 from domains.training.heart_rate import get_max_heart_rate
 from domains.training.recommendation import TrainingRecommendation
 from domains.training.recommendation_engine import TrainingRecommendationEngine
-
-from domains.person.profile import PersonProfile
-from domains.person.profile_validation import InvalidPersonProfileError
 
 logging.basicConfig(
     level=logging.INFO,
@@ -75,7 +78,9 @@ person_profile_repository = SqlAlchemyPersonProfileRepository()
 person_profile_service = PersonProfileService(repository=person_profile_repository)
 
 person_profile_writer = SqlAlchemyPersonProfileWriter()
-person_management_service = PersonManagementService(person_repository=person_repository, profile_writer=person_profile_writer)
+person_management_service = PersonManagementService(
+    person_repository=person_repository, profile_writer=person_profile_writer
+)
 
 training_recommendation_engine = TrainingRecommendationEngine()
 workout_repository = SqlAlchemyWorkoutRepository()
@@ -326,12 +331,10 @@ async def update_person_profile(
         target_weight_kg=request.target_weight_kg,
     )
     try:
-        updated_person, saved_profile = (
-            person_management_service.update_profile(
-                person_id=person_id,
-                display_name=request.display_name,
-                profile=profile,
-            )
+        updated_person, saved_profile = person_management_service.update_profile(
+            person_id=person_id,
+            display_name=request.display_name,
+            profile=profile,
         )
     except PersonNotFoundError as exc:
         raise HTTPException(
@@ -355,7 +358,7 @@ async def update_person_profile(
         target_weight_kg=saved_profile.target_weight_kg,
     )
 
-    
+
 @app.get(
     "/api/persons/{person_id}/check-ins/latest",
     response_model=CheckInResponse | None,

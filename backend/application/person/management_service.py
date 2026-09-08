@@ -33,9 +33,7 @@ class PersonManagementService:
         person = self._person_repository.get(person_id)
 
         if person is None:
-            raise PersonNotFoundError(
-                f"Person not found: {person_id}"
-            )
+            raise PersonNotFoundError(f"Person not found: {person_id}")
 
         updated_person = Person(
             id=person.id,
