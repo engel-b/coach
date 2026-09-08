@@ -22,7 +22,11 @@ interface PersonSelectionProps {
  * Ein späterer USB-Nummernblock sendet dieselben KeyboardEvents.
  * Deshalb funktioniert er ohne Änderung dieser Komponente.
  */
-export function PersonSelection({ persons, onSelect, onCreate }: PersonSelectionProps) {
+export function PersonSelection({
+  persons,
+  onSelect,
+  onCreate,
+}: PersonSelectionProps) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
       /*

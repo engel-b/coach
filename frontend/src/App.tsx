@@ -228,7 +228,7 @@ function App() {
    * Solange keine Person gewählt wurde, zeigen wir
    * ausschließlich die Personenauswahl.
    */
-   if (activePerson === null) {
+  if (activePerson === null) {
     return (
       <main className="app">
         {personCreateOpen ? (
