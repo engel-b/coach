@@ -1495,3 +1495,11 @@ h1 {
 .person-profile-editor .error-message {
   white-space: pre-line;
 }
+
+.person-profile-form .field-hint {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--text-muted, #777);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}

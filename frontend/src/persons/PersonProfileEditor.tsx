@@ -28,6 +28,41 @@ function optionalNumber(value: string): number | null {
   return Number.isFinite(number) ? number : null;
 }
 
+function formatDateForInput(isoDate: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+
+  if (match === null) {
+    return isoDate;
+  }
+
+  return `${match[3]}.${match[2]}.${match[1]}`;
+}
+
+function parseGermanDate(value: string): string | null {
+  const match = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(value.trim());
+
+  if (match === null) {
+    return null;
+  }
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCFullYear(year);
+
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return `${match[3]}-${match[2]}-${match[1]}`;
+}
+
 function ProfileForm({
   profile,
   creating,
@@ -56,7 +91,7 @@ function ProfileForm({
         <h1>{creating ? "Person hinzufügen" : "Profil bearbeiten"}</h1>
       </header>
 
-      <form className="person-profile-form" onSubmit={onSubmit}>
+      <form className="person-profile-form" onSubmit={onSubmit} noValidate>
         <label>
           <span>Name</span>
           <input
@@ -73,9 +108,17 @@ function ProfileForm({
           <span>Geburtsdatum</span>
           <input
             name="dateOfBirth"
-            type="date"
-            defaultValue={profile?.dateOfBirth ?? ""}
+            type="text"
+            inputMode="numeric"
+            placeholder="TT.MM.JJJJ"
+            defaultValue={
+              profile?.dateOfBirth
+                ? formatDateForInput(profile.dateOfBirth)
+                : ""
+            }
             required
+            maxLength={10}
+            autoComplete="bday"
           />
         </label>
 
@@ -117,6 +160,11 @@ function ProfileForm({
             defaultValue={profile?.maxHeartRateBpm ?? ""}
             placeholder="optional"
           />
+          <span className="field-hint">
+            Optional. Trage deinen gemessenen oder ärztlich bestimmten
+            Maximalpuls ein. Wenn du keinen Wert kennst, lass das Feld leer. Der
+            Coach verwendet dann einen altersbasierten Schätzwert.
+          </span>
         </label>
 
         <label>
@@ -226,6 +274,38 @@ export function PersonProfileEditor({
     };
   }, [person]);
 
+  function validateProfileRequest(
+    request: UpdatePersonProfileRequest,
+  ): string | null {
+    if (request.displayName.trim() === "") {
+      return "Bitte gib einen Namen ein.";
+    }
+
+    if (request.dateOfBirth === "") {
+      return "Bitte gib dein Geburtsdatum ein.";
+    }
+
+    if (request.heightCm < 100 || request.heightCm > 250) {
+      return "Bitte gib eine Körpergröße zwischen 100 und 250 cm ein.";
+    }
+
+    if (request.trainingGoal === "weight_loss") {
+      if (request.startWeightKg === null) {
+        return "Bitte gib dein Startgewicht ein.";
+      }
+
+      if (request.targetWeightKg === null) {
+        return "Bitte gib dein Zielgewicht ein.";
+      }
+
+      if (request.targetWeightKg >= request.startWeightKg) {
+        return "Das Zielgewicht muss unter dem Startgewicht liegen.";
+      }
+    }
+
+    return null;
+  }
+
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
@@ -237,9 +317,22 @@ export function PersonProfileEditor({
 
     const formData = new FormData(event.currentTarget);
 
+    const dateInput = String(formData.get("dateOfBirth") ?? "").trim();
+    const parsedDate = parseGermanDate(dateInput);
+
+    if (dateInput === "") {
+      setError("Bitte gib dein Geburtsdatum ein.");
+      return;
+    }
+
+    if (parsedDate === null) {
+      setError("Bitte gib das Datum im Format TT.MM.JJJJ ein.");
+      return;
+    }
+
     const request: UpdatePersonProfileRequest = {
-      displayName: String(formData.get("displayName") ?? ""),
-      dateOfBirth: String(formData.get("dateOfBirth") ?? ""),
+      displayName: String(formData.get("displayName") ?? "").trim(),
+      dateOfBirth: parsedDate,
       heightCm: Number(formData.get("heightCm")),
       trainingGoal: String(formData.get("trainingGoal")) as TrainingGoal,
       maxHeartRateBpm: optionalNumber(
@@ -253,13 +346,10 @@ export function PersonProfileEditor({
       ),
     };
 
-    if (
-      request.trainingGoal === "weight_loss" &&
-      request.startWeightKg !== null &&
-      request.targetWeightKg !== null &&
-      request.targetWeightKg >= request.startWeightKg
-    ) {
-      setError("Das Zielgewicht muss unter dem Startgewicht liegen.");
+    const validationError = validateProfileRequest(request);
+
+    if (validationError !== null) {
+      setError(validationError);
       return;
     }
 
