@@ -2025,3 +2025,129 @@ h1 {
     align-self: center;
   }
 }
+
+/* Workout-Abschlussseite: gemeinsames Dashboard-Raster */
+.completion-dashboard .dashboard-main-grid {
+  align-items: stretch;
+}
+.completion-duration {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 28px;
+}
+.completion-duration strong {
+  font-size: clamp(42px, 5vw, 64px);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+}
+.completion-duration span,
+.completion-progress-label,
+.completion-detail-row,
+.completion-metrics span,
+.completion-metrics small {
+  color: #8a97a8;
+}
+.completion-progress {
+  margin-bottom: 24px;
+}
+.completion-progress-label,
+.completion-detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+.completion-progress-label {
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+.completion-progress-label strong,
+.completion-detail-row strong {
+  color: #e7ebef;
+  font-variant-numeric: tabular-nums;
+}
+.completion-progress-track {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.completion-progress-track > div {
+  height: 100%;
+  border-radius: inherit;
+  background: #73d55b;
+}
+.completion-detail-row {
+  padding: 14px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.075);
+  font-size: 14px;
+}
+.completion-results-card {
+  margin-bottom: 24px;
+}
+.completion-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.completion-metrics > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.025);
+}
+.completion-metrics span {
+  font-size: 13px;
+}
+.completion-metrics strong {
+  font-size: clamp(20px, 2.5vw, 30px);
+  font-variant-numeric: tabular-nums;
+}
+.completion-metrics small {
+  font-size: 12px;
+  line-height: 1.4;
+}
+.completion-badge-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 20px;
+  border: 1px dashed #3b4654;
+  border-radius: 16px;
+}
+.completion-badge-placeholder strong {
+  display: block;
+}
+.completion-badge-placeholder p {
+  margin: 6px 0 0;
+  color: #8a97a8;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.completion-dashboard-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+.completion-dashboard-actions .primary-action {
+  min-height: 54px;
+}
+@media (max-width: 900px) {
+  .completion-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 620px) {
+  .completion-metrics {
+    grid-template-columns: 1fr;
+  }
+  .completion-dashboard-actions .primary-action {
+    width: 100%;
+  }
+}

@@ -29,3 +29,15 @@ class InMemoryCheckInRepository:
             matching,
             key=lambda check_in: check_in.timestamp,
         )
+
+    def get_history_for_person(
+        self,
+        person_id: int,
+        limit: int,
+    ) -> list[CheckIn]:
+        matching = [check_in for check_in in self._check_ins if check_in.person_id == person_id]
+        return sorted(
+            matching,
+            key=lambda check_in: check_in.timestamp,
+            reverse=True,
+        )[:limit]

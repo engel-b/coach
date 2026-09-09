@@ -20,3 +20,9 @@ class CheckInRepository(Protocol):
         self,
         person_id: int,
     ) -> CheckIn | None: ...
+
+    def get_history_for_person(
+        self,
+        person_id: int,
+        limit: int,
+    ) -> list[CheckIn]: ...

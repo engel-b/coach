@@ -41,7 +41,7 @@ class SqlAlchemyCheckInRepository:
             statement = (
                 select(CheckInModel)
                 .where(CheckInModel.person_id == person_id)
-                .order_by(CheckInModel.timestamp.desc())
+                .order_by(CheckInModel.timestamp.desc(), CheckInModel.id.desc())
                 .limit(1)
             )
 
@@ -50,15 +50,37 @@ class SqlAlchemyCheckInRepository:
             if model is None:
                 return None
 
-            return CheckIn(
-                person_id=model.person_id,
-                timestamp=model.timestamp,
-                energy=model.energy,
-                recovery=model.recovery,
-                muscle_soreness=model.muscle_soreness,
-                stress=model.stress,
-                available_training_minutes=model.available_training_minutes,
-                current_weight_kg=model.current_weight_kg,
-                sleep_hours=model.sleep_hours,
-                steps=model.steps,
+            return self._to_domain(model)
+
+    def get_history_for_person(
+        self,
+        person_id: int,
+        limit: int,
+    ) -> list[CheckIn]:
+        with create_session() as session:
+            statement = (
+                select(CheckInModel)
+                .where(CheckInModel.person_id == person_id)
+                .order_by(
+                    CheckInModel.timestamp.desc(),
+                    CheckInModel.id.desc(),
+                )
+                .limit(limit)
             )
+            models = session.scalars(statement).all()
+            return [self._to_domain(model) for model in models]
+
+    @staticmethod
+    def _to_domain(model: CheckInModel) -> CheckIn:
+        return CheckIn(
+            person_id=model.person_id,
+            timestamp=model.timestamp,
+            energy=model.energy,
+            recovery=model.recovery,
+            muscle_soreness=model.muscle_soreness,
+            stress=model.stress,
+            available_training_minutes=model.available_training_minutes,
+            current_weight_kg=model.current_weight_kg,
+            sleep_hours=model.sleep_hours,
+            steps=model.steps,
+        )

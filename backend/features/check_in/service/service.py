@@ -91,6 +91,16 @@ class CheckInService:
     ) -> CheckIn | None:
         return self._repository.get_latest_for_person(person_id)
 
+    def get_history(
+        self,
+        person_id: int,
+        limit: int = 90,
+    ) -> list[CheckIn]:
+        if limit < 1 or limit > 1000:
+            raise InvalidCheckInError("limit must be between 1 and 1000")
+
+        return self._repository.get_history_for_person(person_id, limit)
+
     @staticmethod
     def _validate_scale(
         name: str,
