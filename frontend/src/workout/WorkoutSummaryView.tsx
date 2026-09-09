@@ -1,27 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react";
 
-import { getWorkoutSummary } from '../api/workouts'
-import type { Person } from '../persons/types'
-import type { Workout } from './types'
-import type { WorkoutSummary } from './summary-types'
+import { getWorkoutSummary } from "../api/workouts";
+import type { Person } from "../persons/types";
+import type { Workout } from "./types";
+import type { WorkoutSummary } from "./summary-types";
 
 interface WorkoutSummaryViewProps {
-  person: Person
-  workout: Workout
-  onDone: () => void
+  person: Person;
+  workout: Workout;
+  onDone: () => void;
 }
 
 function formatDuration(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = Math.floor(totalSeconds % 60)
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function formatDistance(meters: number): string {
-  return (meters / 1000).toLocaleString('de-DE', {
+  return (meters / 1000).toLocaleString("de-DE", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })
+  });
 }
 
 export function WorkoutSummaryView({
@@ -29,48 +29,56 @@ export function WorkoutSummaryView({
   workout,
   onDone,
 }: WorkoutSummaryViewProps) {
-  const [summary, setSummary] = useState<WorkoutSummary | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [summary, setSummary] = useState<WorkoutSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     async function loadSummary(): Promise<void> {
       try {
-        setLoading(true)
-        setError(null)
-        const result = await getWorkoutSummary(workout.id)
-        if (!cancelled) setSummary(result)
+        setLoading(true);
+        setError(null);
+        const result = await getWorkoutSummary(workout.id);
+        if (!cancelled) setSummary(result);
       } catch (loadError) {
         if (!cancelled) {
           setError(
             loadError instanceof Error
               ? loadError.message
-              : 'Die Auswertung konnte nicht geladen werden.',
-          )
+              : "Die Auswertung konnte nicht geladen werden.",
+          );
         }
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) setLoading(false);
       }
     }
 
-    void loadSummary()
-    return () => { cancelled = true }
-  }, [workout.id])
+    void loadSummary();
+    return () => {
+      cancelled = true;
+    };
+  }, [workout.id]);
 
-  const completed = summary?.status === 'completed'
-  const status = completed ? 'Abgeschlossen' : 'Abgebrochen'
-  const elapsed = summary?.elapsedSeconds ?? workout.elapsedSeconds
-  const planned = summary?.plannedSeconds ?? workout.totalDurationMinutes * 60
-  const percent = summary?.completionPercent ?? 0
+  const completed = summary?.status === "completed";
+  const status = completed ? "Abgeschlossen" : "Abgebrochen";
+  const elapsed = summary?.elapsedSeconds ?? workout.elapsedSeconds;
+  const planned = summary?.plannedSeconds ?? workout.totalDurationMinutes * 60;
+  const percent = summary?.completionPercent ?? 0;
 
   return (
     <section className="person-dashboard completion-dashboard">
       <header className="dashboard-header">
         <div>
           <div className="eyebrow">DIGITAL FITNESS COACH</div>
-          <h1>{loading ? 'Training wird ausgewertet …' : completed ? 'Workout abgeschlossen' : 'Training beendet'}</h1>
+          <h1>
+            {loading
+              ? "Training wird ausgewertet …"
+              : completed
+                ? "Workout abgeschlossen"
+                : "Training beendet"}
+          </h1>
           <p>Deine Trainingszusammenfassung, {person.displayName}.</p>
         </div>
         <div className="dashboard-header-actions">
@@ -81,7 +89,9 @@ export function WorkoutSummaryView({
       </header>
 
       {error !== null && (
-        <div className="error-message" role="alert">{error}</div>
+        <div className="error-message" role="alert">
+          {error}
+        </div>
       )}
 
       <div className="dashboard-main-grid">
@@ -91,8 +101,10 @@ export function WorkoutSummaryView({
               <div className="dashboard-section-label">DEIN WORKOUT</div>
               <h2>Radtraining</h2>
             </div>
-            <span className={`dashboard-workout-status ${completed ? 'completed' : 'aborted'}`}>
-              {loading ? 'Wird geladen' : status}
+            <span
+              className={`dashboard-workout-status ${completed ? "completed" : "aborted"}`}
+            >
+              {loading ? "Wird geladen" : status}
             </span>
           </div>
           <div className="completion-duration">
@@ -102,10 +114,12 @@ export function WorkoutSummaryView({
           <div className="completion-progress">
             <div className="completion-progress-label">
               <span>Erfüllung der geplanten Dauer</span>
-              <strong>{loading ? '–' : `${percent} %`}</strong>
+              <strong>{loading ? "–" : `${percent} %`}</strong>
             </div>
             <div className="completion-progress-track">
-              <div style={{ width: `${Math.max(0, Math.min(100, percent))}%` }} />
+              <div
+                style={{ width: `${Math.max(0, Math.min(100, percent))}%` }}
+              />
             </div>
           </div>
           <div className="completion-detail-row">
@@ -126,12 +140,12 @@ export function WorkoutSummaryView({
             </div>
             <div>
               <div className="dashboard-section-label">DEIN COACH</div>
-              <h2>{completed ? 'Gut gemacht!' : 'Dein Training zählt.'}</h2>
+              <h2>{completed ? "Gut gemacht!" : "Dein Training zählt."}</h2>
             </div>
           </div>
           <p className="dashboard-coach-text">
             {loading
-              ? 'Ich werte dein Training aus.'
+              ? "Ich werte dein Training aus."
               : completed
                 ? `Du hast ${formatDuration(elapsed)} trainiert und dein Workout abgeschlossen. Die geplante Dauer lag bei ${formatDuration(planned)}.`
                 : `Du hast ${formatDuration(elapsed)} trainiert. Das Workout wurde vorzeitig beendet. Auch diese Aktivität gehört zu deinem Trainingsverlauf.`}
@@ -140,8 +154,8 @@ export function WorkoutSummaryView({
             <span>Nächster Schritt</span>
             <strong>
               {completed
-                ? 'Gönn dir ausreichend Erholung und erfasse beim nächsten Check-in deine aktuelle Tagesform.'
-                : 'Achte auf deine Erholung. Dein nächster Check-in hilft dabei, das folgende Training passend zu planen.'}
+                ? "Gönn dir ausreichend Erholung und erfasse beim nächsten Check-in deine aktuelle Tagesform."
+                : "Achte auf deine Erholung. Dein nächster Check-in hilft dabei, das folgende Training passend zu planen."}
             </strong>
           </div>
         </aside>
@@ -155,10 +169,26 @@ export function WorkoutSummaryView({
           </div>
         </div>
         <div className="completion-metrics">
-          <div><span>Trainiert</span><strong>{formatDuration(elapsed)}</strong><small>Minuten : Sekunden</small></div>
-          <div><span>Geplant</span><strong>{formatDuration(planned)}</strong><small>Minuten : Sekunden</small></div>
-          <div><span>Erfüllung</span><strong>{loading ? '–' : `${percent} %`}</strong><small>Der geplanten Dauer</small></div>
-          <div><span>Distanz</span><strong>{formatDistance(workout.distanceM)} km</strong><small>Gespeicherter Trainingswert</small></div>
+          <div>
+            <span>Trainiert</span>
+            <strong>{formatDuration(elapsed)}</strong>
+            <small>Minuten : Sekunden</small>
+          </div>
+          <div>
+            <span>Geplant</span>
+            <strong>{formatDuration(planned)}</strong>
+            <small>Minuten : Sekunden</small>
+          </div>
+          <div>
+            <span>Erfüllung</span>
+            <strong>{loading ? "–" : `${percent} %`}</strong>
+            <small>Der geplanten Dauer</small>
+          </div>
+          <div>
+            <span>Distanz</span>
+            <strong>{formatDistance(workout.distanceM)} km</strong>
+            <small>Gespeicherter Trainingswert</small>
+          </div>
         </div>
       </section>
 
@@ -170,10 +200,15 @@ export function WorkoutSummaryView({
           </div>
         </div>
         <div className="completion-badge-placeholder">
-          <div className="dashboard-badge-icon" aria-hidden="true">★</div>
+          <div className="dashboard-badge-icon" aria-hidden="true">
+            ★
+          </div>
           <div>
             <strong>Deine Erfolge werden hier sichtbar.</strong>
-            <p>Neue Badges werden angezeigt, sobald die Badge-Auswertung für abgeschlossene Workouts angebunden ist.</p>
+            <p>
+              Neue Badges werden angezeigt, sobald die Badge-Auswertung für
+              abgeschlossene Workouts angebunden ist.
+            </p>
           </div>
         </div>
       </section>
@@ -184,5 +219,5 @@ export function WorkoutSummaryView({
         </button>
       </div>
     </section>
-  )
+  );
 }

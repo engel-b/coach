@@ -2072,7 +2072,7 @@ h1 {
   height: 10px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
 }
 .completion-progress-track > div {
   height: 100%;
@@ -2081,7 +2081,7 @@ h1 {
 }
 .completion-detail-row {
   padding: 14px 0;
-  border-top: 1px solid rgba(255,255,255,0.075);
+  border-top: 1px solid rgba(255, 255, 255, 0.075);
   font-size: 14px;
 }
 .completion-results-card {
@@ -2089,7 +2089,7 @@ h1 {
 }
 .completion-metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0,1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
 .completion-metrics > div {
@@ -2098,16 +2098,21 @@ h1 {
   gap: 8px;
   min-width: 0;
   padding: 20px;
-  border: 1px solid rgba(255,255,255,0.07);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 16px;
-  background: rgba(255,255,255,0.025);
+  background: rgba(255, 255, 255, 0.025);
 }
-.completion-metrics span { font-size: 13px; }
+.completion-metrics span {
+  font-size: 13px;
+}
 .completion-metrics strong {
-  font-size: clamp(20px,2.5vw,30px);
+  font-size: clamp(20px, 2.5vw, 30px);
   font-variant-numeric: tabular-nums;
 }
-.completion-metrics small { font-size: 12px; line-height: 1.4; }
+.completion-metrics small {
+  font-size: 12px;
+  line-height: 1.4;
+}
 .completion-badge-placeholder {
   display: flex;
   align-items: center;
@@ -2116,7 +2121,9 @@ h1 {
   border: 1px dashed #3b4654;
   border-radius: 16px;
 }
-.completion-badge-placeholder strong { display: block; }
+.completion-badge-placeholder strong {
+  display: block;
+}
 .completion-badge-placeholder p {
   margin: 6px 0 0;
   color: #8a97a8;
@@ -2128,11 +2135,19 @@ h1 {
   justify-content: flex-end;
   padding-top: 4px;
 }
-.completion-dashboard-actions .primary-action { min-height: 54px; }
+.completion-dashboard-actions .primary-action {
+  min-height: 54px;
+}
 @media (max-width: 900px) {
-  .completion-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .completion-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @media (max-width: 620px) {
-  .completion-metrics { grid-template-columns: 1fr; }
-  .completion-dashboard-actions .primary-action { width: 100%; }
+  .completion-metrics {
+    grid-template-columns: 1fr;
+  }
+  .completion-dashboard-actions .primary-action {
+    width: 100%;
+  }
 }
