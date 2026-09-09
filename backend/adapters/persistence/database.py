@@ -1,10 +1,10 @@
 from collections.abc import Generator
 from pathlib import Path
+from sqlite3 import Connection as SQLiteConnection
 
 from sqlalchemy import create_engine, event
-from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.engine import Engine
-from sqlite3 import Connection as SQLiteConnection
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 # backend/adapters/persistence/database.py
 #                ↓

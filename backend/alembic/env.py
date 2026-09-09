@@ -4,8 +4,8 @@ from sqlalchemy import engine_from_config, pool
 
 from adapters.persistence.database import DATABASE_URL, Base, enable_sqlite_foreign_keys
 from alembic import context
-from features.person.persistence.person_model import PersonModel, PersonProfileModel  # noqa: F401
 from features.check_in.persistence.check_in_model import CheckInModel  # noqa: F401
+from features.person.persistence.person_model import PersonModel, PersonProfileModel  # noqa: F401
 from features.workout.persistence.workout_model import (  # noqa: F401
     WorkoutModel,
     WorkoutPhaseModel,

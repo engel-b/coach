@@ -7,7 +7,6 @@ import sqlalchemy as sa
 
 from alembic import op
 
-
 revision: str = "e8b7c6d5a401"
 
 down_revision: str | Sequence[str] | None = "c610a1547bed"
@@ -67,8 +66,7 @@ def _check_orphans() -> None:
         raise RuntimeError(
             "Migration abgebrochen: verwaiste Referenzen gefunden. "
             "Bitte zuerst die Bestandsprüfung ausführen und die Daten "
-            "bewusst korrigieren. Es wurden keine Datensätze gelöscht. "
-            + "; ".join(problems)
+            "bewusst korrigieren. Es wurden keine Datensätze gelöscht. " + "; ".join(problems)
         )
 
 

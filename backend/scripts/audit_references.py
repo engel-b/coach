@@ -1,9 +1,8 @@
 """Read-only referential-integrity report for a chosen SQLite database."""
 
 import argparse
-from pathlib import Path
 import sqlite3
-
+from pathlib import Path
 
 REFERENCES = (
     # child table, child PK, FK column, parent table, parent PK
@@ -59,26 +58,14 @@ def main() -> None:
                 """
             ).fetchall()
 
-            print(
-                f"\n{table}.{column} -> "
-                f"{parent}.{parent_column}: "
-                f"{len(rows)} orphan(s)"
-            )
+            print(f"\n{table}.{column} -> {parent}.{parent_column}: {len(rows)} orphan(s)")
 
             for row in rows:
-                print(
-                    f"  {child_pk}={row['child_id']!r}, "
-                    f"{column}={row['reference_value']!r}"
-                )
+                print(f"  {child_pk}={row['child_id']!r}, {column}={row['reference_value']!r}")
 
-        violations = connection.execute(
-            "PRAGMA foreign_key_check"
-        ).fetchall()
+        violations = connection.execute("PRAGMA foreign_key_check").fetchall()
 
-        print(
-            f"\nExisting foreign-key violations: "
-            f"{len(violations)}"
-        )
+        print(f"\nExisting foreign-key violations: {len(violations)}")
 
         for row in violations:
             print(tuple(row))
