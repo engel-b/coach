@@ -16,6 +16,7 @@ class WorkoutModel(Base):
 
     person_id: Mapped[int] = mapped_column(
         Integer,
+        ForeignKey("person.id", name="fk_workout_person", ondelete="RESTRICT"),
         nullable=False,
         index=True,
     )
@@ -49,6 +50,7 @@ class WorkoutModel(Base):
 
     video_id: Mapped[str] = mapped_column(
         String,
+        ForeignKey("workout_video.id", name="fk_workout_video", ondelete="RESTRICT"),
         nullable=False,
         default="cycling-alpen-01",
         server_default="cycling-alpen-01",

@@ -1,8 +1,10 @@
 from collections.abc import Generator
 from pathlib import Path
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.engine import Engine
+from sqlite3 import Connection as SQLiteConnection
 
 # backend/adapters/persistence/database.py
 #                ↓
@@ -33,16 +35,32 @@ class Base(DeclarativeBase):
     """
 
 
-engine = create_engine(
-    DATABASE_URL,
-    # SQLite erlaubt Verbindungen standardmäßig nur aus dem Thread,
-    # der sie erzeugt hat. FastAPI kann Requests aber über verschiedene
-    # Threads abwickeln.
-    connect_args={
-        "check_same_thread": False,
-    },
-)
+def enable_sqlite_foreign_keys(engine: Engine) -> None:
+    """Activate SQLite foreign keys on every DB-API connection."""
+    if engine.dialect.name != "sqlite":
+        return
 
+    @event.listens_for(engine, "connect")
+    def _enable(dbapi_connection: object, connection_record: object) -> None:
+        if not isinstance(dbapi_connection, SQLiteConnection):
+            return
+        cursor = dbapi_connection.cursor()
+        try:
+            cursor.execute("PRAGMA foreign_keys=ON")
+        finally:
+            cursor.close()
+
+
+def make_engine(url: str) -> Engine:
+    engine = create_engine(
+        url,
+        connect_args={"check_same_thread": False} if url.startswith("sqlite") else {},
+    )
+    enable_sqlite_foreign_keys(engine)
+    return engine
+
+
+engine = make_engine(DATABASE_URL)
 
 SessionFactory = sessionmaker(
     bind=engine,
