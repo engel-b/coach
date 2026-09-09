@@ -1,9 +1,10 @@
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Path
+from fastapi import APIRouter, HTTPException, Path, Query
 
 from apps.api import wiring
 from features.check_in.api.contracts.check_in import CheckInRequest, CheckInResponse
+from features.check_in.domain.check_in import CheckIn
 from features.check_in.service.service import InvalidCheckInError
 
 router = APIRouter(tags=["Check-ins"])
@@ -70,18 +71,7 @@ async def create_check_in(
             detail=str(exc),
         ) from exc
 
-    return CheckInResponse(
-        person_id=check_in.person_id,
-        timestamp=check_in.timestamp,
-        energy=check_in.energy,
-        recovery=check_in.recovery,
-        muscle_soreness=check_in.muscle_soreness,
-        stress=check_in.stress,
-        available_training_minutes=(check_in.available_training_minutes),
-        current_weight_kg=check_in.current_weight_kg,
-        sleep_hours=check_in.sleep_hours,
-        steps=check_in.steps,
-    )
+    return _to_response(check_in)
 
 
 @router.get(
@@ -116,6 +106,40 @@ async def latest_check_in(
     if check_in is None:
         return None
 
+    return _to_response(check_in)
+
+
+@router.get(
+    "/api/persons/{person_id}/check-ins",
+    response_model=list[CheckInResponse],
+    response_model_by_alias=True,
+    summary="Check-in-Historie abrufen",
+    description=(
+        "Liefert die neuesten Check-ins einer Person, absteigend nach "
+        "Zeitpunkt sortiert. Die Anzahl ist begrenzt. Fehlende optionale "
+        "Tagesdaten bleiben null."
+    ),
+    responses={
+        404: {"description": "Die Person wurde nicht gefunden."},
+        422: {"description": "Der limit-Parameter ist ungültig."},
+    },
+)
+async def check_in_history(
+    person_id: PersonId,
+    limit: Annotated[
+        int,
+        Query(ge=1, le=1000, description="Maximale Anzahl der Check-ins."),
+    ] = 90,
+) -> list[CheckInResponse]:
+    if wiring.person_service.get_person(person_id) is None:
+        raise HTTPException(status_code=404, detail="Person not found")
+
+    return [
+        _to_response(check_in) for check_in in wiring.check_in_service.get_history(person_id, limit)
+    ]
+
+
+def _to_response(check_in: CheckIn) -> CheckInResponse:
     return CheckInResponse(
         person_id=check_in.person_id,
         timestamp=check_in.timestamp,
@@ -123,7 +147,7 @@ async def latest_check_in(
         recovery=check_in.recovery,
         muscle_soreness=check_in.muscle_soreness,
         stress=check_in.stress,
-        available_training_minutes=(check_in.available_training_minutes),
+        available_training_minutes=check_in.available_training_minutes,
         current_weight_kg=check_in.current_weight_kg,
         sleep_hours=check_in.sleep_hours,
         steps=check_in.steps,
