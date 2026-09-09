@@ -18,7 +18,7 @@ class StartWorkoutRequest(BaseModel):
             "Stabile ID des gewünschten Videos. Ohne Angabe wird die "
             "letzte Videoauswahl fortgesetzt oder das Standardvideo verwendet."
         ),
-        examples=["cycling-alpen-01"],
+        examples=["Lqhq5UQ-U8A"],
     )
 
 
@@ -150,7 +150,7 @@ class WorkoutResponse(BaseModel):
     )
     video_id: str = Field(
         description="Stabile ID des für das Workout ausgewählten Videos.",
-        examples=["cycling-alpen-01"],
+        examples=["Lqhq5UQ-U8A"],
     )
     video_position_seconds: float = Field(
         description="Zuletzt gespeicherte Wiedergabeposition in Sekunden.",

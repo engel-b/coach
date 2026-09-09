@@ -167,7 +167,7 @@ def test_start_with_same_selected_video_resumes_previous_position() -> None:
 
     video_repository.save(
         WorkoutVideo(
-            id="cycling-alpen-01",
+            id="Lqhq5UQ-U8A",
             title="Alpen",
             description="Trainingsvideo Alpen",
             file_path="cycling/alpen.mp4",
@@ -185,7 +185,7 @@ def test_start_with_same_selected_video_resumes_previous_position() -> None:
     first_workout = service.start(
         person_id=1,
         recommendation=create_recommendation(),
-        video_id="cycling-alpen-01",
+        video_id="Lqhq5UQ-U8A",
     )
 
     service.checkpoint(
@@ -198,10 +198,10 @@ def test_start_with_same_selected_video_resumes_previous_position() -> None:
     second_workout = service.start(
         person_id=1,
         recommendation=create_recommendation(),
-        video_id="cycling-alpen-01",
+        video_id="Lqhq5UQ-U8A",
     )
 
-    assert second_workout.video_id == "cycling-alpen-01"
+    assert second_workout.video_id == "Lqhq5UQ-U8A"
     assert second_workout.video_position_seconds == 87.5
 
 
@@ -211,7 +211,7 @@ def test_start_with_different_selected_video_starts_at_zero() -> None:
 
     video_repository.save(
         WorkoutVideo(
-            id="cycling-alpen-01",
+            id="Lqhq5UQ-U8A",
             title="Alpen",
             description=None,
             file_path="cycling/alpen.mp4",
@@ -240,7 +240,7 @@ def test_start_with_different_selected_video_starts_at_zero() -> None:
     first_workout = service.start(
         person_id=1,
         recommendation=create_recommendation(),
-        video_id="cycling-alpen-01",
+        video_id="Lqhq5UQ-U8A",
     )
 
     service.checkpoint(

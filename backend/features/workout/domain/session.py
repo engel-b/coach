@@ -4,7 +4,7 @@ from enum import StrEnum
 
 from features.training.domain.recommendation import WorkoutPhase
 
-DEFAULT_VIDEO_ID = "cycling-alpen-01"
+DEFAULT_VIDEO_ID = "Lqhq5UQ-U8A"
 
 
 class WorkoutStatus(StrEnum):

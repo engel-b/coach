@@ -22,7 +22,7 @@ def isolated_video_catalog(
 
     repository.save(
         WorkoutVideo(
-            id="cycling-alpen-01",
+            id="Lqhq5UQ-U8A",
             title="Alpen",
             description="Trainingsvideo Alpen",
             file_path="cycling/alpen.mp4",
@@ -60,7 +60,7 @@ def test_get_workout_videos_returns_only_active_videos() -> None:
 
     assert len(body) == 1
     assert body[0] == {
-        "id": "cycling-alpen-01",
+        "id": "Lqhq5UQ-U8A",
         "title": "Alpen",
         "description": "Trainingsvideo Alpen",
         "url": "/videos/cycling/alpen.mp4",
@@ -69,13 +69,13 @@ def test_get_workout_videos_returns_only_active_videos() -> None:
 
 
 def test_get_workout_video_by_id() -> None:
-    response = client.get("/api/workout-videos/cycling-alpen-01")
+    response = client.get("/api/workout-videos/Lqhq5UQ-U8A")
 
     assert response.status_code == 200
 
     body = response.json()
 
-    assert body["id"] == "cycling-alpen-01"
+    assert body["id"] == "Lqhq5UQ-U8A"
     assert body["url"] == "/videos/cycling/alpen.mp4"
 
 

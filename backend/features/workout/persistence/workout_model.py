@@ -52,8 +52,8 @@ class WorkoutModel(Base):
         String,
         ForeignKey("workout_video.id", name="fk_workout_video", ondelete="RESTRICT"),
         nullable=False,
-        default="cycling-alpen-01",
-        server_default="cycling-alpen-01",
+        default="Lqhq5UQ-U8A",
+        server_default="Lqhq5UQ-U8A",
     )
 
     video_position_seconds: Mapped[float] = mapped_column(

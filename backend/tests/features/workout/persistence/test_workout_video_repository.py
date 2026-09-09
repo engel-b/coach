@@ -9,12 +9,12 @@ from features.workout.persistence.sqlalchemy_workout_video_repository import (
 def test_existing_workout_video_can_be_loaded() -> None:
     repository = SqlAlchemyWorkoutVideoRepository()
 
-    video = repository.get("cycling-alpen-01")
+    video = repository.get("Lqhq5UQ-U8A")
 
     assert video is not None
-    assert video.id == "cycling-alpen-01"
-    assert video.title == "Alpen"
-    assert video.file_path == "cycling/alpen.mp4"
+    assert video.id == "Lqhq5UQ-U8A"
+    assert video.title == "Italy Alps"
+    assert video.file_path == "cycling/Lqhq5UQ-U8A.mp4"
     assert video.active is True
 
 

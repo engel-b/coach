@@ -56,7 +56,7 @@ def upgrade() -> None:
                 created_at
             )
             VALUES (
-                'cycling-alpen-01',
+                'Lqhq5UQ-U8A',
                 'Alpen',
                 'Trainingsvideo Alpen',
                 'cycling/alpen.mp4',

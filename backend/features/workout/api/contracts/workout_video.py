@@ -9,7 +9,7 @@ class WorkoutVideoResponse(BaseModel):
 
     id: str = Field(
         description="Stabile ID des Videos, unabhängig vom Dateinamen.",
-        examples=["cycling-alpen-01"],
+        examples=["Lqhq5UQ-U8A"],
     )
     title: str = Field(
         description="Anzeigename des Trainingsvideos.",

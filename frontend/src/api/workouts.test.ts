@@ -11,7 +11,7 @@ describe("getWorkoutVideo", () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        id: "cycling-alpen-01",
+        id: "Lqhq5UQ-U8A",
         title: "Alpen",
         description: "Trainingsvideo Alpen",
         url: "/videos/cycling/alpen.mp4",
@@ -21,12 +21,10 @@ describe("getWorkoutVideo", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    const video = await getWorkoutVideo("cycling-alpen-01");
+    const video = await getWorkoutVideo("Lqhq5UQ-U8A");
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/workout-videos/cycling-alpen-01",
-    );
-    expect(video.id).toBe("cycling-alpen-01");
+    expect(fetchMock).toHaveBeenCalledWith("/api/workout-videos/Lqhq5UQ-U8A");
+    expect(video.id).toBe("Lqhq5UQ-U8A");
     expect(video.url).toBe("/videos/cycling/alpen.mp4");
     expect(video.durationSeconds).toBe(3600);
   });
@@ -74,7 +72,7 @@ describe("getWorkoutVideos", () => {
   it("loads the available workout videos", async () => {
     const videos = [
       {
-        id: "cycling-alpen-01",
+        id: "Lqhq5UQ-U8A",
         title: "Alpen",
         description: "Trainingsvideo Alpen",
         url: "/videos/cycling/alpen.mp4",
