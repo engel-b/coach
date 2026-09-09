@@ -1,25 +1,24 @@
 # Howto: Entwicklungsumgebung einrichten
 
-Diese Anleitung beschreibt die lokale Entwicklungsumgebung für das Health-Coach-Projekt unter Windows 11, Linux und macOS. Eine WSL-Installation ist für die normale Entwicklung unter Windows nicht erforderlich.
+Diese Anleitung beschreibt die lokale Entwicklungsumgebung für das Health-Coach-Projekt.
 
 ## 1. Voraussetzungen
 
-| Werkzeug | Zweck | Hinweise |
-| --- | --- | --- |
-| Git | Repository klonen und Versionsverwaltung | Git Bash ist unter Windows optional. |
-| Python | Backend, Tests und Entwicklungswerkzeuge | Die verwendete Projektversion muss unterstützt werden. Python 3.14.7 wurde unter Windows bereits verwendet; die tatsächliche Kompatibilität der Projektabhängigkeiten ist maßgeblich. |
-| pip | Python-Paketverwaltung | Wird über den Python-Interpreter aufgerufen. |
-| venv | Isolierte Python-Umgebung | Bestandteil der Python-Standardbibliothek. |
-| Node.js | JavaScript-Laufzeit für das Frontend | Eine vom Frontend unterstützte Version verwenden; gegebenenfalls `.nvmrc`, `package.json` oder die Projekt-Dokumentation beachten. |
-| npm | Frontend-Abhängigkeiten und Skripte | Wird üblicherweise mit Node.js installiert. |
-| GNU Make | Ausführen der Projekt-Targets | Unter Windows separat installieren. |
-| Datenbank | Backend und Alembic-Migrationen | Datenbanktyp, Version, Zugangsdaten und Startverfahren gemäß Projektkonfiguration bereitstellen. |
+| Werkzeug | Zweck |
+| --- | --- |
+| Git | Repository klonen und Versionsverwaltung |
+| Python | Backend, Tests und Entwicklungswerkzeuge |
+| pip | Python-Paketverwaltung |
+| venv | Isolierte Python-Umgebung |
+| Node.js | JavaScript-Laufzeit für das Frontend |
+| npm | Frontend-Abhängigkeiten und Skripte |
+| GNU Make | Ausführen der Projekt-Targets |
 
 Zusätzliche Dienste, Umgebungsvariablen und Zugangsdaten hängen von der Projektkonfiguration ab. Diese Anleitung setzt keine nicht dokumentierten Datenbank- oder Docker-Anforderungen voraus.
 
 ### Windows 11
 
-Python kann über den offiziellen Installer von python.org installiert werden. Den Python Launcher `py` und gegebenenfalls die PATH-Integration mitinstallieren. Node.js über den offiziellen Installer von nodejs.org installieren. Git for Windows stellt Git und Git Bash bereit.
+Python kann über den [offiziellen Installer von python.org](https://www.python.org/downloads/) installiert werden. Den Python Launcher `py` und gegebenenfalls die PATH-Integration mitinstallieren. Node.js über den [offiziellen Installer von nodejs.org](https://nodejs.org/en/download) installieren. [Git for Windows](https://git-scm.com/install/windows) stellt Git und optional Git Bash bereit.
 
 GNU Make ist nicht Bestandteil von Windows. Eine Möglichkeit ist GnuWin32 Make, beispielsweise über winget, sofern das Paket im eigenen Katalog verfügbar ist:
 
@@ -33,15 +32,11 @@ Falls Make danach nicht im PATH liegt, kann es direkt aufgerufen werden:
 & "C:\Program Files (x86)\GnuWin32\bin\make.exe" --version
 ```
 
-Der Installationspfad kann abweichen. Alternativ eignet sich MSYS2 mit `pacman -S make`. Bei MSYS2 ist zu beachten, dass dessen Shell und Toolchain nicht identisch mit PowerShell oder GnuWin32 sind. Für dieses Projekt wird PowerShell mit einem Windows-kompatiblen Makefile empfohlen.
+Der Installationspfad kann abweichen.
 
 ### Linux
 
 Python, pip, venv, Git, Node.js/npm und Make über den Paketmanager beziehungsweise eine geeignete Node-Versionsverwaltung installieren. Auf Debian/Ubuntu werden beispielsweise die Pakete `python3-venv`, `python3-pip`, `git` und `make` benötigt. Die konkreten Paketnamen und Python-Versionen hängen von der Distribution ab.
-
-### macOS
-
-Python, Git, Node.js und Make installieren, beispielsweise über Homebrew oder die jeweiligen offiziellen Installer. Die Xcode Command Line Tools stellen unter anderem Make bereit. Bei mehreren Python-Versionen den gewünschten Interpreter ausdrücklich auswählen.
 
 ## 2. Installation prüfen
 
@@ -68,8 +63,6 @@ npm --version
 git --version
 make --version
 ```
-
-Die Versionsnummern von Node.js und Python müssen zu den Anforderungen des Projekts passen. Eine beliebige neueste Version ist nicht automatisch mit allen Abhängigkeiten kompatibel.
 
 ## 3. Repository und Projektstruktur
 
@@ -98,7 +91,7 @@ Die virtuelle Umgebung liegt im Ordner `backend`, nicht im Repository-Root. Alle
 
 ## 4. Python-Entwicklungsumgebung installieren
 
-Das Projekt verwendet eine editierbare Installation mit dem Extra `dev`. Der bestätigte Installationsbefehl lautet:
+Das Projekt verwendet eine editierbare Installation mit dem Extra `dev`.
 
 ```text
 python -m pip install -e ".[dev]"
@@ -162,7 +155,7 @@ Falls PowerShell die Aktivierung wegen der Execution Policy blockiert, kann die 
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
-Anschließend die Aktivierung erneut ausführen. Eine Fehlermeldung, dass `Activate.ps1` nicht gefunden wurde, ist dagegen ein Pfad- oder Erstellungsproblem und kein Execution-Policy-Problem.
+Anschließend die Aktivierung erneut ausführen. Eine Fehlermeldung, dass `Activate.ps1` nicht gefunden wurde, ist dagegen kein Execution-Policy-Problem, sondern ein Pfad- oder Erstellungsproblem.
 
 ## 6. Frontend installieren
 
@@ -173,7 +166,7 @@ cd frontend
 npm ci
 ```
 
-`npm ci` ist für reproduzierbare Installationen mit vorhandener, gültiger `package-lock.json` vorgesehen. Falls das Projekt keine Lockdatei besitzt oder diese nicht zur `package.json` passt, muss die Paketkonfiguration geklärt werden; für die initiale Erstellung einer Lockdatei wird üblicherweise `npm install` verwendet.
+`npm ci` ist für reproduzierbare Installationen mit vorhandener, gültiger `package-lock.json` vorgesehen.
 
 Anschließend die verfügbaren Skripte prüfen:
 
@@ -181,7 +174,6 @@ Anschließend die verfügbaren Skripte prüfen:
 npm run
 ```
 
-Das Makefile verwendet unter anderem `dev`, `lint`, `format`, `format:check`, `build` und `test`. Diese Skripte müssen in `frontend/package.json` definiert sein. `npx tsc --noEmit` setzt außerdem die entsprechenden TypeScript-Abhängigkeiten voraus.
 
 ## 7. Makefile plattformübergreifend verwenden
 
@@ -216,7 +208,7 @@ Die Pfade sind relativ zu `backend`, weil vor dem Python-Aufruf `cd backend` aus
 | `make backend` | Alembic-Migrationen ausführen und Uvicorn starten. |
 | `make device-agent` | Device-Agent starten. |
 | `make frontend` | Frontend-Entwicklungsserver starten. |
-| `make test` | Backend-Tests mit pytest ausführen. |
+| `make test` | Tests in Backend und Frontend ausführen. |
 | `make check` | Formatprüfung sowie Backend- und Frontend-Checks ausführen. |
 | `make check-backend` | Ruff, mypy und pytest ausführen. |
 | `make check-frontend` | Lint, Formatprüfung, TypeScript, Build und Tests ausführen. |
@@ -325,10 +317,6 @@ Die Entwicklungsabhängigkeiten fehlen in der verwendeten venv. Im Backend-Ordne
 ```
 
 Unter Linux/macOS `.venv/bin/python` verwenden. Falls das Paket danach weiterhin fehlt, die Definition des `dev`-Extras in `pyproject.toml` prüfen.
-
-### `missing separator`
-
-Makefile-Syntax prüfen. Rezeptzeilen müssen mit einem echten Tabulator beginnen. Variablenzuweisungen und `ifeq`/`else`/`endif` dürfen nicht wie Rezeptzeilen eingerückt sein. Außerdem sicherstellen, dass keine Markdown-Codezäune, typografischen Leerzeichen oder andere Sonderzeichen in die Datei kopiert wurden.
 
 ### Falscher Python-Interpreter
 

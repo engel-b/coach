@@ -98,6 +98,7 @@ frontend:
 
 test:
 	cd backend && $(PYTHON) -m pytest
+	cd frontend && npm test
 
 check: format-check check-backend check-frontend
 
@@ -125,6 +126,7 @@ format:
 
 format-check:
 	cd backend && $(PYTHON) -m ruff format --check .
+	cd frontend && npm run format:check
 
 
 # ---------------------------------------------------------------------------
