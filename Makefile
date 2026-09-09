@@ -23,27 +23,9 @@ dev:
 	@powershell -NoProfile -Command \
 		"$$ErrorActionPreference = 'Stop'; \
 		Write-Host 'Starting Health Coach ...'; \
-		$$backend = Start-Process -PassThru -NoNewWindow make -ArgumentList 'backend'; \
-		$$deviceAgent = Start-Process -PassThru -NoNewWindow make -ArgumentList 'device-agent'; \
-		$$frontend = Start-Process -PassThru -NoNewWindow make -ArgumentList 'frontend'; \
-		try { \
-			while ($$true) { \
-				Start-Sleep -Seconds 1; \
-				if ($$backend.HasExited -or $$deviceAgent.HasExited -or $$frontend.HasExited) { \
-					break; \
-				} \
-			} \
-		} finally { \
-			Write-Host ''; \
-			Write-Host 'Stopping Health Coach ...'; \
-			@($$backend, $$deviceAgent, $$frontend) | ForEach-Object { \
-				if ($$_ -and -not $$_.HasExited) { \
-					Stop-Process -Id $$_.Id -Force -ErrorAction SilentlyContinue; \
-				} \
-			}; \
-			Write-Host 'Health Coach stopped.'; \
-		}"
-
+		Start-Process powershell -ArgumentList '-NoExit', '-NoProfile', '-Command', 'make backend'; \
+		Start-Process powershell -ArgumentList '-NoExit', '-NoProfile', '-Command', 'make device-agent'; \
+		Start-Process powershell -ArgumentList '-NoExit', '-NoProfile', '-Command', 'make frontend'"
 else
 
 dev:

@@ -71,7 +71,17 @@ function createWeightPoints(checkIns: CheckIn[]): CheckIn[] {
     );
 }
 
-function WeightChart({ checkIns }: { checkIns: CheckIn[] }) {
+interface WeightChartProps {
+  checkIns: CheckIn[];
+  startWeightKg: number | null;
+  targetWeightKg: number | null;
+}
+
+function WeightChart({
+  checkIns,
+  startWeightKg,
+  targetWeightKg,
+}: WeightChartProps) {
   const points = useMemo(() => createWeightPoints(checkIns), [checkIns]);
 
   if (points.length < 2) {
@@ -85,19 +95,41 @@ function WeightChart({ checkIns }: { checkIns: CheckIn[] }) {
     );
   }
 
+  /*
+   * Start- und Zielgewicht gehören zur Skala des Diagramms.
+   *
+   * Java-Analogie: Statt nur die Messwerte in eine Liste zu legen und daraus
+   * min/max zu bestimmen, nehmen wir hier noch zwei optionale Referenzwerte in
+   * dieselbe Berechnung auf. So liegen beide horizontalen Linien garantiert
+   * innerhalb des sichtbaren Diagrammbereichs.
+   */
   const weights = points.map((point) => point.currentWeightKg as number);
-  const minimum = Math.min(...weights);
-  const maximum = Math.max(...weights);
-  const padding = Math.max(0.5, (maximum - minimum) * 0.2);
+  const scaleWeights = [
+    ...weights,
+    ...(startWeightKg === null ? [] : [startWeightKg]),
+    ...(targetWeightKg === null ? [] : [targetWeightKg]),
+  ];
+
+  const minimum = Math.min(...scaleWeights);
+  const maximum = Math.max(...scaleWeights);
+  const padding = Math.max(0.5, (maximum - minimum) * 0.12);
   const chartMinimum = minimum - padding;
   const chartMaximum = maximum + padding;
   const chartRange = Math.max(0.1, chartMaximum - chartMinimum);
+
+  const scaleTicks = [0, 0.25, 0.5, 0.75, 1].map((position) => ({
+    position,
+    value: chartMaximum - chartRange * position,
+  }));
+
+  const toChartY = (weight: number): number =>
+    100 - ((weight - chartMinimum) / chartRange) * 100;
 
   const path = points
     .map((point, index) => {
       const x = points.length === 1 ? 50 : (index / (points.length - 1)) * 100;
       const weight = point.currentWeightKg as number;
-      const y = 100 - ((weight - chartMinimum) / chartRange) * 100;
+      const y = toChartY(weight);
 
       return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
     })
@@ -105,29 +137,78 @@ function WeightChart({ checkIns }: { checkIns: CheckIn[] }) {
 
   return (
     <div className="dashboard-weight-chart" aria-label="Gewichtsverlauf">
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img">
-        <line x1="0" y1="25" x2="100" y2="25" />
-        <line x1="0" y1="50" x2="100" y2="50" />
-        <line x1="0" y1="75" x2="100" y2="75" />
-        <path d={path} />
-        {points.map((point, index) => {
-          const x =
-            points.length === 1 ? 50 : (index / (points.length - 1)) * 100;
-          const weight = point.currentWeightKg as number;
-          const y = 100 - ((weight - chartMinimum) / chartRange) * 100;
+      <div className="dashboard-weight-chart-legend">
+        {startWeightKg !== null && (
+          <span className="dashboard-weight-reference start">
+            <i aria-hidden="true" />
+            Start {formatWeight(startWeightKg)} kg
+          </span>
+        )}
+        {targetWeightKg !== null && (
+          <span className="dashboard-weight-reference target">
+            <i aria-hidden="true" />
+            Ziel {formatWeight(targetWeightKg)} kg
+          </span>
+        )}
+      </div>
 
-          return (
-            <circle
-              key={point.timestamp}
-              cx={x}
-              cy={y}
-              r="1.7"
-              vectorEffect="non-scaling-stroke"
+      <div className="dashboard-weight-chart-plot">
+        <div className="dashboard-weight-chart-scale" aria-hidden="true">
+          {scaleTicks.map((tick) => (
+            <span
+              key={tick.position}
+              style={{ top: `${tick.position * 100}%` }}
+            >
+              {formatWeight(tick.value)} kg
+            </span>
+          ))}
+        </div>
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img">
+          <line x1="0" y1="25" x2="100" y2="25" />
+          <line x1="0" y1="50" x2="100" y2="50" />
+          <line x1="0" y1="75" x2="100" y2="75" />
+
+          {startWeightKg !== null && (
+            <line
+              className="dashboard-weight-reference-line start"
+              x1="0"
+              y1={toChartY(startWeightKg)}
+              x2="100"
+              y2={toChartY(startWeightKg)}
             />
-          );
-        })}
-      </svg>
+          )}
 
+          {targetWeightKg !== null && (
+            <line
+              className="dashboard-weight-reference-line target"
+              x1="0"
+              y1={toChartY(targetWeightKg)}
+              x2="100"
+              y2={toChartY(targetWeightKg)}
+            />
+          )}
+
+          <path d={path} />
+        </svg>
+        <div className="dashboard-weight-chart-points" aria-hidden="true">
+          {points.map((point, index) => {
+            const x = (index / (points.length - 1)) * 100;
+            const weight = point.currentWeightKg as number;
+            const y = toChartY(weight);
+
+            return (
+              <span
+                key={point.timestamp}
+                className="dashboard-weight-chart-point"
+                style={{
+                  left: `${x}%`,
+                  top: `${y}%`,
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
       <div className="dashboard-chart-axis">
         <span>{formatDate(points[0].timestamp)}</span>
         <span>{formatDate(points[points.length - 1].timestamp)}</span>
@@ -386,7 +467,11 @@ export function PersonDashboard({
                 </div>
               </div>
 
-              <WeightChart checkIns={data.checkIns} />
+              <WeightChart
+                checkIns={data.checkIns}
+                startWeightKg={data.profile?.startWeightKg ?? null}
+                targetWeightKg={data.profile?.targetWeightKg ?? null}
+              />
             </>
           )}
         </section>
