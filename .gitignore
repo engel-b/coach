@@ -7,3 +7,9 @@ __pycache__/
 .env
 data/
 frontend/public/videos/
+
+# Python package/build metadata
+*.egg-info/
+*.egg/
+build/
+dist/

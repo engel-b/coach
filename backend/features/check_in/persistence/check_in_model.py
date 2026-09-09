@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, Integer
+from sqlalchemy import DateTime, Float, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from adapters.persistence.database import Base
@@ -26,6 +26,7 @@ class CheckInModel(Base):
 
     person_id: Mapped[int] = mapped_column(
         Integer,
+        ForeignKey("person.id", name="fk_check_in_person", ondelete="RESTRICT"),
         nullable=False,
         index=True,
     )
