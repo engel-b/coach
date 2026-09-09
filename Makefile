@@ -1,4 +1,50 @@
-.PHONY: dev backend device-agent frontend test db-upgrade db-current db-history migration
+.PHONY: dev backend device-agent frontend test check check-backend check-frontend format format-check build db-upgrade db-current db-history migration
+
+
+# ---------------------------------------------------------------------------
+# Platform configuration
+# ---------------------------------------------------------------------------
+
+ifeq ($(OS),Windows_NT)
+PYTHON := .venv\Scripts\python.exe
+SHELL := cmd.exe
+else
+PYTHON := .venv/bin/python
+endif
+
+
+# ---------------------------------------------------------------------------
+# Development
+# ---------------------------------------------------------------------------
+
+ifeq ($(OS),Windows_NT)
+
+dev:
+	@powershell -NoProfile -Command \
+		"$$ErrorActionPreference = 'Stop'; \
+		Write-Host 'Starting Health Coach ...'; \
+		$$backend = Start-Process -PassThru -NoNewWindow make -ArgumentList 'backend'; \
+		$$deviceAgent = Start-Process -PassThru -NoNewWindow make -ArgumentList 'device-agent'; \
+		$$frontend = Start-Process -PassThru -NoNewWindow make -ArgumentList 'frontend'; \
+		try { \
+			while ($$true) { \
+				Start-Sleep -Seconds 1; \
+				if ($$backend.HasExited -or $$deviceAgent.HasExited -or $$frontend.HasExited) { \
+					break; \
+				} \
+			} \
+		} finally { \
+			Write-Host ''; \
+			Write-Host 'Stopping Health Coach ...'; \
+			@($$backend, $$deviceAgent, $$frontend) | ForEach-Object { \
+				if ($$_ -and -not $$_.HasExited) { \
+					Stop-Process -Id $$_.Id -Force -ErrorAction SilentlyContinue; \
+				} \
+			}; \
+			Write-Host 'Health Coach stopped.'; \
+		}"
+
+else
 
 dev:
 	@set -eu; \
@@ -25,81 +71,84 @@ dev:
 	$(MAKE) backend & backend_pid=$$!; \
 	$(MAKE) device-agent & device_agent_pid=$$!; \
 	$(MAKE) frontend & frontend_pid=$$!; \
-  wait || true; \
-  cleanup
+	wait || true; \
+	cleanup
+
+endif
+
+
+# ---------------------------------------------------------------------------
+# Services
+# ---------------------------------------------------------------------------
 
 backend:
-	cd backend && \
-	. .venv/bin/activate && \
-  alembic upgrade head && \
-	exec python -m uvicorn apps.api.main:app \
-		--host 0.0.0.0 \
-		--port 8000 \
-		--reload
+	cd backend && $(PYTHON) -m alembic upgrade head
+	cd backend && $(PYTHON) -m uvicorn apps.api.main:app --host 0.0.0.0 --port 8000 --reload
 
 device-agent:
-	cd backend && \
-	. .venv/bin/activate && \
-	exec python -m apps.device_agent.main
+	cd backend && $(PYTHON) -m apps.device_agent.main
 
 frontend:
-	cd frontend && \
-	exec npm run dev -- --host 0.0.0.0
+	cd frontend && npm run dev -- --host 0.0.0.0
+
+
+# ---------------------------------------------------------------------------
+# Tests / checks
+# ---------------------------------------------------------------------------
 
 test:
-	cd backend && \
-	. .venv/bin/activate && \
-	python -m pytest
+	cd backend && $(PYTHON) -m pytest
+	cd frontend && npm test
 
 check: format-check check-backend check-frontend
 
 check-backend:
-	cd backend && \
-	. .venv/bin/activate && \
-	python -m ruff check . && \
-	python -m mypy apps features adapters && \
-	python -m pytest
+	cd backend && $(PYTHON) -m ruff check .
+	cd backend && $(PYTHON) -m mypy apps features adapters
+	cd backend && $(PYTHON) -m pytest
 
 check-frontend:
-	cd frontend && \
-	npm run lint && \
-	npm run format:check && \
-	npx tsc --noEmit && \
-  npm run build && \
-  npm test
+	cd frontend && npm run lint
+	cd frontend && npm run format:check
+	cd frontend && npx tsc --noEmit
+	cd frontend && npm run build
+	cd frontend && npm test
+
+
+# ---------------------------------------------------------------------------
+# Formatting
+# ---------------------------------------------------------------------------
 
 format:
-	cd backend && \
-	. .venv/bin/activate && \
-	python -m ruff format . && \
-	python -m ruff check . --fix
+	cd backend && $(PYTHON) -m ruff format .
+	cd backend && $(PYTHON) -m ruff check . --fix
 	cd frontend && npm run format
 
 format-check:
-	cd backend && \
-	. .venv/bin/activate && \
-	python -m ruff format --check .
-  
+	cd backend && $(PYTHON) -m ruff format --check .
+	cd frontend && npm run format:check
+
+
+# ---------------------------------------------------------------------------
+# Build
+# ---------------------------------------------------------------------------
+
 build: check
-	cd frontend && \
-	npm run build
+	cd frontend && npm run build
+
+
+# ---------------------------------------------------------------------------
+# Database / Alembic
+# ---------------------------------------------------------------------------
 
 db-upgrade:
-	cd backend && \
-	. .venv/bin/activate && \
-	alembic upgrade head
+	cd backend && $(PYTHON) -m alembic upgrade head
 
 db-current:
-	cd backend && \
-	. .venv/bin/activate && \
-	alembic current
+	cd backend && $(PYTHON) -m alembic current
 
 db-history:
-	cd backend && \
-	. .venv/bin/activate && \
-	alembic history
+	cd backend && $(PYTHON) -m alembic history
 
 migration:
-	cd backend && \
-	. .venv/bin/activate && \
-	alembic revision --autogenerate -m "$(m)"
+	cd backend && $(PYTHON) -m alembic revision --autogenerate -m "$(m)"
