@@ -1,7 +1,7 @@
 from features.check_in.persistence.sqlalchemy_check_in_repository import (
     SqlAlchemyCheckInRepository,
 )
-from features.check_in.service.service import CheckInService
+from features.check_in.service.check_in_service import CheckInService
 from features.person.persistence.sqlalchemy_person_profile_repository import (
     SqlAlchemyPersonProfileRepository,
 )
@@ -23,8 +23,8 @@ from features.workout.persistence.sqlalchemy_workout_repository import (
 from features.workout.persistence.sqlalchemy_workout_video_repository import (
     SqlAlchemyWorkoutVideoRepository,
 )
-from features.workout.service.service import WorkoutService
 from features.workout.service.video_catalog_service import VideoCatalogService
+from features.workout.service.workout_service import WorkoutService
 
 # Composition Root der HTTP-Anwendung.
 #

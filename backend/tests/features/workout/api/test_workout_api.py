@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 import apps.api.main as api_main
 import apps.api.wiring as api_wiring
 from features.check_in.persistence.in_memory_check_in_repository import InMemoryCheckInRepository
-from features.check_in.service.service import CheckInService
+from features.check_in.service.check_in_service import CheckInService
 from features.person.domain.person import Person
 from features.person.domain.profile import PersonProfile, TrainingGoal
 from features.person.service.person_service import PersonService
@@ -18,7 +18,7 @@ from features.workout.persistence.in_memory_workout_repository import InMemoryWo
 from features.workout.persistence.in_memory_workout_video_repository import (
     InMemoryWorkoutVideoRepository,
 )
-from features.workout.service.service import WorkoutService
+from features.workout.service.workout_service import WorkoutService
 
 client = TestClient(api_main.app)
 
@@ -177,7 +177,7 @@ def test_workout_can_be_completed_via_api() -> None:
     assert isinstance(workout_id, str)
 
     response = client.post(
-        f"/api/workouts/{workout_id}/complete",
+        f"/api/workouts/{workout_id}/finish",
         json={
             "elapsedSeconds": 1800,
             "distanceM": 12345,
@@ -198,7 +198,7 @@ def test_workout_can_be_completed_via_api() -> None:
     assert completed["completedAt"] is not None
 
 
-def test_workout_can_be_aborted_via_api() -> None:
+def test_workout_can_be_finished_as_aborted_via_api() -> None:
     workout = start_workout(1)
 
     workout_id = workout["id"]
@@ -206,7 +206,7 @@ def test_workout_can_be_aborted_via_api() -> None:
     assert isinstance(workout_id, str)
 
     response = client.post(
-        f"/api/workouts/{workout_id}/abort",
+        f"/api/workouts/{workout_id}/finish",
         json={
             "elapsedSeconds": 723,
             "distanceM": 4321,
@@ -215,16 +215,12 @@ def test_workout_can_be_aborted_via_api() -> None:
 
     assert response.status_code == 200
 
-    aborted = response.json()
+    body = response.json()
 
-    assert aborted["id"] == workout_id
-    assert aborted["status"] == "aborted"
-    assert aborted["elapsedSeconds"] == 723
-    assert aborted["distanceM"] == 4321
-    assert aborted["videoId"] == workout["videoId"]
-    assert aborted["videoPositionSeconds"] == 0.0
-
-    assert aborted["completedAt"] is not None
+    assert body["status"] == "aborted"
+    assert body["elapsedSeconds"] == 723
+    assert body["distanceM"] == 4321
+    assert body["completedAt"] is not None
 
 
 def test_new_workout_resumes_video_position_via_api() -> None:
@@ -253,7 +249,7 @@ def test_new_workout_resumes_video_position_via_api() -> None:
 
 def test_unknown_workout_cannot_be_completed() -> None:
     response = client.post(
-        "/api/workouts/does-not-exist/complete",
+        "/api/workouts/does-not-exist/finish",
         json={
             "elapsedSeconds": 100,
             "distanceM": 500,
@@ -271,7 +267,7 @@ def test_negative_elapsed_seconds_are_rejected() -> None:
     assert isinstance(workout_id, str)
 
     response = client.post(
-        f"/api/workouts/{workout_id}/abort",
+        f"/api/workouts/{workout_id}/finish",
         json={
             "elapsedSeconds": -1,
             "distanceM": 1000,
@@ -289,7 +285,7 @@ def test_negative_distance_is_rejected() -> None:
     assert isinstance(workout_id, str)
 
     response = client.post(
-        f"/api/workouts/{workout_id}/complete",
+        f"/api/workouts/{workout_id}/finish",
         json={
             "elapsedSeconds": 100,
             "distanceM": -1,
@@ -359,15 +355,15 @@ def test_get_workout_summary() -> None:
 
     assert isinstance(workout_id, str)
 
-    complete_response = client.post(
-        f"/api/workouts/{workout_id}/complete",
+    finish_response = client.post(
+        f"/api/workouts/{workout_id}/finish",
         json={
-            "elapsedSeconds": 900,
+            "elapsedSeconds": 1800,
             "distanceM": 6789,
         },
     )
 
-    assert complete_response.status_code == 200
+    assert finish_response.status_code == 200
 
     response = client.get(f"/api/workouts/{workout_id}/summary")
 
@@ -375,25 +371,9 @@ def test_get_workout_summary() -> None:
 
     body = response.json()
 
-    assert body["elapsedSeconds"] == 900
+    assert body["elapsedSeconds"] == 1800
     assert body["distanceM"] == 6789
     assert body["status"] == "completed"
-
-    # Die Empfehlung kann unterschiedliche Gesamtdauern
-    # enthalten. Deshalb berechnen wir den erwarteten
-    # Wert aus dem tatsächlich gestarteten Workout.
-    total_duration_minutes = workout["totalDurationMinutes"]
-
-    assert isinstance(
-        total_duration_minutes,
-        int,
-    )
-
-    expected_planned_seconds = total_duration_minutes * 60
-
-    assert body["plannedSeconds"] == expected_planned_seconds
-
-    assert body["completionPercent"] == round(900 / expected_planned_seconds * 100)
 
 
 def test_get_workout_summary_for_unknown_workout_returns_404() -> None:

@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getWorkoutVideo, getWorkoutVideos, startWorkout } from "./workouts";
+import {
+  finishWorkout,
+  getWorkoutVideo,
+  getWorkoutVideos,
+  startWorkout,
+} from "./workouts";
 
 describe("getWorkoutVideo", () => {
   afterEach(() => {
@@ -150,5 +155,56 @@ describe("startWorkout", () => {
         videoId: "cycling-kueste-01",
       }),
     });
+  });
+});
+
+describe("finishWorkout", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("sends the final workout values to the finish endpoint", async () => {
+    const finishedWorkout = {
+      id: "workout-1",
+      status: "completed",
+      elapsedSeconds: 1937,
+      distanceM: 12345,
+    };
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => finishedWorkout,
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await finishWorkout("workout-1", 1937, 12345);
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/workouts/workout-1/finish", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        elapsedSeconds: 1937,
+        distanceM: 12345,
+      }),
+    });
+
+    expect(result).toEqual(finishedWorkout);
+  });
+
+  it("throws when the workout cannot be finished", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 409,
+      }),
+    );
+
+    await expect(finishWorkout("workout-1", 100, 500)).rejects.toThrow(
+      "Could not finish workout: HTTP 409",
+    );
   });
 });

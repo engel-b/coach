@@ -14,7 +14,7 @@ from features.workout.persistence.in_memory_workout_repository import InMemoryWo
 from features.workout.persistence.in_memory_workout_video_repository import (
     InMemoryWorkoutVideoRepository,
 )
-from features.workout.service.service import InvalidWorkoutVideoError, WorkoutService
+from features.workout.service.workout_service import InvalidWorkoutVideoError, WorkoutService
 
 
 def create_recommendation() -> TrainingRecommendation:
@@ -119,7 +119,7 @@ def test_new_workout_resumes_video_from_previous_workout() -> None:
     assert second_workout.video_position_seconds == 87.5
 
 
-def test_workout_can_be_completed() -> None:
+def test_finish_aborts_workout_before_planned_duration() -> None:
     repository = InMemoryWorkoutRepository()
     service = WorkoutService(repository)
 
@@ -128,19 +128,40 @@ def test_workout_can_be_completed() -> None:
         recommendation=create_recommendation(),
     )
 
-    completed = service.complete(
+    finished = service.finish(
+        workout.id,
+        elapsed_seconds=1799,
+        distance_m=4321,
+    )
+
+    assert finished.status == WorkoutStatus.ABORTED
+    assert finished.elapsed_seconds == 1799
+    assert finished.distance_m == 4321
+    assert finished.completed_at is not None
+
+
+def test_finish_completes_workout_at_planned_duration() -> None:
+    repository = InMemoryWorkoutRepository()
+    service = WorkoutService(repository)
+
+    workout = service.start(
+        person_id=1,
+        recommendation=create_recommendation(),
+    )
+
+    finished = service.finish(
         workout.id,
         elapsed_seconds=1800,
         distance_m=12345,
     )
 
-    assert completed.status == WorkoutStatus.COMPLETED
-    assert completed.elapsed_seconds == 1800
-    assert completed.distance_m == 12345
-    assert completed.completed_at is not None
+    assert finished.status == WorkoutStatus.COMPLETED
+    assert finished.elapsed_seconds == 1800
+    assert finished.distance_m == 12345
+    assert finished.completed_at is not None
 
 
-def test_workout_can_be_aborted() -> None:
+def test_finish_completes_workout_in_overtime() -> None:
     repository = InMemoryWorkoutRepository()
     service = WorkoutService(repository)
 
@@ -149,16 +170,16 @@ def test_workout_can_be_aborted() -> None:
         recommendation=create_recommendation(),
     )
 
-    aborted = service.abort(
+    finished = service.finish(
         workout.id,
-        elapsed_seconds=723,
-        distance_m=4321,
+        elapsed_seconds=1946,
+        distance_m=13000,
     )
 
-    assert aborted.status == WorkoutStatus.ABORTED
-    assert aborted.elapsed_seconds == 723
-    assert aborted.distance_m == 4321
-    assert aborted.completed_at is not None
+    assert finished.status == WorkoutStatus.COMPLETED
+    assert finished.elapsed_seconds == 1946
+    assert finished.distance_m == 13000
+    assert finished.completed_at is not None
 
 
 def test_start_with_same_selected_video_resumes_previous_position() -> None:

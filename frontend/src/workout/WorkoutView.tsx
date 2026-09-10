@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  abortWorkout,
   checkpointWorkout,
-  completeWorkout,
+  finishWorkout,
   getWorkoutVideo,
 } from "../api/workouts";
 import type { DeviceState } from "../devices/types";
@@ -504,7 +503,7 @@ export function WorkoutView({
     finishConfirmation,
   ]);
 
-  const completeCurrentWorkout = useCallback(async (): Promise<void> => {
+  const finishCurrentWorkout = useCallback(async (): Promise<void> => {
     if (finishing) {
       return;
     }
@@ -512,15 +511,15 @@ export function WorkoutView({
     try {
       setFinishing(true);
 
-      const completed = await completeWorkout(
+      const finished = await finishWorkout(
         workout.id,
         elapsedSeconds,
         Math.round(workoutDistance.accumulatedDistanceM),
       );
 
-      onComplete(completed);
+      onComplete(finished);
     } catch (error) {
-      console.error("Could not complete workout", error);
+      console.error("Could not finish workout", error);
     } finally {
       setFinishing(false);
     }
@@ -535,8 +534,12 @@ export function WorkoutView({
   /*
    * "completed" ist ein fachlicher Endzustand der Engine.
    *
-   * Erst hier übersetzen wir ihn in die technische
-   * Backend-Aktion.
+   * Das Frontend meldet dem Backend nur noch:
+   * "Dieses Workout soll jetzt beendet werden."
+   *
+   * Ob es fachlich "completed" oder "aborted" ist,
+   * entscheidet ausschließlich das Backend anhand der
+   * tatsächlich absolvierten Trainingszeit.
    */
   useEffect(() => {
     if (engineState.state !== "completed" || finishing) {
@@ -544,35 +547,13 @@ export function WorkoutView({
     }
 
     const timer = window.setTimeout(() => {
-      void completeCurrentWorkout();
+      void finishCurrentWorkout();
     }, 0);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [completeCurrentWorkout, engineState.state, finishing]);
-
-  async function abortCurrentWorkout(): Promise<void> {
-    if (finishing) {
-      return;
-    }
-
-    try {
-      setFinishing(true);
-
-      const aborted = await abortWorkout(
-        workout.id,
-        elapsedSeconds,
-        Math.round(workoutDistance.accumulatedDistanceM),
-      );
-
-      onComplete(aborted);
-    } catch (error) {
-      console.error("Could not abort workout", error);
-    } finally {
-      setFinishing(false);
-    }
-  }
+  }, [engineState.state, finishCurrentWorkout, finishing]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
@@ -582,7 +563,7 @@ export function WorkoutView({
 
       if (finishConfirmation) {
         if (event.key === "Enter") {
-          void abortCurrentWorkout();
+          void finishCurrentWorkout();
           return;
         }
 
@@ -969,7 +950,7 @@ export function WorkoutView({
                 className="primary-action"
                 disabled={finishing}
                 onClick={() => {
-                  void abortCurrentWorkout();
+                  void finishCurrentWorkout();
                 }}
               >
                 {finishing ? "Wird beendet …" : "Training beenden"}

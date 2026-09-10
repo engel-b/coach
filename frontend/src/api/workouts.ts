@@ -71,12 +71,12 @@ export async function checkpointWorkout(
   return (await response.json()) as Workout;
 }
 
-export async function completeWorkout(
+export async function finishWorkout(
   workoutId: string,
   elapsedSeconds: number,
   distanceM: number,
 ): Promise<Workout> {
-  const response = await fetch(`/api/workouts/${workoutId}/complete`, {
+  const response = await fetch(`/api/workouts/${workoutId}/finish`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -88,30 +88,7 @@ export async function completeWorkout(
   });
 
   if (!response.ok) {
-    throw new Error(`Could not complete workout: HTTP ${response.status}`);
-  }
-
-  return (await response.json()) as Workout;
-}
-
-export async function abortWorkout(
-  workoutId: string,
-  elapsedSeconds: number,
-  distanceM: number,
-): Promise<Workout> {
-  const response = await fetch(`/api/workouts/${workoutId}/abort`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      elapsedSeconds,
-      distanceM,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Could not abort workout: HTTP ${response.status}`);
+    throw new Error(`Could not finish workout: HTTP ${response.status}`);
   }
 
   return (await response.json()) as Workout;
