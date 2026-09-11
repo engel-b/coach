@@ -1,39 +1,14 @@
-from collections.abc import Iterator
 from datetime import date
-from pathlib import Path
 
 import pytest
-from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from adapters.persistence.database import Base
 from features.person.domain.person import Person
 from features.person.domain.profile import PersonProfile, TrainingGoal
 from features.person.persistence.person_model import PersonModel, PersonProfileModel
 from features.person.persistence.sqlalchemy_person_profile_writer import (
     SqlAlchemyPersonProfileWriter,
 )
-
-
-@pytest.fixture
-def session_factory(
-    tmp_path: Path,
-) -> Iterator[sessionmaker[Session]]:
-    engine = create_engine(
-        f"sqlite:///{tmp_path / 'person-profile-writer.db'}",
-        connect_args={"check_same_thread": False},
-    )
-
-    Base.metadata.create_all(engine)
-
-    factory = sessionmaker(
-        bind=engine,
-        expire_on_commit=False,
-    )
-
-    yield factory
-
-    engine.dispose()
 
 
 def seed_person_and_profile(

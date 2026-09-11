@@ -1,15 +1,12 @@
 from collections.abc import Iterator
 from datetime import date
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 import apps.api.main as api_main
 import apps.api.wiring as api_wiring
-from adapters.persistence.database import Base
 from features.person.domain.person import Person
 from features.person.domain.profile import PersonProfile, TrainingGoal
 from features.person.persistence.sqlalchemy_person_profile_repository import (
@@ -28,26 +25,17 @@ from features.person.service.profile_service import PersonProfileService
 
 @pytest.fixture
 def profile_api(
-    tmp_path: Path,
+    session_factory: sessionmaker[Session],
     monkeypatch: pytest.MonkeyPatch,
 ) -> Iterator[TestClient]:
-    # Eine eigene SQLite-Datei pro Test. Keine echte Coach-Datenbank.
-    engine = create_engine(
-        f"sqlite:///{tmp_path / 'profile-api.db'}",
-        connect_args={"check_same_thread": False},
-    )
-    Base.metadata.create_all(engine)
-
-    factory = sessionmaker(bind=engine, expire_on_commit=False)
-
     person_repository = SqlAlchemyPersonRepository(
-        session_factory=factory,
+        session_factory=session_factory,
     )
     profile_repository = SqlAlchemyPersonProfileRepository(
-        session_factory=factory,
+        session_factory=session_factory,
     )
     writer = SqlAlchemyPersonProfileWriter(
-        session_factory=factory,
+        session_factory=session_factory,
     )
 
     person_repository.save(Person(id=1, display_name="Person 1"))
@@ -81,8 +69,6 @@ def profile_api(
 
     with TestClient(api_main.app) as client:
         yield client
-
-    engine.dispose()
 
 
 def valid_profile_request() -> dict[str, object]:

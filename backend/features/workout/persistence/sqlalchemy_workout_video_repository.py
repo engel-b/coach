@@ -10,17 +10,7 @@ from features.workout.persistence.workout_video_model import WorkoutVideoModel
 
 class SqlAlchemyWorkoutVideoRepository:
     """
-    SQLAlchemy-Persistenz für den Workout-Video-Katalog.
-
-    Standardmäßig wird die produktive Session-Factory verwendet.
-
-    Für Tests kann eine andere Session-Factory injiziert werden.
-    Dadurch bleibt das Repository unabhängig von einer konkreten
-    Datenbankinstanz.
-
-    Java-Vergleich:
-    Ähnlich wie Constructor Injection eines EntityManagers bzw.
-    einer EntityManagerFactory.
+    Produktive Persistenz für den Workout-Video-Katalog.
     """
 
     def __init__(
