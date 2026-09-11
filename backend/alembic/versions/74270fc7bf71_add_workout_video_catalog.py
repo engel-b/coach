@@ -42,31 +42,6 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-
-    op.execute(
-        sa.text(
-            """
-            INSERT INTO workout_video (
-                id,
-                title,
-                description,
-                file_path,
-                duration_seconds,
-                active,
-                created_at
-            )
-            VALUES (
-                'Lqhq5UQ-U8A',
-                'Alpen',
-                'Trainingsvideo Alpen',
-                'cycling/alpen.mp4',
-                NULL,
-                1,
-                CURRENT_TIMESTAMP
-            )
-            """
-        )
-    )
     # ### end Alembic commands ###
 
 

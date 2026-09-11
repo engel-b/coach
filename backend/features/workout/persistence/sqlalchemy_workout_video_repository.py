@@ -1,4 +1,7 @@
+from collections.abc import Callable
+
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from adapters.persistence.database import create_session
 from features.workout.domain.video import WorkoutVideo
@@ -7,14 +10,30 @@ from features.workout.persistence.workout_video_model import WorkoutVideoModel
 
 class SqlAlchemyWorkoutVideoRepository:
     """
-    Produktive Persistenz für den Workout-Video-Katalog.
+    SQLAlchemy-Persistenz für den Workout-Video-Katalog.
+
+    Standardmäßig wird die produktive Session-Factory verwendet.
+
+    Für Tests kann eine andere Session-Factory injiziert werden.
+    Dadurch bleibt das Repository unabhängig von einer konkreten
+    Datenbankinstanz.
+
+    Java-Vergleich:
+    Ähnlich wie Constructor Injection eines EntityManagers bzw.
+    einer EntityManagerFactory.
     """
+
+    def __init__(
+        self,
+        session_factory: Callable[[], Session] = create_session,
+    ) -> None:
+        self._session_factory = session_factory
 
     def save(
         self,
         video: WorkoutVideo,
     ) -> None:
-        with create_session() as session:
+        with self._session_factory() as session:
             existing = session.get(
                 WorkoutVideoModel,
                 video.id,
@@ -46,7 +65,7 @@ class SqlAlchemyWorkoutVideoRepository:
         self,
         video_id: str,
     ) -> WorkoutVideo | None:
-        with create_session() as session:
+        with self._session_factory() as session:
             model = session.get(
                 WorkoutVideoModel,
                 video_id,
@@ -62,7 +81,7 @@ class SqlAlchemyWorkoutVideoRepository:
         *,
         active_only: bool = True,
     ) -> list[WorkoutVideo]:
-        with create_session() as session:
+        with self._session_factory() as session:
             statement = select(WorkoutVideoModel)
 
             if active_only:
