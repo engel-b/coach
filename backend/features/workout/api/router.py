@@ -15,7 +15,7 @@ from features.workout.api.contracts.workout_mapper import (
     to_workout_response,
     to_workout_summary_response,
 )
-from features.workout.service.service import (
+from features.workout.service.workout_service import (
     InvalidWorkoutDurationError,
     InvalidWorkoutVideoError,
     WorkoutAlreadyFinishedError,
@@ -180,15 +180,17 @@ async def checkpoint_workout(
 
 
 @router.post(
-    "/api/workouts/{workout_id}/complete",
+    "/api/workouts/{workout_id}/finish",
     response_model=WorkoutResponse,
     response_model_by_alias=True,
-    summary="Workout regulär abschließen",
+    summary="Workout beenden",
     description=(
-        "Markiert ein laufendes Workout als abgeschlossen und speichert "
-        "die tatsächlich absolvierte Trainingszeit sowie die Distanz. "
-        "Die Videoposition wird aus dem zuletzt gespeicherten Checkpoint "
-        "übernommen."
+        "Beendet ein laufendes Workout und speichert die tatsächlich "
+        "absolvierte Trainingszeit sowie die Distanz. Das Backend bestimmt "
+        "den fachlichen Endstatus anhand der absolvierten Trainingszeit. "
+        "Wurde die geplante Trainingsdauer erreicht oder überschritten, "
+        "wird das Workout als abgeschlossen gespeichert. Andernfalls "
+        "wird es als abgebrochen gespeichert."
     ),
     responses={
         404: {"description": "Das Workout wurde nicht gefunden."},
@@ -196,57 +198,12 @@ async def checkpoint_workout(
         422: {"description": "Die übermittelten Abschlusswerte sind ungültig."},
     },
 )
-async def complete_workout(
+async def finish_workout(
     workout_id: str,
     request: FinishWorkoutRequest,
 ) -> WorkoutResponse:
     try:
-        workout = wiring.workout_service.complete(
-            workout_id,
-            elapsed_seconds=request.elapsed_seconds,
-            distance_m=request.distance_m,
-        )
-    except WorkoutNotFoundError as exc:
-        raise HTTPException(
-            status_code=404,
-            detail=str(exc),
-        ) from exc
-    except WorkoutAlreadyFinishedError as exc:
-        raise HTTPException(
-            status_code=409,
-            detail=str(exc),
-        ) from exc
-    except InvalidWorkoutDurationError as exc:
-        raise HTTPException(
-            status_code=422,
-            detail=str(exc),
-        ) from exc
-
-    return to_workout_response(workout)
-
-
-@router.post(
-    "/api/workouts/{workout_id}/abort",
-    response_model=WorkoutResponse,
-    response_model_by_alias=True,
-    summary="Workout abbrechen",
-    description=(
-        "Beendet ein Workout vorzeitig und speichert die bis dahin "
-        "absolvierte Trainingszeit und Distanz. Ein abgebrochenes "
-        "Workout bleibt in der Trainingshistorie erhalten."
-    ),
-    responses={
-        404: {"description": "Das Workout wurde nicht gefunden."},
-        409: {"description": "Das Workout wurde bereits beendet."},
-        422: {"description": "Die übermittelten Abschlusswerte sind ungültig."},
-    },
-)
-async def abort_workout(
-    workout_id: str,
-    request: FinishWorkoutRequest,
-) -> WorkoutResponse:
-    try:
-        workout = wiring.workout_service.abort(
+        workout = wiring.workout_service.finish(
             workout_id,
             elapsed_seconds=request.elapsed_seconds,
             distance_m=request.distance_m,

@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Path, Query
 from apps.api import wiring
 from features.check_in.api.contracts.check_in import CheckInRequest, CheckInResponse
 from features.check_in.domain.check_in import CheckIn
-from features.check_in.service.service import InvalidCheckInError
+from features.check_in.service.check_in_service import InvalidCheckInError
 
 router = APIRouter(tags=["Check-ins"])
 

@@ -80,7 +80,11 @@ class WorkoutCheckpointRequest(BaseModel):
 
 class FinishWorkoutRequest(BaseModel):
     """
-    Request für regulären Abschluss oder Abbruch eines Workouts.
+    Request zum Beenden eines Workouts.
+
+    Der endgültige Workout-Status wird serverseitig aus der
+    tatsächlich absolvierten Trainingszeit und der geplanten
+    Trainingsdauer bestimmt.
 
     elapsed_seconds ist die tatsächlich absolvierte aktive Trainingszeit.
 

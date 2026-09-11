@@ -10,7 +10,7 @@ from apps.api import main, wiring
 from features.check_in.domain.check_in import CheckIn
 from features.check_in.persistence.in_memory_check_in_repository import InMemoryCheckInRepository
 from features.check_in.persistence.sqlalchemy_check_in_repository import SqlAlchemyCheckInRepository
-from features.check_in.service.service import CheckInService, InvalidCheckInError
+from features.check_in.service.check_in_service import CheckInService, InvalidCheckInError
 from features.person.domain.person import Person
 
 

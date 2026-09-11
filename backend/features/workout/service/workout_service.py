@@ -115,7 +115,7 @@ class WorkoutService:
 
         return updated
 
-    def complete(
+    def finish(
         self,
         workout_id: str,
         *,
@@ -127,41 +127,23 @@ class WorkoutService:
         self._validate_elapsed_seconds(elapsed_seconds)
         self._validate_distance_m(distance_m)
 
-        completed = replace(
+        planned_seconds = workout.total_duration_minutes * 60
+
+        status = (
+            WorkoutStatus.COMPLETED if elapsed_seconds >= planned_seconds else WorkoutStatus.ABORTED
+        )
+
+        finished = replace(
             workout,
-            status=WorkoutStatus.COMPLETED,
+            status=status,
             elapsed_seconds=elapsed_seconds,
             distance_m=distance_m,
             completed_at=datetime.now(UTC),
         )
 
-        self._repository.save(completed)
+        self._repository.save(finished)
 
-        return completed
-
-    def abort(
-        self,
-        workout_id: str,
-        *,
-        elapsed_seconds: int,
-        distance_m: int,
-    ) -> WorkoutSession:
-        workout = self._get_running_workout(workout_id)
-
-        self._validate_elapsed_seconds(elapsed_seconds)
-        self._validate_distance_m(distance_m)
-
-        aborted = replace(
-            workout,
-            status=WorkoutStatus.ABORTED,
-            elapsed_seconds=elapsed_seconds,
-            distance_m=distance_m,
-            completed_at=datetime.now(UTC),
-        )
-
-        self._repository.save(aborted)
-
-        return aborted
+        return finished
 
     def get(
         self,

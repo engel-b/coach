@@ -3,7 +3,7 @@ import pytest
 from features.check_in.persistence.in_memory_check_in_repository import (
     InMemoryCheckInRepository,
 )
-from features.check_in.service.service import (
+from features.check_in.service.check_in_service import (
     CheckInService,
     InvalidCheckInError,
 )
