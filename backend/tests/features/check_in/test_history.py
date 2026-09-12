@@ -2,16 +2,15 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
-from adapters.persistence.database import Base
 from apps.api import main, wiring
 from features.check_in.domain.check_in import CheckIn
 from features.check_in.persistence.in_memory_check_in_repository import InMemoryCheckInRepository
 from features.check_in.persistence.sqlalchemy_check_in_repository import SqlAlchemyCheckInRepository
 from features.check_in.service.check_in_service import CheckInService, InvalidCheckInError
 from features.person.domain.person import Person
+from features.person.persistence.sqlalchemy_person_repository import SqlAlchemyPersonRepository
 
 
 def sample(person_id: int, minute: int, weight: float | None) -> CheckIn:
@@ -42,25 +41,33 @@ def test_history_is_isolated_ordered_and_limited() -> None:
         service.get_history(1, 1001)
 
 
-def test_sqlalchemy_history_uses_temporary_database(tmp_path, monkeypatch) -> None:
-    import features.check_in.persistence.sqlalchemy_check_in_repository as module
+def test_sqlalchemy_history_uses_isolated_database(
+    session_factory: sessionmaker[Session],
+) -> None:
+    person_repository = SqlAlchemyPersonRepository(
+        session_factory=session_factory,
+    )
+    person_repository.save(Person(id=1, display_name="Person 1"))
+    person_repository.save(Person(id=2, display_name="Person 2"))
 
-    engine = create_engine(f"sqlite:///{tmp_path / 'history.db'}")
-    Base.metadata.create_all(engine)
-    factory = sessionmaker(bind=engine, expire_on_commit=False)
-    monkeypatch.setattr(module, "create_session", factory)
-    repository = SqlAlchemyCheckInRepository()
-    try:
-        for check_in in [sample(1, 1, None), sample(2, 4, 90), sample(1, 3, 82), sample(1, 2, 83)]:
-            repository.save(check_in)
-        assert [item.current_weight_kg for item in repository.get_history_for_person(1, 2)] == [
-            82,
-            83,
-        ]
-        assert repository.get_history_for_person(3, 90) == []
-        assert repository.get_latest_for_person(1).current_weight_kg == 82
-    finally:
-        engine.dispose()
+    repository = SqlAlchemyCheckInRepository(
+        session_factory=session_factory,
+    )
+
+    for check_in in [
+        sample(1, 1, None),
+        sample(2, 4, 90),
+        sample(1, 3, 82),
+        sample(1, 2, 83),
+    ]:
+        repository.save(check_in)
+
+    assert [item.current_weight_kg for item in repository.get_history_for_person(1, 2)] == [82, 83]
+    assert repository.get_history_for_person(3, 90) == []
+
+    latest = repository.get_latest_for_person(1)
+    assert latest is not None
+    assert latest.current_weight_kg == 82
 
 
 def test_history_api(monkeypatch) -> None:

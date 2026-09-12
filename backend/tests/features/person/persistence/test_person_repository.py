@@ -1,48 +1,15 @@
-from collections.abc import Iterator
 from datetime import date
-from pathlib import Path
 
-import pytest
-from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from adapters.persistence.database import Base
 from features.person.domain.person import Person
 from features.person.domain.profile import PersonProfile, TrainingGoal
-from features.person.persistence.person_model import PersonModel, PersonProfileModel
 from features.person.persistence.sqlalchemy_person_profile_repository import (
     SqlAlchemyPersonProfileRepository,
 )
 from features.person.persistence.sqlalchemy_person_repository import (
     SqlAlchemyPersonRepository,
 )
-
-
-@pytest.fixture
-def session_factory(
-    tmp_path: Path,
-) -> Iterator[sessionmaker[Session]]:
-    database_path = tmp_path / "persons.db"
-
-    engine = create_engine(
-        f"sqlite:///{database_path}",
-        connect_args={"check_same_thread": False},
-    )
-
-    # Die Namen stellen sicher, dass die Models in Base.metadata registriert sind.
-    assert PersonModel.__tablename__ == "person"
-    assert PersonProfileModel.__tablename__ == "person_profile"
-
-    Base.metadata.create_all(engine)
-
-    factory = sessionmaker(
-        bind=engine,
-        expire_on_commit=False,
-    )
-
-    yield factory
-
-    engine.dispose()
 
 
 def test_person_repository_saves_and_loads_person(

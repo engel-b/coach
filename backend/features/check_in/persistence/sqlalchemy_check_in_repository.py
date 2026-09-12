@@ -1,4 +1,7 @@
+from collections.abc import Callable
+
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from adapters.persistence.database import create_session
 from features.check_in.domain.check_in import CheckIn
@@ -12,11 +15,17 @@ class SqlAlchemyCheckInRepository:
     Der Rest der Anwendung kennt SQLAlchemy nicht.
     """
 
+    def __init__(
+        self,
+        session_factory: Callable[[], Session] = create_session,
+    ) -> None:
+        self._session_factory = session_factory
+
     def save(
         self,
         check_in: CheckIn,
     ) -> None:
-        with create_session() as session:
+        with self._session_factory() as session:
             model = CheckInModel(
                 person_id=check_in.person_id,
                 timestamp=check_in.timestamp,
@@ -37,7 +46,7 @@ class SqlAlchemyCheckInRepository:
         self,
         person_id: int,
     ) -> CheckIn | None:
-        with create_session() as session:
+        with self._session_factory() as session:
             statement = (
                 select(CheckInModel)
                 .where(CheckInModel.person_id == person_id)
@@ -57,7 +66,7 @@ class SqlAlchemyCheckInRepository:
         person_id: int,
         limit: int,
     ) -> list[CheckIn]:
-        with create_session() as session:
+        with self._session_factory() as session:
             statement = (
                 select(CheckInModel)
                 .where(CheckInModel.person_id == person_id)
