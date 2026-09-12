@@ -1,4 +1,3 @@
-from collections.abc import Iterator
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session, sessionmaker
@@ -7,33 +6,7 @@ from features.workout.domain.video import WorkoutVideo
 from features.workout.persistence.sqlalchemy_workout_video_repository import (
     SqlAlchemyWorkoutVideoRepository,
 )
-from features.workout.persistence.workout_video_model import WorkoutVideoModel
 
-
-@pytest.fixture
-def session_factory() -> Iterator[sessionmaker[Session]]:
-    """
-    Erstellt für jeden Test eine vollständig isolierte SQLite-In-Memory-DB.
-
-    StaticPool ist hier wichtig:
-    SQLite-In-Memory-Datenbanken existieren normalerweise pro Connection.
-    Da das Repository für save() und get() jeweils neue Sessions öffnet,
-    müssen diese Sessions dieselbe Connection bzw. dieselbe In-Memory-DB
-    verwenden.
-
-    Java-Vergleich:
-    Das entspricht ungefähr einer eigenen H2-In-Memory-Datenbank
-    pro Testklasse/Test-Fixture.
-    """
-
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-
-    # Stellt sicher, dass das Model in Base.metadata registriert ist.
-    assert WorkoutVideoModel.__tablename__ == "workout_video"
 
 def test_unknown_workout_video_returns_none(
     session_factory: sessionmaker[Session],
