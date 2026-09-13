@@ -43,6 +43,7 @@ class LiveCoachingDecision:
     heart_rate_bpm: int
     target_min_bpm: int
     target_max_bpm: int
+    outside_target_seconds: float
     reason: str
 
 
