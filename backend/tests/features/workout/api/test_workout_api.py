@@ -444,3 +444,15 @@ def test_start_workout_rejects_unknown_video(
 
     assert response.status_code == 422
     assert response.json()["detail"] == ("Workout video is not available: missing-video")
+
+
+def test_workout_runtime_state_can_be_reported() -> None:
+    workout = start_workout(1)
+    workout_id = workout["id"]
+
+    response = client.post(
+        f"/api/workouts/{workout_id}/runtime-state",
+        json={"runtimeState": "paused"},
+    )
+
+    assert response.status_code == 204

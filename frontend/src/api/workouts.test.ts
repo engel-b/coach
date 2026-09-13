@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  checkpointWorkout,
   finishWorkout,
   getWorkoutVideo,
   getWorkoutVideos,
@@ -158,6 +159,36 @@ describe("startWorkout", () => {
   });
 });
 
+describe("checkpointWorkout", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("includes the current runtime state", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: "workout-1" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await checkpointWorkout("workout-1", 120, 1350, 87.5, "paused");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/workouts/workout-1/checkpoint",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          elapsedSeconds: 120,
+          distanceM: 1350,
+          videoPositionSeconds: 87.5,
+          runtimeState: "paused",
+        }),
+      },
+    );
+  });
+});
+
 describe("finishWorkout", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -205,6 +236,29 @@ describe("finishWorkout", () => {
 
     await expect(finishWorkout("workout-1", 100, 500)).rejects.toThrow(
       "Could not finish workout: HTTP 409",
+    );
+  });
+});
+
+describe("updateWorkoutRuntimeState", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("reports a runtime state immediately", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { updateWorkoutRuntimeState } = await import("./workouts");
+    await updateWorkoutRuntimeState("workout-1", "paused");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/workouts/workout-1/runtime-state",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ runtimeState: "paused" }),
+      },
     );
   });
 });

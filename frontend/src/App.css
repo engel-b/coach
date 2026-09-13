@@ -2245,3 +2245,81 @@ h1 {
   background: #70b5ef;
   transform: translate(-50%, -50%);
 }
+
+/*
+ * Live-Coaching-Hinweis während eines laufenden Workouts.
+ *
+ * Die Sprechblase hängt am Coach-Avatar und bleibt damit visuell klar
+ * vom Zielpuls-Overlay und von der Rohtelemetrie getrennt.
+ */
+.coach-message {
+  position: absolute;
+  right: 145px;
+  bottom: 38px;
+
+  width: min(330px, calc(100vw - 230px));
+  padding: 16px 18px;
+
+  border: 1px solid rgba(115, 213, 91, 0.38);
+  border-radius: 18px;
+
+  background: rgba(10, 16, 21, 0.92);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(16px);
+}
+
+.coach-message::after {
+  position: absolute;
+  right: -9px;
+  bottom: 24px;
+
+  width: 16px;
+  height: 16px;
+
+  border-top: 1px solid rgba(115, 213, 91, 0.38);
+  border-right: 1px solid rgba(115, 213, 91, 0.38);
+
+  background: rgba(10, 16, 21, 0.92);
+
+  content: "";
+  transform: rotate(45deg);
+}
+
+.coach-message-label {
+  color: #73d55b;
+
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+}
+
+.coach-message-text {
+  margin-top: 7px;
+
+  color: #f3f6f8;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.coach-avatar-status.connected {
+  color: #ccefc3;
+}
+
+@media (max-width: 760px) {
+  .coach-message {
+    right: 0;
+    bottom: 145px;
+
+    width: min(300px, calc(100vw - 56px));
+  }
+
+  .coach-message::after {
+    right: 50px;
+    bottom: -9px;
+
+    border-top: 0;
+    border-right: 1px solid rgba(115, 213, 91, 0.38);
+    border-bottom: 1px solid rgba(115, 213, 91, 0.38);
+  }
+}

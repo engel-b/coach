@@ -1,5 +1,8 @@
 export type WorkoutStatus = "running" | "completed" | "aborted";
 
+export type WorkoutRuntimeState =
+  "running" | "paused" | "finish_window" | "overtime";
+
 export interface WorkoutPhase {
   phaseType: "warm_up" | "main" | "cool_down";
   durationMinutes: number;

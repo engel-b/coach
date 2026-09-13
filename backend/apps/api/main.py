@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from apps.api.routers.health import router as health_router
 from features.check_in.api.router import router as check_ins_router
+from features.coaching.api.router import router as coaching_router
 from features.person.api.router import router as persons_router
 from features.telemetry.api.devices_router import router as devices_router
 from features.telemetry.api.router import router as telemetry_router
@@ -78,6 +79,7 @@ app = FastAPI(
 )
 
 app.include_router(health_router)
+app.include_router(coaching_router)
 app.include_router(devices_router)
 app.include_router(telemetry_router)
 app.include_router(persons_router)

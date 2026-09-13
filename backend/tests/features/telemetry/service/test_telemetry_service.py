@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 from features.telemetry.api.contracts.telemetry import TelemetryMessage
 from features.telemetry.domain.health.device import DeviceStatus, DeviceType
+from features.telemetry.domain.health.heart_rate import HeartRateSample
 from features.telemetry.service.service import TelemetryService
 
 DEVICE_ID = "AA:BB:CC:DD:EE:FF"
@@ -367,3 +368,60 @@ def test_device_status_preserves_existing_heart_rate() -> None:
     assert device.status == DeviceStatus.CONNECTED
     assert device.last_seen == status_timestamp
     assert device.heart_rate_bpm == 142
+
+
+def test_heart_rate_sample_is_published_to_registered_handler() -> None:
+    service = TelemetryService()
+
+    received_samples: list[HeartRateSample] = []
+
+    service.add_heart_rate_handler(received_samples.append)
+
+    timestamp = datetime(
+        2026,
+        9,
+        13,
+        6,
+        30,
+        tzinfo=UTC,
+    )
+
+    service.handle(
+        TelemetryMessage(
+            type="heart_rate.sample",
+            timestamp=timestamp,
+            device_id="heart-rate-01",
+            payload={
+                "bpm": 148,
+            },
+        )
+    )
+
+    assert received_samples == [
+        HeartRateSample(
+            device_id="heart-rate-01",
+            timestamp=timestamp,
+            bpm=148,
+        )
+    ]
+
+
+def test_invalid_heart_rate_is_not_published() -> None:
+    service = TelemetryService()
+
+    received_samples: list[HeartRateSample] = []
+
+    service.add_heart_rate_handler(received_samples.append)
+
+    service.handle(
+        TelemetryMessage(
+            type="heart_rate.sample",
+            timestamp=datetime.now(UTC),
+            device_id="heart-rate-01",
+            payload={
+                "bpm": "invalid",
+            },
+        )
+    )
+
+    assert received_samples == []

@@ -1,8 +1,12 @@
+from collections.abc import Callable
 from dataclasses import replace
 
 from features.telemetry.api.contracts.telemetry import TelemetryMessage
 from features.telemetry.domain.health.device import DeviceStatus, DeviceType
+from features.telemetry.domain.health.heart_rate import HeartRateSample
 from features.telemetry.service.models import DeviceState
+
+HeartRateHandler = Callable[[HeartRateSample], None]
 
 
 class TelemetryService:
@@ -14,6 +18,7 @@ class TelemetryService:
     - TelemetryMessages entgegennehmen
     - fachlich relevante Payloads interpretieren
     - aktuellen Gerätezustand halten
+    - fachliche Herzfrequenz-Samples an registrierte Interessenten weitergeben
 
     Nicht verantwortlich für:
 
@@ -21,6 +26,7 @@ class TelemetryService:
     - Bluetooth
     - Datenbank
     - UI
+    - Coaching-Entscheidungen
     """
 
     def __init__(self) -> None:
@@ -29,19 +35,22 @@ class TelemetryService:
         # Der Dictionary-Zugriff ist für unseren kleinen lokalen
         # Mehrgerätebetrieb völlig ausreichend.
         self._devices: dict[str, DeviceState] = {}
+        self._heart_rate_handlers: list[HeartRateHandler] = []
+
+    def add_heart_rate_handler(
+        self,
+        handler: HeartRateHandler,
+    ) -> None:
+        """
+        Registriert einen Interessenten für fachliche Herzfrequenz-Samples.
+
+        Der TelemetryService kennt dabei nicht den konkreten Empfänger.
+        Das kann später beispielsweise der Live Coach sein.
+        """
+
+        self._heart_rate_handlers.append(handler)
 
     def handle(self, message: TelemetryMessage) -> None:
-        """
-        Zentraler Einstiegspunkt für Telemetrie vom Device Agent.
-
-        Später können hier weitere Nachrichtentypen ergänzt werden:
-
-            bike.telemetry
-            scale.measurement
-            device.status_changed
-            ...
-        """
-
         if message.type == "device.status_changed":
             self._handle_device_status(message)
             return
@@ -126,12 +135,7 @@ class TelemetryService:
                 last_seen=message.timestamp,
                 heart_rate_bpm=bpm_value,
             )
-
         else:
-            # dataclasses.replace ist bei frozen dataclasses sehr praktisch.
-            #
-            # Java-Vergleich:
-            # Wir erzeugen einen neuen Record mit geänderten Feldern.
             state = replace(
                 previous,
                 last_seen=message.timestamp,
@@ -139,6 +143,15 @@ class TelemetryService:
             )
 
         self._devices[message.device_id] = state
+
+        sample = HeartRateSample(
+            device_id=message.device_id,
+            timestamp=message.timestamp,
+            bpm=bpm_value,
+        )
+
+        for handler in self._heart_rate_handlers:
+            handler(sample)
 
     def _handle_bike_telemetry(
         self,
