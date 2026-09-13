@@ -129,6 +129,8 @@ async def start_workout(
             detail=str(exc),
         ) from exc
 
+    wiring.live_coaching_lifecycle.workout_started(workout)
+
     return to_workout_response(workout)
 
 
@@ -175,6 +177,8 @@ async def checkpoint_workout(
             status_code=422,
             detail=str(exc),
         ) from exc
+
+    wiring.live_coaching_lifecycle.workout_checkpointed(workout)
 
     return to_workout_response(workout)
 
@@ -223,6 +227,8 @@ async def finish_workout(
             status_code=422,
             detail=str(exc),
         ) from exc
+
+    wiring.live_coaching_lifecycle.workout_finished(workout)
 
     return to_workout_response(workout)
 
