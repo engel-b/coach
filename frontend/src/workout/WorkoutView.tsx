@@ -5,6 +5,10 @@ import {
   finishWorkout,
   getWorkoutVideo,
 } from "../api/workouts";
+import { coachingMessage } from "../coaching/coachingMessage";
+import { useCoachSpeech } from "../coaching/useCoachSpeech";
+import type { LiveCoachingEvent } from "../coaching/types";
+import { useLiveCoaching } from "../coaching/useLiveCoaching";
 import type { DeviceState } from "../devices/types";
 import type { Person } from "../persons/types";
 import type { Workout, WorkoutPhase } from "./types";
@@ -133,12 +137,51 @@ export function WorkoutView({
 
   const [finishing, setFinishing] = useState(false);
 
+  const [latestCoachingEvent, setLatestCoachingEvent] =
+    useState<LiveCoachingEvent | null>(null);
+
   const [videoLoadState, setVideoLoadState] = useState<VideoLoadState>({
     status: "loading",
     videoId: workout.videoId,
   });
 
   const [videoLoadAttempt, setVideoLoadAttempt] = useState(0);
+
+  const speakCoachingEvent = useCoachSpeech();
+
+  const handleCoachingMessage = useCallback(
+    (message: LiveCoachingEvent): void => {
+      if (message.workoutId === workout.id) {
+        setLatestCoachingEvent(message);
+        speakCoachingEvent(message);
+      }
+    },
+    [speakCoachingEvent, workout.id],
+  );
+
+  const coachingConnected = useLiveCoaching({
+    onMessage: handleCoachingMessage,
+  });
+
+  /*
+   * Eine Coaching-Nachricht soll Aufmerksamkeit erzeugen, aber nicht
+   * dauerhaft über dem Trainingsvideo stehen bleiben. Der fachliche
+   * Event bleibt im Backend entprellt; diese acht Sekunden betreffen
+   * ausschließlich die visuelle Darstellung.
+   */
+  useEffect(() => {
+    if (latestCoachingEvent === null) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setLatestCoachingEvent(null);
+    }, 8_000);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [latestCoachingEvent]);
 
   /*
    * Die aktuelle Videoposition ist technischer Laufzeitzustand.
@@ -767,11 +810,27 @@ export function WorkoutView({
         </div>
 
         <div className="coach-avatar">
+          {latestCoachingEvent !== null && (
+            <div className="coach-message" role="status" aria-live="polite">
+              <div className="coach-message-label">COACH</div>
+
+              <div className="coach-message-text">
+                {coachingMessage(latestCoachingEvent)}
+              </div>
+            </div>
+          )}
+
           <div className="coach-avatar-face">
             <span>HC</span>
           </div>
 
-          <div className="coach-avatar-status">Coach</div>
+          <div
+            className={`coach-avatar-status${
+              coachingConnected ? " connected" : ""
+            }`}
+          >
+            {coachingConnected ? "Coach online" : "Coach verbindet …"}
+          </div>
         </div>
 
         {engineState.state === "paused" && (
