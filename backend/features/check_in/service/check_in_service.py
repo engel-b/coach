@@ -47,11 +47,11 @@ class CheckInService:
 
         if available_training_minutes not in {
             15,
+            20,
+            25,
             30,
-            45,
-            60,
         }:
-            raise InvalidCheckInError("available_training_minutes must be 15, 30, 45 or 60")
+            raise InvalidCheckInError("available_training_minutes must be 15, 20, 25 or 30")
 
         # Optionale Tagesdaten werden nur geprüft, wenn ein Wert vorliegt.
         # None bedeutet "nicht erfasst" und ist ausdrücklich gültig.
