@@ -27,7 +27,6 @@ class HeartRateDeviationTracker:
 
     def reset(self) -> None:
         """Verwirft eine laufende Abweichung, z. B. nach Pause oder Sensorlücke."""
-
         self._current_status = None
         self._deviation_started_at_seconds = None
         self._last_timestamp_seconds = None
