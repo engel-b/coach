@@ -1,11 +1,8 @@
 export type CoachingAction = "increase_intensity" | "reduce_intensity";
 
-export type HeartRateZoneStatus =
-  | "below_target"
-  | "in_target"
-  | "above_target";
+export type HeartRateZoneStatus = "below_target" | "in_target" | "above_target";
 
-export interface LiveCoachingEvent {
+export interface HeartRateCoachingEvent {
   type: "coaching.decision";
   timestamp: string;
   workoutId: string;
@@ -18,3 +15,18 @@ export interface LiveCoachingEvent {
   outsideTargetSeconds: number;
   reason: string;
 }
+
+export interface CoachingPauseStartedEvent {
+  type: "coaching.pause_started";
+  timestamp: string;
+  workoutId: string;
+}
+
+export interface CoachingPauseEndedEvent {
+  type: "coaching.pause_ended";
+  timestamp: string;
+  workoutId: string;
+}
+
+export type LiveCoachingEvent =
+  HeartRateCoachingEvent | CoachingPauseStartedEvent | CoachingPauseEndedEvent;

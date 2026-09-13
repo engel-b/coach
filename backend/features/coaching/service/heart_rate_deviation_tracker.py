@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 from features.coaching.domain.live_coaching import HeartRateZoneStatus
 
+MAX_CONTINUOUS_SAMPLE_GAP_SECONDS = 30.0
+
 
 @dataclass(frozen=True)
 class HeartRateDeviation:
@@ -23,6 +25,13 @@ class HeartRateDeviationTracker:
         self._deviation_started_at_seconds: float | None = None
         self._last_timestamp_seconds: float | None = None
 
+    def reset(self) -> None:
+        """Verwirft eine laufende Abweichung, z. B. nach Pause oder Sensorlücke."""
+
+        self._current_status = None
+        self._deviation_started_at_seconds = None
+        self._last_timestamp_seconds = None
+
     def update(
         self,
         *,
@@ -43,6 +52,16 @@ class HeartRateDeviationTracker:
             and timestamp_seconds < self._last_timestamp_seconds
         ):
             raise ValueError("timestamp_seconds must not move backwards")
+
+        if (
+            self._last_timestamp_seconds is not None
+            and timestamp_seconds - self._last_timestamp_seconds > MAX_CONTINUOUS_SAMPLE_GAP_SECONDS
+        ):
+            # Eine groessere Sample-Luecke gilt als unterbrochene HR-Verbindung.
+            # Alte Abweichungsdauer darf nach einem Sensor-Reconnect nicht
+            # weitergezaehlt werden.
+            self._current_status = None
+            self._deviation_started_at_seconds = None
 
         self._last_timestamp_seconds = timestamp_seconds
 

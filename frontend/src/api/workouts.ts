@@ -1,4 +1,8 @@
-import type { Workout, WorkoutVideo } from "../workout/types";
+import type {
+  Workout,
+  WorkoutRuntimeState,
+  WorkoutVideo,
+} from "../workout/types";
 import type { WorkoutSummary } from "../workout/summary-types";
 
 export async function startWorkout(
@@ -51,6 +55,7 @@ export async function checkpointWorkout(
   elapsedSeconds: number,
   distanceM: number,
   videoPositionSeconds: number,
+  runtimeState: WorkoutRuntimeState,
 ): Promise<Workout> {
   const response = await fetch(`/api/workouts/${workoutId}/checkpoint`, {
     method: "POST",
@@ -61,6 +66,7 @@ export async function checkpointWorkout(
       elapsedSeconds,
       distanceM,
       videoPositionSeconds,
+      runtimeState,
     }),
   });
 
@@ -69,6 +75,25 @@ export async function checkpointWorkout(
   }
 
   return (await response.json()) as Workout;
+}
+
+export async function updateWorkoutRuntimeState(
+  workoutId: string,
+  runtimeState: WorkoutRuntimeState,
+): Promise<void> {
+  const response = await fetch(`/api/workouts/${workoutId}/runtime-state`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ runtimeState }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Could not update workout runtime state: HTTP ${response.status}`,
+    );
+  }
 }
 
 export async function finishWorkout(

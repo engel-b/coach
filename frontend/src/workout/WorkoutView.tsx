@@ -4,6 +4,7 @@ import {
   checkpointWorkout,
   finishWorkout,
   getWorkoutVideo,
+  updateWorkoutRuntimeState,
 } from "../api/workouts";
 import { coachingMessage } from "../coaching/coachingMessage";
 import { useCoachSpeech } from "../coaching/useCoachSpeech";
@@ -11,7 +12,7 @@ import type { LiveCoachingEvent } from "../coaching/types";
 import { useLiveCoaching } from "../coaching/useLiveCoaching";
 import type { DeviceState } from "../devices/types";
 import type { Person } from "../persons/types";
-import type { Workout, WorkoutPhase } from "./types";
+import type { Workout, WorkoutPhase, WorkoutRuntimeState } from "./types";
 import { calculateVideoPlaybackRate, isBikeMoving } from "./videoPlayback";
 import { playWorkoutFinishSound } from "./workoutSound";
 import { WorkoutVideo } from "./WorkoutVideo";
@@ -203,6 +204,8 @@ export function WorkoutView({
    * keinen Render auslösen soll.
    */
   const checkpointInFlightRef = useRef(false);
+
+  const lastReportedRuntimeStateRef = useRef<WorkoutRuntimeState>("running");
 
   const totalDurationSeconds = useMemo(
     () =>
@@ -444,6 +447,11 @@ export function WorkoutView({
         elapsedSecondsRef.current,
         Math.round(workoutDistanceMRef.current),
         videoPositionSecondsRef.current,
+        engineState.state === "paused" ||
+          engineState.state === "finish_window" ||
+          engineState.state === "overtime"
+          ? engineState.state
+          : "running",
       )
         .catch((error: unknown) => {
           console.error("Could not checkpoint workout", error);
@@ -456,7 +464,33 @@ export function WorkoutView({
     return () => {
       window.clearInterval(timer);
     };
-  }, [finishing, workout.id]);
+  }, [engineState.state, finishing, workout.id]);
+
+  /*
+   * Runtime-State-Wechsel werden sofort separat gemeldet. So kann der Coach
+   * auf Pause/Resume ohne das naechste 5-Sekunden-Checkpoint-Intervall warten.
+   * Fehlende HR-Hardware spielt hier keine Rolle: Pause/Resume sind reine
+   * Workout-Ereignisse.
+   */
+  useEffect(() => {
+    if (engineState.state === "completed" || engineState.state === "aborted") {
+      return;
+    }
+
+    const runtimeState: WorkoutRuntimeState = engineState.state;
+
+    if (lastReportedRuntimeStateRef.current === runtimeState) {
+      return;
+    }
+
+    lastReportedRuntimeStateRef.current = runtimeState;
+
+    void updateWorkoutRuntimeState(workout.id, runtimeState).catch(
+      (error: unknown) => {
+        console.error("Could not update workout runtime state", error);
+      },
+    );
+  }, [engineState.state, workout.id]);
 
   /*
    * Die Telemetrie entscheidet nur, ob das Bike gerade
@@ -829,7 +863,11 @@ export function WorkoutView({
               coachingConnected ? " connected" : ""
             }`}
           >
-            {coachingConnected ? "Coach online" : "Coach verbindet …"}
+            {coachingConnected
+              ? heartRateDevice !== undefined
+                ? "Coach online"
+                : "Coach online · Kein Pulssensor"
+              : "Coach verbindet …"}
           </div>
         </div>
 

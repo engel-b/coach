@@ -198,3 +198,57 @@ def test_timestamp_must_not_move_backwards() -> None:
             target_min_bpm=125,
             target_max_bpm=145,
         )
+
+
+def test_reset_starts_deviation_tracking_from_scratch() -> None:
+    tracker = HeartRateDeviationTracker()
+
+    tracker.update(
+        timestamp_seconds=0.0,
+        heart_rate_bpm=150,
+        target_min_bpm=125,
+        target_max_bpm=145,
+    )
+    tracker.update(
+        timestamp_seconds=21.0,
+        heart_rate_bpm=150,
+        target_min_bpm=125,
+        target_max_bpm=145,
+    )
+
+    tracker.reset()
+
+    result = tracker.update(
+        timestamp_seconds=31.0,
+        heart_rate_bpm=150,
+        target_min_bpm=125,
+        target_max_bpm=145,
+    )
+
+    assert result.outside_target_seconds == 0.0
+
+
+def test_long_sample_gap_resets_deviation_after_sensor_reconnect() -> None:
+    tracker = HeartRateDeviationTracker()
+
+    tracker.update(
+        timestamp_seconds=0.0,
+        heart_rate_bpm=150,
+        target_min_bpm=125,
+        target_max_bpm=145,
+    )
+    tracker.update(
+        timestamp_seconds=5.0,
+        heart_rate_bpm=150,
+        target_min_bpm=125,
+        target_max_bpm=145,
+    )
+
+    result = tracker.update(
+        timestamp_seconds=40.0,
+        heart_rate_bpm=150,
+        target_min_bpm=125,
+        target_max_bpm=145,
+    )
+
+    assert result.outside_target_seconds == 0.0

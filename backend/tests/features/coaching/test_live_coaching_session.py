@@ -17,6 +17,7 @@ from features.training.domain.recommendation import (
     WorkoutPhase,
     WorkoutPhaseType,
 )
+from features.workout.domain.runtime import WorkoutRuntimeState
 from features.workout.domain.session import WorkoutSession, WorkoutStatus
 
 
@@ -175,3 +176,63 @@ def test_finished_workout_cannot_create_live_coaching_session() -> None:
         match="live coaching requires a running workout",
     ):
         create_session(workout)
+
+
+def test_paused_session_ignores_heart_rate_and_resets_deviation() -> None:
+    session = create_session()
+    session.update_elapsed_seconds(300)
+
+    start = datetime.now(UTC)
+
+    session.handle_heart_rate(
+        HeartRateSample(
+            device_id="heart-rate-1",
+            timestamp=start,
+            bpm=150,
+        )
+    )
+
+    session.update_runtime_state(WorkoutRuntimeState.PAUSED)
+
+    paused_decision = session.handle_heart_rate(
+        HeartRateSample(
+            device_id="heart-rate-1",
+            timestamp=start + timedelta(seconds=30),
+            bpm=150,
+        )
+    )
+
+    session.update_runtime_state(WorkoutRuntimeState.RUNNING)
+
+    resumed_decision = session.handle_heart_rate(
+        HeartRateSample(
+            device_id="heart-rate-1",
+            timestamp=start + timedelta(seconds=31),
+            bpm=150,
+        )
+    )
+
+    assert paused_decision is None
+    assert resumed_decision is not None
+    assert resumed_decision.action is CoachingAction.NONE
+    assert resumed_decision.outside_target_seconds == 0.0
+
+
+def test_finish_window_and_overtime_ignore_heart_rate() -> None:
+    session = create_session()
+
+    for runtime_state in (
+        WorkoutRuntimeState.FINISH_WINDOW,
+        WorkoutRuntimeState.OVERTIME,
+    ):
+        session.update_runtime_state(runtime_state)
+
+        decision = session.handle_heart_rate(
+            HeartRateSample(
+                device_id="heart-rate-1",
+                timestamp=datetime.now(UTC),
+                bpm=180,
+            )
+        )
+
+        assert decision is None

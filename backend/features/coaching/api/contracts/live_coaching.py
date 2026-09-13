@@ -13,7 +13,7 @@ from features.telemetry.domain.health.heart_rate import HeartRateSample
 
 
 class LiveCoachingEvent(BaseModel):
-    """WebSocket-Event für eine relevante Live-Coaching-Entscheidung."""
+    """WebSocket-Event für eine relevante Herzfrequenz-Coaching-Entscheidung."""
 
     model_config = ConfigDict(
         alias_generator=to_camel,
@@ -52,3 +52,16 @@ class LiveCoachingEvent(BaseModel):
             outside_target_seconds=decision.outside_target_seconds,
             reason=decision.reason,
         )
+
+
+class LiveCoachingRuntimeEvent(BaseModel):
+    """WebSocket-Event für sprachrelevante Runtime-Übergänge des Workouts."""
+
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
+
+    type: Literal["coaching.pause_started", "coaching.pause_ended"]
+    timestamp: datetime
+    workout_id: str

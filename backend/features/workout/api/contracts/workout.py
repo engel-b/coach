@@ -4,6 +4,8 @@ from typing import Annotated
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
+from features.workout.domain.runtime import WorkoutRuntimeState
+
 
 class StartWorkoutRequest(BaseModel):
     """Optionale Auswahl eines Trainingsvideos beim Start."""
@@ -72,10 +74,27 @@ class WorkoutCheckpointRequest(BaseModel):
         description="Aktuelle Wiedergabeposition des Videos in Sekunden.",
         examples=[612.5],
     )
+    runtime_state: WorkoutRuntimeState = Field(
+        default=WorkoutRuntimeState.RUNNING,
+        validation_alias="runtimeState",
+        serialization_alias="runtimeState",
+        description="Aktueller nicht persistierter Laufzeitzustand des Workouts.",
+    )
 
     model_config = ConfigDict(
         populate_by_name=True,
     )
+
+
+class WorkoutRuntimeStateRequest(BaseModel):
+    """Sofortige Meldung eines Runtime-State-Wechsels an den Live Coach."""
+
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
+
+    runtime_state: WorkoutRuntimeState
 
 
 class FinishWorkoutRequest(BaseModel):

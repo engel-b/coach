@@ -28,6 +28,11 @@ class LiveCoachingService:
         self._deviation_tracker = deviation_tracker
         self._coaching_engine = coaching_engine
 
+    def reset(self) -> None:
+        """Setzt den zeitlichen Herzfrequenz-Kontext der Session zurück."""
+
+        self._deviation_tracker.reset()
+
     def evaluate_heart_rate(
         self,
         *,

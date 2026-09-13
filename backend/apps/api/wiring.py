@@ -52,6 +52,7 @@ live_coaching_event_publisher = LiveCoachingEventPublisher(
 live_coaching_lifecycle = LiveCoachingLifecycle(
     coordinator=live_coaching_coordinator,
     decision_handler=live_coaching_event_publisher.publish,
+    runtime_handler=live_coaching_event_publisher.publish_runtime_event,
 )
 
 telemetry_service = TelemetryService()

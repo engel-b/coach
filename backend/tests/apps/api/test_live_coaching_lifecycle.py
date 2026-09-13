@@ -6,6 +6,7 @@ from features.coaching.service.live_coaching_coordinator import LiveCoachingCoor
 from features.coaching.service.live_coaching_engine import LiveCoachingEngine
 from features.telemetry.domain.health.heart_rate import HeartRateSample
 from features.training.domain.recommendation import WorkoutPhase, WorkoutPhaseType
+from features.workout.domain.runtime import WorkoutRuntimeState
 from features.workout.domain.session import WorkoutSession, WorkoutStatus
 
 
@@ -254,3 +255,54 @@ def test_normal_heart_rate_reenables_same_action_for_later_deviation() -> None:
         CoachingAction.REDUCE_INTENSITY,
         CoachingAction.REDUCE_INTENSITY,
     ]
+
+
+def test_pause_and_resume_emit_runtime_events_without_heart_rate_sensor() -> None:
+    runtime_events: list[tuple[str, str]] = []
+    coordinator = LiveCoachingCoordinator(
+        coaching_engine=LiveCoachingEngine(
+            rules=LiveCoachingRules(
+                deviation_seconds_before_action=20.0,
+            )
+        )
+    )
+    lifecycle = LiveCoachingLifecycle(
+        coordinator=coordinator,
+        runtime_handler=lambda workout_id, event_type: runtime_events.append(
+            (workout_id, event_type)
+        ),
+    )
+    lifecycle.workout_started(create_workout())
+
+    lifecycle.workout_runtime_state_changed(
+        workout_id="workout-1",
+        runtime_state=WorkoutRuntimeState.PAUSED,
+    )
+    lifecycle.workout_runtime_state_changed(
+        workout_id="workout-1",
+        runtime_state=WorkoutRuntimeState.RUNNING,
+    )
+
+    assert runtime_events == [
+        ("workout-1", "coaching.pause_started"),
+        ("workout-1", "coaching.pause_ended"),
+    ]
+
+
+def test_heart_rate_is_ignored_while_paused() -> None:
+    lifecycle = create_lifecycle()
+    lifecycle.workout_started(create_workout(elapsed_seconds=300))
+    lifecycle.workout_runtime_state_changed(
+        workout_id="workout-1",
+        runtime_state=WorkoutRuntimeState.PAUSED,
+    )
+
+    lifecycle.handle_heart_rate(
+        HeartRateSample(
+            device_id="heart-rate-1",
+            timestamp=datetime.now(UTC),
+            bpm=180,
+        )
+    )
+
+    assert lifecycle.last_decision is None

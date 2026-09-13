@@ -59,3 +59,25 @@ describe("parseLiveCoachingEvent", () => {
     ).toBeNull();
   });
 });
+
+it("accepts pause and resume coaching events", () => {
+  expect(
+    parseLiveCoachingEvent({
+      type: "coaching.pause_started",
+      timestamp: "2026-09-13T08:30:00Z",
+      workoutId: "workout-1",
+    }),
+  ).toEqual({
+    type: "coaching.pause_started",
+    timestamp: "2026-09-13T08:30:00Z",
+    workoutId: "workout-1",
+  });
+
+  expect(
+    parseLiveCoachingEvent({
+      type: "coaching.pause_ended",
+      timestamp: "2026-09-13T08:31:00Z",
+      workoutId: "workout-1",
+    }),
+  ).not.toBeNull();
+});

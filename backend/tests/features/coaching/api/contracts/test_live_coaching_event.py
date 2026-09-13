@@ -44,3 +44,19 @@ def test_live_coaching_event_uses_camel_case_json_contract() -> None:
         "outsideTargetSeconds": 21.0,
         "reason": "heart_rate_above_target_long_enough",
     }
+
+
+def test_live_coaching_runtime_event_uses_camel_case_json_contract() -> None:
+    from features.coaching.api.contracts.live_coaching import LiveCoachingRuntimeEvent
+
+    event = LiveCoachingRuntimeEvent(
+        type="coaching.pause_started",
+        timestamp=datetime(2026, 9, 13, 8, 30, tzinfo=UTC),
+        workout_id="workout-1",
+    )
+
+    assert event.model_dump(mode="json", by_alias=True) == {
+        "type": "coaching.pause_started",
+        "timestamp": "2026-09-13T08:30:00Z",
+        "workoutId": "workout-1",
+    }

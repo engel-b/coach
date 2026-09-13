@@ -6,6 +6,7 @@ from features.coaching.service.live_coaching_engine import LiveCoachingEngine
 from features.coaching.service.live_coaching_service import LiveCoachingService
 from features.coaching.service.live_coaching_session import LiveCoachingSession
 from features.telemetry.domain.health.heart_rate import HeartRateSample
+from features.workout.domain.runtime import WorkoutRuntimeState
 from features.workout.domain.session import WorkoutSession
 
 
@@ -36,6 +37,13 @@ class LiveCoachingCoordinator:
 
         return self._session.workout_id
 
+    @property
+    def runtime_state(self) -> WorkoutRuntimeState | None:
+        if self._session is None:
+            return None
+
+        return self._session.runtime_state
+
     def start(
         self,
         workout: WorkoutSession,
@@ -60,6 +68,15 @@ class LiveCoachingCoordinator:
         session = self._require_session(workout_id)
 
         session.update_elapsed_seconds(elapsed_seconds)
+
+    def update_runtime_state(
+        self,
+        *,
+        workout_id: str,
+        runtime_state: WorkoutRuntimeState,
+    ) -> bool:
+        session = self._require_session(workout_id)
+        return session.update_runtime_state(runtime_state)
 
     def handle_heart_rate(
         self,

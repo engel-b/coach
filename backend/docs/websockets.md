@@ -85,7 +85,7 @@ Der Router nimmt eingehende Textnachrichten entgegen, interpretiert sie aber nic
 
 **Richtung:** Backend → Frontend
 
-Dieser Stream transportiert relevante Live-Coaching-Entscheidungen. Er ist bewusst von der Rohtelemetrie getrennt. In V1 wird ein Event nur erzeugt, wenn der Coach eine konkrete Änderung der Trainingsintensität empfiehlt. Entscheidungen mit `action = none` werden nicht übertragen.
+Dieser Stream transportiert relevante Live-Coaching-Ereignisse. Er ist bewusst von der Rohtelemetrie getrennt. Herzfrequenz-Entscheidungen werden nur übertragen, wenn der Coach eine konkrete Änderung der Trainingsintensität empfiehlt. Entscheidungen mit `action = none` werden nicht übertragen. Zusätzlich werden Pause und Wiederaufnahme als eigene Runtime-Events übertragen.
 
 Wiederholte identische Aktionen werden unterdrückt, solange sich die Situation nicht normalisiert oder die Coaching-Aktion wechselt. Dadurch entsteht bei dauerhaft zu hohem Puls nicht mit jedem neuen Herzfrequenz-Sample ein weiteres identisches Event.
 
@@ -110,6 +110,18 @@ Beispiel:
 ```
 
 `outsideTargetSeconds` beschreibt, wie lange die Herzfrequenz zum Entscheidungszeitpunkt bereits ununterbrochen außerhalb des Zielbereichs lag.
+
+Pause und Wiederaufnahme verwenden einen kleineren Contract:
+
+```json
+{
+  "type": "coaching.pause_started",
+  "timestamp": "2026-09-13T08:35:00Z",
+  "workoutId": "workout-1"
+}
+```
+
+Beim Fortsetzen lautet `type` entsprechend `coaching.pause_ended`. Diese Runtime-Events sind unabhängig von einem Herzfrequenzsensor. Fehlt ein Pulssensor, läuft das Workout normal weiter; lediglich HR-basierte Coaching-Entscheidungen entfallen. Größere Lücken im HR-Sample-Strom setzen die laufende Abweichungsdauer zurück, damit ein Sensor-Reconnect keine alte Pulsabweichung fortschreibt.
 
 Der Stream enthält noch keinen ausformulierten Sprachtext. `action`, `zoneStatus` und `reason` sind fachliche Werte. Eine spätere Speech Policy kann daraus geeignete und nicht zu häufige Sprachmeldungen erzeugen.
 

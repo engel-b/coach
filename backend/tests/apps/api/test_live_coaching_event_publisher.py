@@ -62,3 +62,21 @@ async def test_publisher_schedules_websocket_event() -> None:
         "outsideTargetSeconds": 21.0,
         "reason": "heart_rate_above_target_long_enough",
     }
+
+
+async def test_publisher_schedules_pause_runtime_event() -> None:
+    broadcaster = RecordingBroadcaster()
+    publisher = LiveCoachingEventPublisher(broadcaster=broadcaster)
+
+    publisher.publish_runtime_event(
+        "workout-1",
+        "coaching.pause_started",
+    )
+
+    await asyncio.sleep(0)
+
+    assert len(broadcaster.messages) == 1
+    message = json.loads(broadcaster.messages[0])
+    assert message["type"] == "coaching.pause_started"
+    assert message["workoutId"] == "workout-1"
+    assert isinstance(message["timestamp"], str)

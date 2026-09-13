@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { LiveCoachingEvent } from "./types";
+import type { CoachingAction, HeartRateCoachingEvent } from "./types";
 import { useCoachSpeech } from "./useCoachSpeech";
 
 class FakeSpeechSynthesisUtterance {
@@ -16,15 +16,14 @@ class FakeSpeechSynthesisUtterance {
   }
 }
 
-function event(action: LiveCoachingEvent["action"]): LiveCoachingEvent {
+function event(action: CoachingAction): HeartRateCoachingEvent {
   return {
     type: "coaching.decision",
     timestamp: "2026-09-13T08:30:00Z",
     workoutId: "workout-1",
     deviceId: "heart-rate-1",
     action,
-    zoneStatus:
-      action === "reduce_intensity" ? "above_target" : "below_target",
+    zoneStatus: action === "reduce_intensity" ? "above_target" : "below_target",
     heartRateBpm: action === "reduce_intensity" ? 149 : 119,
     targetMinBpm: 125,
     targetMaxBpm: 145,
@@ -107,5 +106,21 @@ describe("useCoachSpeech", () => {
     unmount();
 
     expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it("speaks pause events even without a heart-rate decision", () => {
+    const { result } = renderHook(() => useCoachSpeech());
+
+    act(() => {
+      result.current({
+        type: "coaching.pause_started",
+        timestamp: "2026-09-13T08:30:00Z",
+        workoutId: "workout-1",
+      });
+    });
+
+    expect(speak).toHaveBeenCalledOnce();
+    const utterance = speak.mock.calls[0][0] as FakeSpeechSynthesisUtterance;
+    expect(utterance.text).toBe("Pause.");
   });
 });

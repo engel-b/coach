@@ -1,10 +1,9 @@
 import type {
   CoachingAction,
+  HeartRateCoachingEvent,
   HeartRateZoneStatus,
   LiveCoachingEvent,
 } from "./types";
-
-const COACHING_DECISION = "coaching.decision";
 
 const COACHING_ACTIONS: readonly CoachingAction[] = [
   "increase_intensity",
@@ -17,19 +16,36 @@ const HEART_RATE_ZONE_STATUSES: readonly HeartRateZoneStatus[] = [
   "above_target",
 ];
 
-/**
- * Validiert eine Nachricht an der WebSocket-Systemgrenze.
- *
- * JSON.parse() liefert nur unknown. Erst nach dieser Prüfung darf
- * die Nachricht als LiveCoachingEvent in die Anwendung gelangen.
- */
 export function parseLiveCoachingEvent(
   value: unknown,
 ): LiveCoachingEvent | null {
-  if (!isRecord(value) || value.type !== COACHING_DECISION) {
+  if (!isRecord(value)) {
     return null;
   }
 
+  if (
+    (value.type === "coaching.pause_started" ||
+      value.type === "coaching.pause_ended") &&
+    typeof value.timestamp === "string" &&
+    typeof value.workoutId === "string"
+  ) {
+    return {
+      type: value.type,
+      timestamp: value.timestamp,
+      workoutId: value.workoutId,
+    };
+  }
+
+  if (value.type !== "coaching.decision") {
+    return null;
+  }
+
+  return parseHeartRateDecision(value);
+}
+
+function parseHeartRateDecision(
+  value: Record<string, unknown>,
+): HeartRateCoachingEvent | null {
   if (
     typeof value.timestamp !== "string" ||
     typeof value.workoutId !== "string" ||
@@ -47,7 +63,7 @@ export function parseLiveCoachingEvent(
   }
 
   return {
-    type: COACHING_DECISION,
+    type: "coaching.decision",
     timestamp: value.timestamp,
     workoutId: value.workoutId,
     deviceId: value.deviceId,
