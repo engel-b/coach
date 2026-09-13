@@ -1,7 +1,13 @@
+from apps.api.live_coaching_event_publisher import LiveCoachingEventPublisher
+from apps.api.live_coaching_lifecycle import LiveCoachingLifecycle
 from features.check_in.persistence.sqlalchemy_check_in_repository import (
     SqlAlchemyCheckInRepository,
 )
 from features.check_in.service.check_in_service import CheckInService
+from features.coaching.api.broadcaster import LiveCoachingBroadcaster
+from features.coaching.domain.live_coaching import LiveCoachingRules
+from features.coaching.service.live_coaching_coordinator import LiveCoachingCoordinator
+from features.coaching.service.live_coaching_engine import LiveCoachingEngine
 from features.person.persistence.sqlalchemy_person_profile_repository import (
     SqlAlchemyPersonProfileRepository,
 )
@@ -31,7 +37,28 @@ from features.workout.service.workout_service import WorkoutService
 # Die Objekte leben aktuell für die gesamte Laufzeit des Backend-Prozesses.
 # Später können wir hier bei Bedarf auf FastAPI-Dependencies umstellen,
 # ohne die fachlichen Router erneut umzubauen.
+live_coaching_engine = LiveCoachingEngine(
+    rules=LiveCoachingRules(
+        deviation_seconds_before_action=20.0,
+    )
+)
+live_coaching_coordinator = LiveCoachingCoordinator(
+    coaching_engine=live_coaching_engine,
+)
+live_coaching_broadcaster = LiveCoachingBroadcaster()
+live_coaching_event_publisher = LiveCoachingEventPublisher(
+    broadcaster=live_coaching_broadcaster,
+)
+live_coaching_lifecycle = LiveCoachingLifecycle(
+    coordinator=live_coaching_coordinator,
+    decision_handler=live_coaching_event_publisher.publish,
+    runtime_handler=live_coaching_event_publisher.publish_runtime_event,
+)
+
 telemetry_service = TelemetryService()
+telemetry_service.add_heart_rate_handler(
+    live_coaching_lifecycle.handle_heart_rate,
+)
 
 person_repository = SqlAlchemyPersonRepository()
 person_service = PersonService(repository=person_repository)

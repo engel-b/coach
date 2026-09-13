@@ -9,6 +9,7 @@ from features.workout.api.contracts.workout import (
     StartWorkoutRequest,
     WorkoutCheckpointRequest,
     WorkoutResponse,
+    WorkoutRuntimeStateRequest,
     WorkoutSummaryResponse,
 )
 from features.workout.api.contracts.workout_mapper import (
@@ -129,6 +130,8 @@ async def start_workout(
             detail=str(exc),
         ) from exc
 
+    wiring.live_coaching_lifecycle.workout_started(workout)
+
     return to_workout_response(workout)
 
 
@@ -176,7 +179,39 @@ async def checkpoint_workout(
             detail=str(exc),
         ) from exc
 
+    wiring.live_coaching_lifecycle.workout_checkpointed(
+        workout,
+        runtime_state=request.runtime_state,
+    )
+
     return to_workout_response(workout)
+
+
+@router.post(
+    "/api/workouts/{workout_id}/runtime-state",
+    status_code=204,
+    summary="Workout-Laufzeitzustand melden",
+    description=(
+        "Meldet einen sofortigen Runtime-State-Wechsel an den Live Coach. "
+        "Der Zustand wird nicht persistiert und beeinflusst das Workout selbst nicht."
+    ),
+)
+async def update_workout_runtime_state(
+    workout_id: str,
+    request: WorkoutRuntimeStateRequest,
+) -> None:
+    workout = wiring.workout_service.get(workout_id)
+
+    if workout is None:
+        raise HTTPException(status_code=404, detail=f"Workout {workout_id} not found")
+
+    if workout.status.value != "running":
+        raise HTTPException(status_code=409, detail=f"Workout {workout_id} is not running")
+
+    wiring.live_coaching_lifecycle.workout_runtime_state_changed(
+        workout_id=workout_id,
+        runtime_state=request.runtime_state,
+    )
 
 
 @router.post(
@@ -223,6 +258,8 @@ async def finish_workout(
             status_code=422,
             detail=str(exc),
         ) from exc
+
+    wiring.live_coaching_lifecycle.workout_finished(workout)
 
     return to_workout_response(workout)
 
