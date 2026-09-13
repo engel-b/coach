@@ -223,8 +223,8 @@ def test_normal_heart_rate_reenables_same_action_for_later_deviation() -> None:
     )
     lifecycle = LiveCoachingLifecycle(
         coordinator=coordinator,
-        decision_handler=lambda _workout_id, _sample, decision: (
-            forwarded_actions.append(decision.action)
+        decision_handler=lambda _workout_id, _sample, decision: forwarded_actions.append(
+            decision.action
         ),
     )
     lifecycle.workout_started(
