@@ -82,6 +82,7 @@ class LiveCoachingEngine:
             heart_rate_bpm=context.heart_rate_bpm,
             target_min_bpm=context.target_min_bpm,
             target_max_bpm=context.target_max_bpm,
+            outside_target_seconds=context.outside_target_seconds,
             reason=reason,
         )
 

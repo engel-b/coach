@@ -154,3 +154,103 @@ def test_finishing_non_active_workout_does_not_stop_active_session() -> None:
     )
 
     assert lifecycle.active_workout_id == "workout-1"
+
+
+def test_relevant_decision_is_forwarded_once_until_state_changes() -> None:
+    forwarded: list[tuple[str, HeartRateSample, object]] = []
+
+    coordinator = LiveCoachingCoordinator(
+        coaching_engine=LiveCoachingEngine(
+            rules=LiveCoachingRules(
+                deviation_seconds_before_action=20.0,
+            )
+        )
+    )
+    lifecycle = LiveCoachingLifecycle(
+        coordinator=coordinator,
+        decision_handler=lambda workout_id, sample, decision: forwarded.append(
+            (workout_id, sample, decision)
+        ),
+    )
+    lifecycle.workout_started(
+        create_workout(
+            elapsed_seconds=300,
+        )
+    )
+
+    start = datetime.now(UTC)
+
+    lifecycle.handle_heart_rate(
+        HeartRateSample(
+            device_id="heart-rate-1",
+            timestamp=start,
+            bpm=150,
+        )
+    )
+    lifecycle.handle_heart_rate(
+        HeartRateSample(
+            device_id="heart-rate-1",
+            timestamp=start + timedelta(seconds=21),
+            bpm=149,
+        )
+    )
+    lifecycle.handle_heart_rate(
+        HeartRateSample(
+            device_id="heart-rate-1",
+            timestamp=start + timedelta(seconds=22),
+            bpm=150,
+        )
+    )
+
+    assert len(forwarded) == 1
+    assert forwarded[0][0] == "workout-1"
+    assert forwarded[0][1].bpm == 149
+
+    decision = forwarded[0][2]
+    assert isinstance(decision, type(lifecycle.last_decision))
+    assert decision.action is CoachingAction.REDUCE_INTENSITY
+
+
+def test_normal_heart_rate_reenables_same_action_for_later_deviation() -> None:
+    forwarded_actions: list[CoachingAction] = []
+
+    coordinator = LiveCoachingCoordinator(
+        coaching_engine=LiveCoachingEngine(
+            rules=LiveCoachingRules(
+                deviation_seconds_before_action=20.0,
+            )
+        )
+    )
+    lifecycle = LiveCoachingLifecycle(
+        coordinator=coordinator,
+        decision_handler=lambda _workout_id, _sample, decision: (
+            forwarded_actions.append(decision.action)
+        ),
+    )
+    lifecycle.workout_started(
+        create_workout(
+            elapsed_seconds=300,
+        )
+    )
+
+    start = datetime.now(UTC)
+
+    for seconds, bpm in (
+        (0, 150),
+        (21, 149),
+        (22, 140),
+        (23, 150),
+        (44, 149),
+    ):
+        lifecycle.handle_heart_rate(
+            HeartRateSample(
+                device_id="heart-rate-1",
+                timestamp=start + timedelta(seconds=seconds),
+                bpm=bpm,
+            )
+        )
+
+    assert forwarded_actions == [
+        CoachingAction.REDUCE_INTENSITY,
+        CoachingAction.REDUCE_INTENSITY,
+    ]

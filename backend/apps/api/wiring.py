@@ -1,8 +1,10 @@
+from apps.api.live_coaching_event_publisher import LiveCoachingEventPublisher
 from apps.api.live_coaching_lifecycle import LiveCoachingLifecycle
 from features.check_in.persistence.sqlalchemy_check_in_repository import (
     SqlAlchemyCheckInRepository,
 )
 from features.check_in.service.check_in_service import CheckInService
+from features.coaching.api.broadcaster import LiveCoachingBroadcaster
 from features.coaching.domain.live_coaching import LiveCoachingRules
 from features.coaching.service.live_coaching_coordinator import LiveCoachingCoordinator
 from features.coaching.service.live_coaching_engine import LiveCoachingEngine
@@ -43,8 +45,13 @@ live_coaching_engine = LiveCoachingEngine(
 live_coaching_coordinator = LiveCoachingCoordinator(
     coaching_engine=live_coaching_engine,
 )
+live_coaching_broadcaster = LiveCoachingBroadcaster()
+live_coaching_event_publisher = LiveCoachingEventPublisher(
+    broadcaster=live_coaching_broadcaster,
+)
 live_coaching_lifecycle = LiveCoachingLifecycle(
     coordinator=live_coaching_coordinator,
+    decision_handler=live_coaching_event_publisher.publish,
 )
 
 telemetry_service = TelemetryService()

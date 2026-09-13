@@ -120,3 +120,8 @@ def test_get_devices_does_not_expose_snake_case_fields() -> None:
     assert "last_seen" not in device
     assert "heart_rate_bpm" not in device
     assert "distance_m" not in device
+
+
+def test_live_coaching_websocket_accepts_frontend_connection() -> None:
+    with client.websocket_connect("/ws/coaching"):
+        pass
