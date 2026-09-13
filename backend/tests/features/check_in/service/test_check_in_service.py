@@ -19,12 +19,12 @@ def test_check_in_is_created() -> None:
         recovery=3,
         muscle_soreness=2,
         stress=2,
-        available_training_minutes=45,
+        available_training_minutes=25,
     )
 
     assert check_in.person_id == 1
     assert check_in.energy == 4
-    assert check_in.available_training_minutes == 45
+    assert check_in.available_training_minutes == 25
 
 
 def test_latest_check_in_can_be_loaded() -> None:
