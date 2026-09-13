@@ -6,6 +6,7 @@ from apps.api.routers.health import router as health_router
 from features.check_in.api.router import router as check_ins_router
 from features.coaching.api.router import router as coaching_router
 from features.person.api.router import router as persons_router
+from features.speech.api.router import router as speech_router
 from features.telemetry.api.devices_router import router as devices_router
 from features.telemetry.api.router import router as telemetry_router
 from features.training.api.router import router as training_router
@@ -57,6 +58,10 @@ OPENAPI_TAGS = [
         ),
     },
     {
+        "name": "Speech",
+        "description": "Lokale Sprachsynthese fuer Coach-Ausgaben.",
+    },
+    {
         "name": "System",
         "description": "Technische Endpunkte zur Zustandsprüfung des Backends.",
     },
@@ -83,6 +88,7 @@ app.include_router(coaching_router)
 app.include_router(devices_router)
 app.include_router(telemetry_router)
 app.include_router(persons_router)
+app.include_router(speech_router)
 app.include_router(check_ins_router)
 app.include_router(training_router)
 app.include_router(workouts_router)

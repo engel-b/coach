@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 
+import { synthesizeSpeech } from "../api/speech";
 import {
   coachingSpeechMessage,
   evaluateCoachingSpeech,
@@ -12,56 +13,122 @@ const INITIAL_STATE: CoachingSpeechState = {
   lastSpokenAtMs: null,
 };
 
+function speakWithBrowserFallback(text: string): void {
+  if (
+    !("speechSynthesis" in window) ||
+    !("SpeechSynthesisUtterance" in window)
+  ) {
+    return;
+  }
+
+  const utterance = new window.SpeechSynthesisUtterance(text);
+  utterance.lang = "de-DE";
+  utterance.rate = 1;
+  utterance.pitch = 1;
+  utterance.volume = 1;
+
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utterance);
+}
+
 /**
- * Spricht fachliche Coaching-Events ueber die Web Speech API aus.
+ * Setzt die akustische Speech Policy fuer fachliche Coaching-Events um.
  *
- * Der Hook entscheidet nicht ueber Trainingslogik. Er setzt ausschliesslich
- * die akustische Speech Policy um und bleibt damit von der Coaching Engine
- * getrennt.
+ * Primaer wird Audio durch die lokale Backend-TTS erzeugt. Browser-TTS bleibt
+ * nur als technischer Fallback erhalten, falls der lokale Adapter nicht
+ * erreichbar oder noch nicht eingerichtet ist.
  */
 export function useCoachSpeech(): (event: LiveCoachingEvent) => void {
   const speechStateRef = useRef<CoachingSpeechState>(INITIAL_STATE);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const requestRef = useRef<AbortController | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
+  const stopCurrentSpeech = useCallback((): void => {
+    requestRef.current?.abort();
+    requestRef.current = null;
+
+    if (audioRef.current !== null) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+
+    if (objectUrlRef.current !== null) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+  }, []);
+
+  useEffect(() => stopCurrentSpeech, [stopCurrentSpeech]);
+
+  return useCallback(
+    (event: LiveCoachingEvent): void => {
+      const decision = evaluateCoachingSpeech(
+        event,
+        speechStateRef.current,
+        Date.now(),
+      );
+
+      speechStateRef.current = decision.nextState;
+
+      if (!decision.speak) {
+        return;
       }
-    };
-  }, []);
 
-  return useCallback((event: LiveCoachingEvent): void => {
-    if (
-      !("speechSynthesis" in window) ||
-      !("SpeechSynthesisUtterance" in window)
-    ) {
-      return;
-    }
+      const text = coachingSpeechMessage(event);
 
-    const decision = evaluateCoachingSpeech(
-      event,
-      speechStateRef.current,
-      Date.now(),
-    );
+      stopCurrentSpeech();
 
-    speechStateRef.current = decision.nextState;
+      const controller = new AbortController();
+      requestRef.current = controller;
 
-    if (!decision.speak) {
-      return;
-    }
+      void synthesizeSpeech(text, controller.signal)
+        .then(async (audioBlob) => {
+          if (controller.signal.aborted) {
+            return;
+          }
 
-    const utterance = new window.SpeechSynthesisUtterance(
-      coachingSpeechMessage(event),
-    );
+          const objectUrl = URL.createObjectURL(audioBlob);
+          objectUrlRef.current = objectUrl;
 
-    utterance.lang = "de-DE";
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    utterance.volume = 1;
+          const audio = new Audio(objectUrl);
+          audioRef.current = audio;
 
-    // Eine neue relevante Coaching-Entscheidung ist wichtiger als eine noch
-    // laufende alte Ansage. Deshalb wird die alte Ausgabe nicht aufgestaut.
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
-  }, []);
+          const cleanupAudio = (): void => {
+            if (audioRef.current === audio) {
+              audioRef.current = null;
+            }
+            if (objectUrlRef.current === objectUrl) {
+              URL.revokeObjectURL(objectUrl);
+              objectUrlRef.current = null;
+            }
+          };
+
+          audio.addEventListener("ended", cleanupAudio, { once: true });
+          audio.addEventListener("error", cleanupAudio, { once: true });
+
+          try {
+            await audio.play();
+          } catch (error) {
+            cleanupAudio();
+            console.warn("Local coach audio playback failed", error);
+            speakWithBrowserFallback(text);
+          }
+        })
+        .catch((error: unknown) => {
+          if (controller.signal.aborted) {
+            return;
+          }
+
+          console.warn("Local coach TTS failed; using browser fallback", error);
+          speakWithBrowserFallback(text);
+        });
+    },
+    [stopCurrentSpeech],
+  );
 }

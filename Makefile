@@ -1,4 +1,4 @@
-.PHONY: dev backend device-agent frontend test check check-backend check-frontend format format-check build db-upgrade db-current db-history migration
+.PHONY: dev backend device-agent frontend test check check-backend check-frontend format format-check build db-upgrade db-current db-history migration tts-voice
 
 
 # ---------------------------------------------------------------------------
@@ -134,3 +134,11 @@ db-history:
 
 migration:
 	cd backend && $(PYTHON) -m alembic revision --autogenerate -m "$(m)"
+
+
+# ---------------------------------------------------------------------------
+# Local TTS
+# ---------------------------------------------------------------------------
+
+tts-voice:
+	cd backend && $(PYTHON) -m piper.download_voices --data-dir models/piper de_DE-thorsten-medium

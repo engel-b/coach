@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 from apps.api.live_coaching_event_publisher import LiveCoachingEventPublisher
 from apps.api.live_coaching_lifecycle import LiveCoachingLifecycle
 from features.check_in.persistence.sqlalchemy_check_in_repository import (
@@ -20,6 +23,8 @@ from features.person.persistence.sqlalchemy_person_repository import (
 from features.person.service.management_service import PersonManagementService
 from features.person.service.person_service import PersonService
 from features.person.service.profile_service import PersonProfileService
+from features.speech.adapters.piper_tts import PiperTtsAdapter
+from features.speech.service.speech_service import SpeechService
 from features.telemetry.service.broadcaster import TelemetryBroadcaster
 from features.telemetry.service.service import TelemetryService
 from features.training.domain.recommendation_engine import TrainingRecommendationEngine
@@ -94,3 +99,14 @@ video_catalog_service = VideoCatalogService(
 )
 
 telemetry_broadcaster = TelemetryBroadcaster()
+
+
+piper_model_path = Path(
+    os.environ.get(
+        "HEALTH_COACH_PIPER_MODEL",
+        "models/piper/de_DE-thorsten-medium.onnx",
+    )
+)
+speech_service = SpeechService(
+    tts=PiperTtsAdapter(model_path=piper_model_path),
+)
