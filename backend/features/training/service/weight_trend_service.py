@@ -4,6 +4,7 @@ from features.check_in.domain.check_in import CheckIn
 from features.training.domain.weight_trend import (
     WeightTrend,
     WeightTrendDirection,
+    WeightTrendRules,
 )
 
 
@@ -18,19 +19,8 @@ class WeightTrendService:
     als belastbarer Trend.
     """
 
-    def __init__(
-        self,
-        *,
-        window_days: int = 30,
-        stable_threshold_kg_per_week: float = 0.10,
-    ) -> None:
-        if window_days < 7:
-            raise ValueError("window_days must be at least 7")
-        if stable_threshold_kg_per_week < 0:
-            raise ValueError("stable_threshold_kg_per_week must not be negative")
-
-        self._window_days = window_days
-        self._stable_threshold_kg_per_week = stable_threshold_kg_per_week
+    def __init__(self, *, rules: WeightTrendRules | None = None) -> None:
+        self._rules = rules or WeightTrendRules()
 
     def calculate(
         self,
@@ -38,7 +28,7 @@ class WeightTrendService:
         check_ins: list[CheckIn],
         as_of: datetime,
     ) -> WeightTrend:
-        window_start = as_of - timedelta(days=self._window_days)
+        window_start = as_of - timedelta(days=self._rules.window_days)
 
         samples = sorted(
             (
@@ -50,13 +40,13 @@ class WeightTrendService:
             key=lambda check_in: check_in.timestamp,
         )
 
-        if len(samples) < 3:
+        if len(samples) < self._rules.min_sample_count:
             return self._unknown(sample_count=len(samples))
 
         first_timestamp = samples[0].timestamp
         span_days = (samples[-1].timestamp - first_timestamp).total_seconds() / 86400.0
 
-        if span_days < 7.0:
+        if span_days < self._rules.min_span_days:
             return self._unknown(
                 sample_count=len(samples),
                 span_days=span_days,
@@ -85,7 +75,7 @@ class WeightTrendService:
         )
         weekly_change_kg = slope_kg_per_day * 7.0
 
-        if abs(weekly_change_kg) < self._stable_threshold_kg_per_week:
+        if abs(weekly_change_kg) < self._rules.stable_threshold_kg_per_week:
             direction = WeightTrendDirection.STABLE
         elif weekly_change_kg < 0:
             direction = WeightTrendDirection.DOWN
