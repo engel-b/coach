@@ -4,6 +4,7 @@ from features.check_in.domain.check_in import CheckIn
 from features.training.domain.readiness import (
     DailyActivityStatus,
     ReadinessContext,
+    ReadinessRules,
     RecentTrainingLoadStatus,
     RecentTrainingSession,
     SleepStatus,
@@ -14,41 +15,14 @@ class ReadinessService:
     """
     Normalisiert Schlaf, Tagesaktivität und jüngste Trainingsbelastung.
 
-    Die Schwellwerte sind explizite, konservative Produktregeln. Sie sind
-    keine medizinischen Grenzwerte. Belastende Signale dürfen die heutige
-    Dauer reduzieren; fehlende/geringe Aktivität führt nie automatisch zu
-    einer höheren Belastung.
+    Die Schwellwerte kommen aus ReadinessRules. Sie sind explizite,
+    konservative Produktregeln und keine medizinischen Grenzwerte.
+    Belastende Signale dürfen die heutige Dauer reduzieren;
+    fehlende/geringe Aktivität führt nie automatisch zu höherer Belastung.
     """
 
-    def __init__(
-        self,
-        *,
-        short_sleep_hours: float = 6.0,
-        high_daily_steps: int = 12_000,
-        recent_training_window_days: int = 3,
-        high_recent_training_minutes: float = 90.0,
-        high_recent_workout_count: int = 3,
-        caution_duration_cap_minutes: int = 30,
-    ) -> None:
-        if short_sleep_hours <= 0:
-            raise ValueError("short_sleep_hours must be positive")
-        if high_daily_steps <= 0:
-            raise ValueError("high_daily_steps must be positive")
-        if recent_training_window_days < 1:
-            raise ValueError("recent_training_window_days must be positive")
-        if high_recent_training_minutes <= 0:
-            raise ValueError("high_recent_training_minutes must be positive")
-        if high_recent_workout_count < 1:
-            raise ValueError("high_recent_workout_count must be positive")
-        if caution_duration_cap_minutes < 1:
-            raise ValueError("caution_duration_cap_minutes must be positive")
-
-        self._short_sleep_hours = short_sleep_hours
-        self._high_daily_steps = high_daily_steps
-        self._recent_training_window_days = recent_training_window_days
-        self._high_recent_training_minutes = high_recent_training_minutes
-        self._high_recent_workout_count = high_recent_workout_count
-        self._caution_duration_cap_minutes = caution_duration_cap_minutes
+    def __init__(self, *, rules: ReadinessRules | None = None) -> None:
+        self._rules = rules or ReadinessRules()
 
     def assess(
         self,
@@ -60,7 +34,7 @@ class ReadinessService:
         daily_activity_status = self._daily_activity_status(check_in.steps)
 
         window_start = check_in.timestamp - timedelta(
-            days=self._recent_training_window_days,
+            days=self._rules.recent_training_window_days,
         )
         sessions_in_window = [
             session
@@ -88,21 +62,21 @@ class ReadinessService:
             recent_training_minutes=round(recent_training_minutes, 1),
             recent_workout_count=recent_workout_count,
             max_duration_minutes=(
-                self._caution_duration_cap_minutes if has_caution_signal else None
+                self._rules.caution_duration_cap_minutes if has_caution_signal else None
             ),
         )
 
     def _sleep_status(self, sleep_hours: float | None) -> SleepStatus:
         if sleep_hours is None:
             return SleepStatus.UNKNOWN
-        if sleep_hours < self._short_sleep_hours:
+        if sleep_hours < self._rules.short_sleep_hours:
             return SleepStatus.SHORT
         return SleepStatus.ADEQUATE
 
     def _daily_activity_status(self, steps: int | None) -> DailyActivityStatus:
         if steps is None:
             return DailyActivityStatus.UNKNOWN
-        if steps >= self._high_daily_steps:
+        if steps >= self._rules.high_daily_steps:
             return DailyActivityStatus.HIGH
         return DailyActivityStatus.NORMAL
 
@@ -113,8 +87,8 @@ class ReadinessService:
         workout_count: int,
     ) -> RecentTrainingLoadStatus:
         if (
-            active_minutes >= self._high_recent_training_minutes
-            or workout_count >= self._high_recent_workout_count
+            active_minutes >= self._rules.high_recent_training_minutes
+            or workout_count >= self._rules.high_recent_workout_count
         ):
             return RecentTrainingLoadStatus.HIGH
         if active_minutes > 0:

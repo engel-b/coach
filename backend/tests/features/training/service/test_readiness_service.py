@@ -1,8 +1,11 @@
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
 from features.check_in.domain.check_in import CheckIn
 from features.training.domain.readiness import (
     DailyActivityStatus,
+    ReadinessRules,
     RecentTrainingLoadStatus,
     RecentTrainingSession,
     SleepStatus,
@@ -90,3 +93,31 @@ def test_missing_sleep_and_steps_do_not_create_a_caution_signal() -> None:
     assert readiness.sleep_status is SleepStatus.UNKNOWN
     assert readiness.daily_activity_status is DailyActivityStatus.UNKNOWN
     assert readiness.max_duration_minutes is None
+
+
+def test_custom_rules_are_applied() -> None:
+    service = ReadinessService(
+        rules=ReadinessRules(
+            short_sleep_hours=7.0,
+            high_daily_steps=8_000,
+            recent_training_window_days=5,
+            high_recent_training_minutes=60.0,
+            high_recent_workout_count=2,
+            caution_duration_cap_minutes=20,
+        )
+    )
+
+    readiness = service.assess(
+        check_in=check_in(sleep_hours=6.5, steps=8_500),
+        recent_sessions=[session(days_ago=4, active_minutes=30)],
+    )
+
+    assert readiness.sleep_status is SleepStatus.SHORT
+    assert readiness.daily_activity_status is DailyActivityStatus.HIGH
+    assert readiness.recent_training_minutes == 30.0
+    assert readiness.max_duration_minutes == 20
+
+
+def test_readiness_rules_reject_invalid_values() -> None:
+    with pytest.raises(ValueError, match="short_sleep_hours must be positive"):
+        ReadinessRules(short_sleep_hours=0)
