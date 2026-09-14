@@ -40,6 +40,7 @@ def create_training_recommendation(
     )
 
     weight_goal_progress = wiring.weight_goal_progress_service.calculate(
+        start_weight_kg=profile.start_weight_kg,
         current_weight_kg=check_in.current_weight_kg,
         target_weight_kg=profile.target_weight_kg,
     )

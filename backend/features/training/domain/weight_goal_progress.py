@@ -17,10 +17,18 @@ class WeightGoalProgress:
 
     Das Objekt bewertet ausdrücklich nicht, ob eine Abnahmerate gesund,
     optimal oder zu langsam/schnell ist. Es beschreibt nur den aktuellen
-    Abstand zum persönlichen Zielgewicht.
+    Abstand zum persönlichen Zielgewicht und – sofern Start- und Zielgewicht
+    eine Abnahmestrecke definieren – den Fortschritt seit dem Start.
+
+    `progress_percent` beschreibt die Zielerreichung und wird auf 0 bis 100 %
+    begrenzt. Eine Über- oder Unterschreitung wird weiterhin über `status` und
+    die Gewichtsabstände beschrieben.
     """
 
     status: WeightGoalStatus
+    start_weight_kg: float | None
     current_weight_kg: float | None
     target_weight_kg: float | None
     remaining_kg: float | None
+    lost_since_start_kg: float | None
+    progress_percent: float | None

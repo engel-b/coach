@@ -35,6 +35,7 @@ def context(
     recent_training_load_status: RecentTrainingLoadStatus = RecentTrainingLoadStatus.LOW,
     max_duration_minutes: int | None = None,
     trend_direction: WeightTrendDirection = WeightTrendDirection.DOWN,
+    start_weight_kg: float | None = 100.0,
     current_weight_kg: float | None = 92.4,
     target_weight_kg: float | None = 82.0,
 ) -> PreWorkoutCoachingContext:
@@ -69,12 +70,40 @@ def context(
                 if current_weight_kg < target_weight_kg
                 else WeightGoalStatus.AT_TARGET
             ),
+            start_weight_kg=start_weight_kg,
             current_weight_kg=current_weight_kg,
             target_weight_kg=target_weight_kg,
             remaining_kg=(
                 None
                 if current_weight_kg is None or target_weight_kg is None
                 else round(current_weight_kg - target_weight_kg, 1)
+            ),
+            lost_since_start_kg=(
+                None
+                if start_weight_kg is None
+                or current_weight_kg is None
+                or target_weight_kg is None
+                or start_weight_kg <= target_weight_kg
+                else round(start_weight_kg - current_weight_kg, 1)
+            ),
+            progress_percent=(
+                None
+                if start_weight_kg is None
+                or current_weight_kg is None
+                or target_weight_kg is None
+                or start_weight_kg <= target_weight_kg
+                else round(
+                    min(
+                        100.0,
+                        max(
+                            0.0,
+                            (start_weight_kg - current_weight_kg)
+                            / (start_weight_kg - target_weight_kg)
+                            * 100.0,
+                        ),
+                    ),
+                    1,
+                )
             ),
         ),
         readiness=ReadinessContext(
@@ -186,3 +215,16 @@ def test_missing_current_weight_is_explicit_for_weight_loss_goal() -> None:
 
     assert RecommendationReasonCode.WEIGHT_GOAL_NO_CURRENT_WEIGHT in recommendation.reason_codes
     assert "fehlt aktuell ein Gewichtswert" in recommendation.reason
+
+
+def test_weight_goal_progress_since_start_is_explained() -> None:
+    recommendation = planner().recommend(
+        context(
+            start_weight_kg=100.0,
+            current_weight_kg=92.0,
+            target_weight_kg=80.0,
+        )
+    )
+
+    assert "8.0 kg verloren" in recommendation.reason
+    assert "40 %" in recommendation.reason

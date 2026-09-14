@@ -170,6 +170,22 @@ class PreWorkoutCoachingPlanner:
                 parts.append("Für einen belastbaren Gewichtstrend liegen noch nicht genug Daten vor.")
 
             goal_progress = context.weight_goal_progress
+            if (
+                goal_progress.lost_since_start_kg is not None
+                and goal_progress.progress_percent is not None
+            ):
+                if goal_progress.lost_since_start_kg > 0:
+                    parts.append(
+                        f"Seit deinem Startgewicht hast du {goal_progress.lost_since_start_kg:.1f} kg verloren "
+                        f"und damit {goal_progress.progress_percent:.0f} % deines Weges zum Ziel erreicht."
+                    )
+                elif goal_progress.lost_since_start_kg < 0:
+                    parts.append(
+                        f"Dein aktuelles Gewicht liegt {abs(goal_progress.lost_since_start_kg):.1f} kg über deinem Startgewicht."
+                    )
+                else:
+                    parts.append("Dein aktuelles Gewicht entspricht deinem hinterlegten Startgewicht.")
+
             if goal_progress.status is WeightGoalStatus.ABOVE_TARGET:
                 parts.append(
                     f"Bis zu deinem hinterlegten Zielgewicht sind es aktuell noch {goal_progress.remaining_kg:.1f} kg."
