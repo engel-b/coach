@@ -1,18 +1,30 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { synthesizeSpeech } from "../api/speech";
 import type { CoachingAction, HeartRateCoachingEvent } from "./types";
 import { useCoachSpeech } from "./useCoachSpeech";
 
-class FakeSpeechSynthesisUtterance {
-  text: string;
-  lang = "";
-  rate = 1;
-  pitch = 1;
-  volume = 1;
+vi.mock("../api/speech", () => ({
+  synthesizeSpeech: vi.fn(),
+}));
 
-  constructor(text: string) {
-    this.text = text;
+const synthesizeSpeechMock = vi.mocked(synthesizeSpeech);
+
+class FakeAudio {
+  static instances: FakeAudio[] = [];
+
+  currentTime = 0;
+  readonly pause = vi.fn();
+  readonly play = vi.fn().mockResolvedValue(undefined);
+  private readonly listeners = new Map<string, () => void>();
+
+  constructor() {
+    FakeAudio.instances.push(this);
+  }
+
+  addEventListener(type: string, listener: () => void): void {
+    this.listeners.set(type, listener);
   }
 }
 
@@ -32,50 +44,52 @@ function event(action: CoachingAction): HeartRateCoachingEvent {
   };
 }
 
+async function flushPromises(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
 describe("useCoachSpeech", () => {
-  const speak = vi.fn();
-  const cancel = vi.fn();
+  const createObjectURL = vi.fn(() => "blob:coach-audio");
+  const revokeObjectURL = vi.fn();
 
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-13T08:30:00Z"));
 
-    Object.defineProperty(window, "speechSynthesis", {
-      configurable: true,
-      value: {
-        speak,
-        cancel,
-      },
-    });
+    synthesizeSpeechMock.mockResolvedValue(
+      new Blob(["wav"], { type: "audio/wav" }),
+    );
+    FakeAudio.instances = [];
 
-    Object.defineProperty(window, "SpeechSynthesisUtterance", {
-      configurable: true,
-      value: FakeSpeechSynthesisUtterance,
+    vi.stubGlobal("Audio", FakeAudio);
+    vi.stubGlobal("URL", {
+      ...URL,
+      createObjectURL,
+      revokeObjectURL,
     });
   });
 
   afterEach(() => {
     vi.useRealTimers();
-    speak.mockReset();
-    cancel.mockReset();
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
   });
 
-  it("speaks a relevant coaching event in German", () => {
+  it("synthesizes and plays a relevant coaching event", async () => {
     const { result } = renderHook(() => useCoachSpeech());
 
     act(() => {
       result.current(event("reduce_intensity"));
     });
+    await act(flushPromises);
 
-    expect(cancel).toHaveBeenCalledOnce();
-    expect(speak).toHaveBeenCalledOnce();
-
-    const utterance = speak.mock.calls[0][0] as FakeSpeechSynthesisUtterance;
-
-    expect(utterance.text).toBe(
+    expect(synthesizeSpeechMock).toHaveBeenCalledWith(
       "Dein Puls ist über dem Zielbereich. Nimm etwas Tempo heraus.",
+      expect.any(AbortSignal),
     );
-    expect(utterance.lang).toBe("de-DE");
+    expect(FakeAudio.instances).toHaveLength(1);
+    expect(FakeAudio.instances[0].play).toHaveBeenCalledOnce();
   });
 
   it("does not repeat the same action during the cooldown", () => {
@@ -86,10 +100,10 @@ describe("useCoachSpeech", () => {
       result.current(event("reduce_intensity"));
     });
 
-    expect(speak).toHaveBeenCalledOnce();
+    expect(synthesizeSpeechMock).toHaveBeenCalledOnce();
   });
 
-  it("speaks an action change immediately", () => {
+  it("synthesizes an action change immediately", () => {
     const { result } = renderHook(() => useCoachSpeech());
 
     act(() => {
@@ -97,18 +111,22 @@ describe("useCoachSpeech", () => {
       result.current(event("increase_intensity"));
     });
 
-    expect(speak).toHaveBeenCalledTimes(2);
+    expect(synthesizeSpeechMock).toHaveBeenCalledTimes(2);
   });
 
-  it("cancels pending speech when the hook is unmounted", () => {
-    const { unmount } = renderHook(() => useCoachSpeech());
+  it("aborts pending speech when the hook is unmounted", () => {
+    const abort = vi.spyOn(AbortController.prototype, "abort");
+    const { result, unmount } = renderHook(() => useCoachSpeech());
 
+    act(() => {
+      result.current(event("reduce_intensity"));
+    });
     unmount();
 
-    expect(cancel).toHaveBeenCalledOnce();
+    expect(abort).toHaveBeenCalled();
   });
 
-  it("speaks pause events even without a heart-rate decision", () => {
+  it("speaks pause events even without a heart-rate decision", async () => {
     const { result } = renderHook(() => useCoachSpeech());
 
     act(() => {
@@ -118,9 +136,11 @@ describe("useCoachSpeech", () => {
         workoutId: "workout-1",
       });
     });
+    await act(flushPromises);
 
-    expect(speak).toHaveBeenCalledOnce();
-    const utterance = speak.mock.calls[0][0] as FakeSpeechSynthesisUtterance;
-    expect(utterance.text).toBe("Pause.");
+    expect(synthesizeSpeechMock).toHaveBeenCalledWith(
+      "Pause.",
+      expect.any(AbortSignal),
+    );
   });
 });
