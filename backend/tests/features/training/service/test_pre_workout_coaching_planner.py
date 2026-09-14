@@ -191,9 +191,7 @@ def test_high_daily_activity_is_visible_and_caps_duration() -> None:
 
 
 def test_non_weight_loss_goal_does_not_add_weight_reason_codes() -> None:
-    recommendation = planner().recommend(
-        context(training_goal=TrainingGoal.ENDURANCE)
-    )
+    recommendation = planner().recommend(context(training_goal=TrainingGoal.ENDURANCE))
 
     assert RecommendationReasonCode.WEIGHT_LOSS_GOAL not in recommendation.reason_codes
     assert RecommendationReasonCode.WEIGHT_TREND_DOWN not in recommendation.reason_codes

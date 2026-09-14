@@ -143,7 +143,9 @@ class PreWorkoutCoachingPlanner:
         if any(reason in recovery_reasons for reason in reason_codes):
             parts.append("Dein heutiger Check-in spricht für eine eher regenerative Einheit.")
         else:
-            parts.append("Dein heutiger Check-in spricht für eine lockere Grundlagen-Ausdauereinheit.")
+            parts.append(
+                "Dein heutiger Check-in spricht für eine lockere Grundlagen-Ausdauereinheit."
+            )
 
         if RecommendationReasonCode.SHORT_SLEEP in reason_codes:
             parts.append("Dein Schlaf war kurz, deshalb bleiben wir heute bewusst konservativ.")
@@ -172,7 +174,9 @@ class PreWorkoutCoachingPlanner:
                     "wir erhöhen die heutige Belastung deshalb aber nicht automatisch."
                 )
             else:
-                parts.append("Für einen belastbaren Gewichtstrend liegen noch nicht genug Daten vor.")
+                parts.append(
+                    "Für einen belastbaren Gewichtstrend liegen noch nicht genug Daten vor."
+                )
 
             goal_progress = context.weight_goal_progress
             if (
@@ -189,7 +193,9 @@ class PreWorkoutCoachingPlanner:
                         f"Dein aktuelles Gewicht liegt {abs(goal_progress.lost_since_start_kg):.1f} kg über deinem Startgewicht."
                     )
                 else:
-                    parts.append("Dein aktuelles Gewicht entspricht deinem hinterlegten Startgewicht.")
+                    parts.append(
+                        "Dein aktuelles Gewicht entspricht deinem hinterlegten Startgewicht."
+                    )
 
             if goal_progress.status is WeightGoalStatus.ABOVE_TARGET:
                 parts.append(

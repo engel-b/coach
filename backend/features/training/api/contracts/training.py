@@ -68,8 +68,7 @@ class TrainingRecommendationResponse(BaseModel):
     weight_goal_progress: WeightGoalProgressResponse | None = Field(
         default=None,
         description=(
-            "Strukturierter Fortschritt zum Gewichts-Ziel, "
-            "sofern für die Empfehlung relevant."
+            "Strukturierter Fortschritt zum Gewichts-Ziel, sofern für die Empfehlung relevant."
         ),
     )
     reason_codes: list[str] = Field(

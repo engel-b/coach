@@ -518,8 +518,8 @@ export function PersonDashboard({
 
             {data.recommendation === null ? (
               <strong>
-                Starte den Check-in, damit ich dein Training passend zur aktuellen
-                Tagesform empfehlen kann.
+                Starte den Check-in, damit ich dein Training passend zur
+                aktuellen Tagesform empfehlen kann.
               </strong>
             ) : (
               <>

@@ -49,9 +49,7 @@ class WeightGoalProgressService:
         if start_weight_kg is not None and start_weight_kg > target_weight_kg:
             planned_loss_kg = start_weight_kg - target_weight_kg
             lost_since_start_kg = round(start_weight_kg - current_weight_kg, 1)
-            raw_progress_percent = (
-                (start_weight_kg - current_weight_kg) / planned_loss_kg * 100.0
-            )
+            raw_progress_percent = (start_weight_kg - current_weight_kg) / planned_loss_kg * 100.0
             progress_percent = round(
                 min(100.0, max(0.0, raw_progress_percent)),
                 1,
