@@ -7,6 +7,7 @@ import {
   recommendationReasonLabels,
   workoutTitle,
 } from "./recommendationPresentation";
+import { WeightGoalProgress } from "./WeightGoalProgress";
 import type {
   TrainingRecommendation,
   WorkoutPhase,
@@ -180,6 +181,8 @@ export function TrainingRecommendationView({
           <div className="reason-title">Warum dieses Training?</div>
 
           <p>{recommendation.reason}</p>
+
+          <WeightGoalProgress recommendation={recommendation} />
 
           {reasonLabels.length > 0 && (
             <div className="recommendation-reason-tags">

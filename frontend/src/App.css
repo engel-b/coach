@@ -2386,3 +2386,59 @@ h1 {
   font-size: 11px;
   line-height: 1.45;
 }
+
+.weight-goal-progress {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 0.9rem;
+  background: rgba(15, 23, 42, 0.28);
+}
+
+.weight-goal-progress-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.weight-goal-progress-heading span,
+.weight-goal-progress small {
+  color: var(--text-muted, #777);
+}
+
+.weight-goal-progress-heading span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.weight-goal-progress-heading strong {
+  font-size: 0.95rem;
+}
+
+.weight-goal-progress-track {
+  height: 0.55rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.18);
+}
+
+.weight-goal-progress-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: currentColor;
+}
+
+.weight-goal-progress small {
+  font-size: 0.8rem;
+}
+
+.weight-goal-progress-compact {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+}

@@ -5,6 +5,7 @@ import { getPersonProfile } from "../api/persons";
 import { getTrainingRecommendation } from "../api/training";
 import { getWorkoutHistory } from "../api/workouts";
 import type { CheckIn } from "../check-in/types";
+import { WeightGoalProgress } from "../training/WeightGoalProgress";
 import type { TrainingRecommendation } from "../training/types";
 import {
   recommendationReasonLabels,
@@ -485,6 +486,13 @@ export function PersonDashboard({
                 </div>
               </div>
 
+              {data.recommendation !== null && (
+                <WeightGoalProgress
+                  recommendation={data.recommendation}
+                  compact
+                />
+              )}
+
               <WeightChart
                 checkIns={data.checkIns}
                 startWeightKg={data.profile?.startWeightKg ?? null}
@@ -510,8 +518,8 @@ export function PersonDashboard({
 
             {data.recommendation === null ? (
               <strong>
-                Starte den Check-in, damit ich dein Training passend zur
-                aktuellen Tagesform empfehlen kann.
+                Starte den Check-in, damit ich dein Training passend zur aktuellen
+                Tagesform empfehlen kann.
               </strong>
             ) : (
               <>

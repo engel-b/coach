@@ -58,6 +58,11 @@ class PreWorkoutCoachingPlanner:
             recommendation,
             reason=self._reason_text(context, reason_codes),
             reason_codes=reason_codes,
+            weight_goal_progress=(
+                context.weight_goal_progress
+                if context.training_goal is TrainingGoal.WEIGHT_LOSS
+                else None
+            ),
         )
 
     @staticmethod

@@ -128,6 +128,8 @@ def test_good_readiness_keeps_base_endurance_and_adds_weight_context() -> None:
     assert RecommendationReasonCode.READINESS_GOOD in recommendation.reason_codes
     assert RecommendationReasonCode.WEIGHT_LOSS_GOAL in recommendation.reason_codes
     assert RecommendationReasonCode.WEIGHT_TREND_DOWN in recommendation.reason_codes
+    assert recommendation.weight_goal_progress is not None
+    assert recommendation.weight_goal_progress.progress_percent == 42.2
     assert "Gewichtstrend" in recommendation.reason
 
 
