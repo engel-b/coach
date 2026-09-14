@@ -27,6 +27,7 @@ from features.speech.adapters.piper_tts import PiperTtsAdapter
 from features.speech.service.speech_service import SpeechService
 from features.telemetry.service.broadcaster import TelemetryBroadcaster
 from features.telemetry.service.service import TelemetryService
+from features.training.domain.readiness import ReadinessRules
 from features.training.domain.recommendation_engine import TrainingRecommendationEngine
 from features.training.service.pre_workout_coaching_planner import PreWorkoutCoachingPlanner
 from features.training.service.readiness_service import ReadinessService
@@ -89,7 +90,23 @@ check_in_service = CheckInService(
 
 training_recommendation_engine = TrainingRecommendationEngine()
 weight_trend_service = WeightTrendService()
-readiness_service = ReadinessService()
+
+# Aktive Produktregeln für die Pre-Workout-Readiness.
+#
+# Diese Werte sind Coaching-Schwellen und ausdrücklich keine medizinischen
+# Grenzwerte. Die explizite Verdrahtung im Composition Root macht sichtbar,
+# welche Regeln im laufenden Produkt gelten und erlaubt später den Austausch
+# gegen Konfiguration, ohne den ReadinessService zu verändern.
+readiness_rules = ReadinessRules(
+    short_sleep_hours=6.0,
+    high_daily_steps=12_000,
+    recent_training_window_days=3,
+    high_recent_training_minutes=90.0,
+    high_recent_workout_count=3,
+    caution_duration_cap_minutes=30,
+)
+readiness_service = ReadinessService(rules=readiness_rules)
+
 pre_workout_coaching_planner = PreWorkoutCoachingPlanner(
     engine=training_recommendation_engine,
 )
