@@ -14,6 +14,10 @@ from features.training.domain.readiness import (
 )
 from features.training.domain.recommendation import WorkoutType
 from features.training.domain.recommendation_engine import TrainingRecommendationEngine
+from features.training.domain.weight_goal_progress import (
+    WeightGoalProgress,
+    WeightGoalStatus,
+)
 from features.training.domain.weight_trend import WeightTrend, WeightTrendDirection
 from features.training.service.pre_workout_coaching_planner import PreWorkoutCoachingPlanner
 
@@ -25,13 +29,14 @@ def context(
     recovery: int = 4,
     muscle_soreness: int = 1,
     stress: int = 2,
-    sleep_hours: float | None = 7.5,
     available_training_minutes: int = 30,
     sleep_status: SleepStatus = SleepStatus.ADEQUATE,
     daily_activity_status: DailyActivityStatus = DailyActivityStatus.NORMAL,
     recent_training_load_status: RecentTrainingLoadStatus = RecentTrainingLoadStatus.LOW,
     max_duration_minutes: int | None = None,
     trend_direction: WeightTrendDirection = WeightTrendDirection.DOWN,
+    current_weight_kg: float | None = 92.4,
+    target_weight_kg: float | None = 82.0,
 ) -> PreWorkoutCoachingContext:
     return PreWorkoutCoachingContext(
         check_in=CheckIn(
@@ -41,8 +46,8 @@ def context(
             recovery=recovery,
             muscle_soreness=muscle_soreness,
             stress=stress,
-            sleep_hours=sleep_hours,
             available_training_minutes=available_training_minutes,
+            current_weight_kg=current_weight_kg,
         ),
         max_heart_rate=180,
         training_goal=training_goal,
@@ -51,6 +56,26 @@ def context(
             weekly_change_kg=-0.4 if trend_direction is WeightTrendDirection.DOWN else 0.0,
             sample_count=5,
             span_days=28.0,
+        ),
+        weight_goal_progress=WeightGoalProgress(
+            status=(
+                WeightGoalStatus.NO_GOAL
+                if target_weight_kg is None
+                else WeightGoalStatus.NO_CURRENT_WEIGHT
+                if current_weight_kg is None
+                else WeightGoalStatus.ABOVE_TARGET
+                if current_weight_kg > target_weight_kg
+                else WeightGoalStatus.BELOW_TARGET
+                if current_weight_kg < target_weight_kg
+                else WeightGoalStatus.AT_TARGET
+            ),
+            current_weight_kg=current_weight_kg,
+            target_weight_kg=target_weight_kg,
+            remaining_kg=(
+                None
+                if current_weight_kg is None or target_weight_kg is None
+                else round(current_weight_kg - target_weight_kg, 1)
+            ),
         ),
         readiness=ReadinessContext(
             sleep_status=sleep_status,
@@ -135,7 +160,29 @@ def test_high_daily_activity_is_visible_and_caps_duration() -> None:
 
 
 def test_non_weight_loss_goal_does_not_add_weight_reason_codes() -> None:
-    recommendation = planner().recommend(context(training_goal=TrainingGoal.ENDURANCE))
+    recommendation = planner().recommend(
+        context(training_goal=TrainingGoal.ENDURANCE)
+    )
 
     assert RecommendationReasonCode.WEIGHT_LOSS_GOAL not in recommendation.reason_codes
     assert RecommendationReasonCode.WEIGHT_TREND_DOWN not in recommendation.reason_codes
+
+
+def test_weight_goal_distance_is_explained_without_changing_workout_load() -> None:
+    recommendation = planner().recommend(
+        context(
+            current_weight_kg=92.4,
+            target_weight_kg=82.0,
+        )
+    )
+
+    assert recommendation.workout_type is WorkoutType.BASE_ENDURANCE
+    assert RecommendationReasonCode.WEIGHT_GOAL_ABOVE_TARGET in recommendation.reason_codes
+    assert "10.4 kg" in recommendation.reason
+
+
+def test_missing_current_weight_is_explicit_for_weight_loss_goal() -> None:
+    recommendation = planner().recommend(context(current_weight_kg=None))
+
+    assert RecommendationReasonCode.WEIGHT_GOAL_NO_CURRENT_WEIGHT in recommendation.reason_codes
+    assert "fehlt aktuell ein Gewichtswert" in recommendation.reason

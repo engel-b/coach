@@ -32,6 +32,7 @@ from features.training.domain.recommendation_engine import TrainingRecommendatio
 from features.training.domain.weight_trend import WeightTrendRules
 from features.training.service.pre_workout_coaching_planner import PreWorkoutCoachingPlanner
 from features.training.service.readiness_service import ReadinessService
+from features.training.service.weight_goal_progress_service import WeightGoalProgressService
 from features.training.service.weight_trend_service import WeightTrendService
 from features.workout.persistence.sqlalchemy_workout_repository import (
     SqlAlchemyWorkoutRepository,
@@ -97,6 +98,7 @@ weight_trend_rules = WeightTrendRules(
     stable_threshold_kg_per_week=0.10,
 )
 weight_trend_service = WeightTrendService(rules=weight_trend_rules)
+weight_goal_progress_service = WeightGoalProgressService()
 readiness_rules = ReadinessRules(
     short_sleep_hours=6.0,
     high_daily_steps=12_000,

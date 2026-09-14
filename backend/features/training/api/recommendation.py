@@ -39,8 +39,12 @@ def create_training_recommendation(
         as_of=check_in.timestamp,
     )
 
-    recent_workouts = wiring.workout_service.get_for_person(person_id, limit=20)
+    weight_goal_progress = wiring.weight_goal_progress_service.calculate(
+        current_weight_kg=check_in.current_weight_kg,
+        target_weight_kg=profile.target_weight_kg,
+    )
 
+    recent_workouts = wiring.workout_service.get_for_person(person_id, limit=20)
     readiness = wiring.readiness_service.assess(
         check_in=check_in,
         recent_sessions=[
@@ -58,6 +62,7 @@ def create_training_recommendation(
             max_heart_rate=max_heart_rate,
             training_goal=profile.training_goal,
             weight_trend=weight_trend,
+            weight_goal_progress=weight_goal_progress,
             readiness=readiness,
         )
     )

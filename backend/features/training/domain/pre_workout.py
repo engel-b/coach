@@ -4,6 +4,7 @@ from enum import StrEnum
 from features.check_in.domain.check_in import CheckIn
 from features.person.domain.profile import TrainingGoal
 from features.training.domain.readiness import ReadinessContext
+from features.training.domain.weight_goal_progress import WeightGoalProgress
 from features.training.domain.weight_trend import WeightTrend
 
 
@@ -22,6 +23,11 @@ class RecommendationReasonCode(StrEnum):
     WEIGHT_TREND_STABLE = "weight_trend_stable"
     WEIGHT_TREND_UP = "weight_trend_up"
     WEIGHT_TREND_UNKNOWN = "weight_trend_unknown"
+    WEIGHT_GOAL_NOT_CONFIGURED = "weight_goal_not_configured"
+    WEIGHT_GOAL_NO_CURRENT_WEIGHT = "weight_goal_no_current_weight"
+    WEIGHT_GOAL_ABOVE_TARGET = "weight_goal_above_target"
+    WEIGHT_GOAL_AT_TARGET = "weight_goal_at_target"
+    WEIGHT_GOAL_BELOW_TARGET = "weight_goal_below_target"
 
 
 @dataclass(frozen=True)
@@ -30,4 +36,5 @@ class PreWorkoutCoachingContext:
     max_heart_rate: int
     training_goal: TrainingGoal
     weight_trend: WeightTrend
+    weight_goal_progress: WeightGoalProgress
     readiness: ReadinessContext

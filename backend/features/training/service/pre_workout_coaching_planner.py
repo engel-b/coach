@@ -12,6 +12,7 @@ from features.training.domain.readiness import (
 )
 from features.training.domain.recommendation import TrainingRecommendation
 from features.training.domain.recommendation_engine import TrainingRecommendationEngine
+from features.training.domain.weight_goal_progress import WeightGoalStatus
 from features.training.domain.weight_trend import WeightTrendDirection
 
 
@@ -77,7 +78,6 @@ class PreWorkoutCoachingPlanner:
             reasons.append(RecommendationReasonCode.HIGH_STRESS)
         if readiness.sleep_status is SleepStatus.SHORT:
             reasons.append(RecommendationReasonCode.SHORT_SLEEP)
-
         if readiness.daily_activity_status is DailyActivityStatus.HIGH:
             reasons.append(RecommendationReasonCode.HIGH_DAILY_ACTIVITY)
         if readiness.recent_training_load_status is RecentTrainingLoadStatus.HIGH:
@@ -110,6 +110,15 @@ class PreWorkoutCoachingPlanner:
                     WeightTrendDirection.UNKNOWN: RecommendationReasonCode.WEIGHT_TREND_UNKNOWN,
                 }[context.weight_trend.direction]
             )
+            reasons.append(
+                {
+                    WeightGoalStatus.NO_GOAL: RecommendationReasonCode.WEIGHT_GOAL_NOT_CONFIGURED,
+                    WeightGoalStatus.NO_CURRENT_WEIGHT: RecommendationReasonCode.WEIGHT_GOAL_NO_CURRENT_WEIGHT,
+                    WeightGoalStatus.ABOVE_TARGET: RecommendationReasonCode.WEIGHT_GOAL_ABOVE_TARGET,
+                    WeightGoalStatus.AT_TARGET: RecommendationReasonCode.WEIGHT_GOAL_AT_TARGET,
+                    WeightGoalStatus.BELOW_TARGET: RecommendationReasonCode.WEIGHT_GOAL_BELOW_TARGET,
+                }[context.weight_goal_progress.status]
+            )
 
         return tuple(reasons)
 
@@ -129,9 +138,7 @@ class PreWorkoutCoachingPlanner:
         if any(reason in recovery_reasons for reason in reason_codes):
             parts.append("Dein heutiger Check-in spricht für eine eher regenerative Einheit.")
         else:
-            parts.append(
-                "Dein heutiger Check-in spricht für eine lockere Grundlagen-Ausdauereinheit."
-            )
+            parts.append("Dein heutiger Check-in spricht für eine lockere Grundlagen-Ausdauereinheit.")
 
         if RecommendationReasonCode.SHORT_SLEEP in reason_codes:
             parts.append("Dein Schlaf war kurz, deshalb bleiben wir heute bewusst konservativ.")
@@ -160,8 +167,22 @@ class PreWorkoutCoachingPlanner:
                     "wir erhöhen die heutige Belastung deshalb aber nicht automatisch."
                 )
             else:
+                parts.append("Für einen belastbaren Gewichtstrend liegen noch nicht genug Daten vor.")
+
+            goal_progress = context.weight_goal_progress
+            if goal_progress.status is WeightGoalStatus.ABOVE_TARGET:
                 parts.append(
-                    "Für einen belastbaren Gewichtstrend liegen noch nicht genug Daten vor."
+                    f"Bis zu deinem hinterlegten Zielgewicht sind es aktuell noch {goal_progress.remaining_kg:.1f} kg."
                 )
+            elif goal_progress.status is WeightGoalStatus.AT_TARGET:
+                parts.append("Dein aktuelles Gewicht entspricht deinem hinterlegten Zielgewicht.")
+            elif goal_progress.status is WeightGoalStatus.BELOW_TARGET:
+                parts.append(
+                    f"Dein aktuelles Gewicht liegt {abs(goal_progress.remaining_kg or 0.0):.1f} kg unter deinem hinterlegten Zielgewicht."
+                )
+            elif goal_progress.status is WeightGoalStatus.NO_CURRENT_WEIGHT:
+                parts.append("Für den Abstand zum Zielgewicht fehlt aktuell ein Gewichtswert.")
+            else:
+                parts.append("Für das Abnehmziel ist aktuell kein Zielgewicht hinterlegt.")
 
         return " ".join(parts)
