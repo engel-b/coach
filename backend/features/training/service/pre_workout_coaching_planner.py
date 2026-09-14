@@ -5,6 +5,11 @@ from features.training.domain.pre_workout import (
     PreWorkoutCoachingContext,
     RecommendationReasonCode,
 )
+from features.training.domain.readiness import (
+    DailyActivityStatus,
+    RecentTrainingLoadStatus,
+    SleepStatus,
+)
 from features.training.domain.recommendation import TrainingRecommendation
 from features.training.domain.recommendation_engine import TrainingRecommendationEngine
 from features.training.domain.weight_trend import WeightTrendDirection
@@ -18,9 +23,9 @@ class PreWorkoutCoachingPlanner:
     über Workout-Typ, Dauer und Herzfrequenzphasen. Der Planner ergänzt
     den größeren Coaching-Kontext und strukturierte Begründungen.
 
-    Der Gewichtstrend darf in dieser ersten Version die Trainingslast
-    nicht erhöhen. Er liefert Kontext und Erklärung; Readiness-/Recovery-
-    Regeln haben Vorrang.
+    Gewichtstrend und geringe Aktivität dürfen die Trainingslast nicht
+    erhöhen. Belastende Readiness-Signale können die verfügbare Dauer
+    konservativ begrenzen; subjektive Recovery-Regeln haben Vorrang.
     """
 
     def __init__(self, engine: TrainingRecommendationEngine) -> None:
@@ -30,8 +35,20 @@ class PreWorkoutCoachingPlanner:
         self,
         context: PreWorkoutCoachingContext,
     ) -> TrainingRecommendation:
+        effective_check_in = context.check_in
+        duration_cap = context.readiness.max_duration_minutes
+
+        if (
+            duration_cap is not None
+            and effective_check_in.available_training_minutes > duration_cap
+        ):
+            effective_check_in = replace(
+                effective_check_in,
+                available_training_minutes=duration_cap,
+            )
+
         recommendation = self._engine.recommend(
-            check_in=context.check_in,
+            check_in=effective_check_in,
             max_heart_rate=context.max_heart_rate,
         )
         reason_codes = self._reason_codes(context)
@@ -47,6 +64,7 @@ class PreWorkoutCoachingPlanner:
         context: PreWorkoutCoachingContext,
     ) -> tuple[RecommendationReasonCode, ...]:
         check_in = context.check_in
+        readiness = context.readiness
         reasons: list[RecommendationReasonCode] = []
 
         if check_in.energy <= 2:
@@ -57,19 +75,29 @@ class PreWorkoutCoachingPlanner:
             reasons.append(RecommendationReasonCode.HIGH_MUSCLE_SORENESS)
         if check_in.stress >= 4:
             reasons.append(RecommendationReasonCode.HIGH_STRESS)
-        if check_in.sleep_hours is not None and check_in.sleep_hours < 6.0:
+        if readiness.sleep_status is SleepStatus.SHORT:
             reasons.append(RecommendationReasonCode.SHORT_SLEEP)
 
-        if not any(
-            reason
-            in {
-                RecommendationReasonCode.LOW_ENERGY,
-                RecommendationReasonCode.LOW_RECOVERY,
-                RecommendationReasonCode.HIGH_MUSCLE_SORENESS,
-                RecommendationReasonCode.HIGH_STRESS,
-            }
-            for reason in reasons
+        if readiness.daily_activity_status is DailyActivityStatus.HIGH:
+            reasons.append(RecommendationReasonCode.HIGH_DAILY_ACTIVITY)
+        if readiness.recent_training_load_status is RecentTrainingLoadStatus.HIGH:
+            reasons.append(RecommendationReasonCode.HIGH_RECENT_TRAINING_LOAD)
+        if (
+            readiness.max_duration_minutes is not None
+            and check_in.available_training_minutes > readiness.max_duration_minutes
         ):
+            reasons.append(RecommendationReasonCode.DURATION_REDUCED_FOR_READINESS)
+
+        readiness_warnings = {
+            RecommendationReasonCode.LOW_ENERGY,
+            RecommendationReasonCode.LOW_RECOVERY,
+            RecommendationReasonCode.HIGH_MUSCLE_SORENESS,
+            RecommendationReasonCode.HIGH_STRESS,
+            RecommendationReasonCode.SHORT_SLEEP,
+            RecommendationReasonCode.HIGH_DAILY_ACTIVITY,
+            RecommendationReasonCode.HIGH_RECENT_TRAINING_LOAD,
+        }
+        if not any(reason in readiness_warnings for reason in reasons):
             reasons.append(RecommendationReasonCode.READINESS_GOOD)
 
         if context.training_goal is TrainingGoal.WEIGHT_LOSS:
@@ -107,6 +135,18 @@ class PreWorkoutCoachingPlanner:
 
         if RecommendationReasonCode.SHORT_SLEEP in reason_codes:
             parts.append("Dein Schlaf war kurz, deshalb bleiben wir heute bewusst konservativ.")
+        if RecommendationReasonCode.HIGH_DAILY_ACTIVITY in reason_codes:
+            parts.append(
+                "Du warst heute bereits viel auf den Beinen; diese Aktivität berücksichtigen wir bei der Trainingsdauer."
+            )
+        if RecommendationReasonCode.HIGH_RECENT_TRAINING_LOAD in reason_codes:
+            parts.append(
+                "In den letzten Tagen kam bereits einiges an Trainingszeit zusammen; deshalb planen wir heute zurückhaltender."
+            )
+        if RecommendationReasonCode.DURATION_REDUCED_FOR_READINESS in reason_codes:
+            parts.append(
+                f"Die heutige Einheit wird deshalb auf maximal {context.readiness.max_duration_minutes} Minuten begrenzt."
+            )
 
         if context.training_goal is TrainingGoal.WEIGHT_LOSS:
             trend = context.weight_trend

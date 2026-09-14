@@ -6,6 +6,12 @@ from features.training.domain.pre_workout import (
     PreWorkoutCoachingContext,
     RecommendationReasonCode,
 )
+from features.training.domain.readiness import (
+    DailyActivityStatus,
+    ReadinessContext,
+    RecentTrainingLoadStatus,
+    SleepStatus,
+)
 from features.training.domain.recommendation import WorkoutType
 from features.training.domain.recommendation_engine import TrainingRecommendationEngine
 from features.training.domain.weight_trend import WeightTrend, WeightTrendDirection
@@ -20,6 +26,11 @@ def context(
     muscle_soreness: int = 1,
     stress: int = 2,
     sleep_hours: float | None = 7.5,
+    available_training_minutes: int = 30,
+    sleep_status: SleepStatus = SleepStatus.ADEQUATE,
+    daily_activity_status: DailyActivityStatus = DailyActivityStatus.NORMAL,
+    recent_training_load_status: RecentTrainingLoadStatus = RecentTrainingLoadStatus.LOW,
+    max_duration_minutes: int | None = None,
     trend_direction: WeightTrendDirection = WeightTrendDirection.DOWN,
 ) -> PreWorkoutCoachingContext:
     return PreWorkoutCoachingContext(
@@ -30,8 +41,8 @@ def context(
             recovery=recovery,
             muscle_soreness=muscle_soreness,
             stress=stress,
-            available_training_minutes=30,
             sleep_hours=sleep_hours,
+            available_training_minutes=available_training_minutes,
         ),
         max_heart_rate=180,
         training_goal=training_goal,
@@ -40,6 +51,14 @@ def context(
             weekly_change_kg=-0.4 if trend_direction is WeightTrendDirection.DOWN else 0.0,
             sample_count=5,
             span_days=28.0,
+        ),
+        readiness=ReadinessContext(
+            sleep_status=sleep_status,
+            daily_activity_status=daily_activity_status,
+            recent_training_load_status=recent_training_load_status,
+            recent_training_minutes=0.0,
+            recent_workout_count=0,
+            max_duration_minutes=max_duration_minutes,
         ),
     )
 
@@ -72,12 +91,47 @@ def test_recovery_has_priority_over_weight_loss_goal() -> None:
     assert "erhöhen die heutige Belastung deshalb aber nicht automatisch" in recommendation.reason
 
 
-def test_short_sleep_is_explained_without_alone_forcing_recovery() -> None:
-    recommendation = planner().recommend(context(sleep_hours=5.5))
+def test_short_sleep_caps_long_session_without_alone_forcing_recovery() -> None:
+    recommendation = planner().recommend(
+        context(
+            available_training_minutes=60,
+            sleep_status=SleepStatus.SHORT,
+            max_duration_minutes=30,
+        )
+    )
 
     assert recommendation.workout_type is WorkoutType.BASE_ENDURANCE
+    assert recommendation.total_duration_minutes == 30
     assert RecommendationReasonCode.SHORT_SLEEP in recommendation.reason_codes
+    assert RecommendationReasonCode.DURATION_REDUCED_FOR_READINESS in recommendation.reason_codes
     assert "Schlaf war kurz" in recommendation.reason
+
+
+def test_high_recent_training_load_is_visible_and_caps_duration() -> None:
+    recommendation = planner().recommend(
+        context(
+            available_training_minutes=60,
+            recent_training_load_status=RecentTrainingLoadStatus.HIGH,
+            max_duration_minutes=30,
+        )
+    )
+
+    assert recommendation.total_duration_minutes == 30
+    assert RecommendationReasonCode.HIGH_RECENT_TRAINING_LOAD in recommendation.reason_codes
+    assert RecommendationReasonCode.DURATION_REDUCED_FOR_READINESS in recommendation.reason_codes
+
+
+def test_high_daily_activity_is_visible_and_caps_duration() -> None:
+    recommendation = planner().recommend(
+        context(
+            available_training_minutes=45,
+            daily_activity_status=DailyActivityStatus.HIGH,
+            max_duration_minutes=30,
+        )
+    )
+
+    assert recommendation.total_duration_minutes == 30
+    assert RecommendationReasonCode.HIGH_DAILY_ACTIVITY in recommendation.reason_codes
 
 
 def test_non_weight_loss_goal_does_not_add_weight_reason_codes() -> None:

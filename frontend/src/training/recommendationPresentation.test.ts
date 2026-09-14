@@ -32,6 +32,18 @@ describe("recommendationPresentation", () => {
     ).toEqual(["Tagesform gut", "Gewichtstrend sinkt"]);
   });
 
+  it("maps readiness adjustment reasons", () => {
+    expect(
+      recommendationReasonLabels(
+        recommendation([
+          "short_sleep",
+          "high_recent_training_load",
+          "duration_reduced_for_readiness",
+        ]),
+      ),
+    ).toEqual(["Schlaf kurz", "Zuletzt viel trainiert", "Dauer angepasst"]);
+  });
+
   it("ignores unknown future reason codes", () => {
     expect(
       recommendationReasonLabels(recommendation(["future_reason"])),
