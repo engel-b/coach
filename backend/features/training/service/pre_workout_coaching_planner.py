@@ -1,0 +1,127 @@
+from dataclasses import replace
+
+from features.person.domain.profile import TrainingGoal
+from features.training.domain.pre_workout import (
+    PreWorkoutCoachingContext,
+    RecommendationReasonCode,
+)
+from features.training.domain.recommendation import TrainingRecommendation
+from features.training.domain.recommendation_engine import TrainingRecommendationEngine
+from features.training.domain.weight_trend import WeightTrendDirection
+
+
+class PreWorkoutCoachingPlanner:
+    """
+    Orchestriert die deterministische Pre-Workout-Empfehlung.
+
+    Der bestehende TrainingRecommendationEngine entscheidet weiterhin
+    über Workout-Typ, Dauer und Herzfrequenzphasen. Der Planner ergänzt
+    den größeren Coaching-Kontext und strukturierte Begründungen.
+
+    Der Gewichtstrend darf in dieser ersten Version die Trainingslast
+    nicht erhöhen. Er liefert Kontext und Erklärung; Readiness-/Recovery-
+    Regeln haben Vorrang.
+    """
+
+    def __init__(self, engine: TrainingRecommendationEngine) -> None:
+        self._engine = engine
+
+    def recommend(
+        self,
+        context: PreWorkoutCoachingContext,
+    ) -> TrainingRecommendation:
+        recommendation = self._engine.recommend(
+            check_in=context.check_in,
+            max_heart_rate=context.max_heart_rate,
+        )
+        reason_codes = self._reason_codes(context)
+
+        return replace(
+            recommendation,
+            reason=self._reason_text(context, reason_codes),
+            reason_codes=reason_codes,
+        )
+
+    @staticmethod
+    def _reason_codes(
+        context: PreWorkoutCoachingContext,
+    ) -> tuple[RecommendationReasonCode, ...]:
+        check_in = context.check_in
+        reasons: list[RecommendationReasonCode] = []
+
+        if check_in.energy <= 2:
+            reasons.append(RecommendationReasonCode.LOW_ENERGY)
+        if check_in.recovery <= 2:
+            reasons.append(RecommendationReasonCode.LOW_RECOVERY)
+        if check_in.muscle_soreness >= 4:
+            reasons.append(RecommendationReasonCode.HIGH_MUSCLE_SORENESS)
+        if check_in.stress >= 4:
+            reasons.append(RecommendationReasonCode.HIGH_STRESS)
+        if check_in.sleep_hours is not None and check_in.sleep_hours < 6.0:
+            reasons.append(RecommendationReasonCode.SHORT_SLEEP)
+
+        if not any(
+            reason
+            in {
+                RecommendationReasonCode.LOW_ENERGY,
+                RecommendationReasonCode.LOW_RECOVERY,
+                RecommendationReasonCode.HIGH_MUSCLE_SORENESS,
+                RecommendationReasonCode.HIGH_STRESS,
+            }
+            for reason in reasons
+        ):
+            reasons.append(RecommendationReasonCode.READINESS_GOOD)
+
+        if context.training_goal is TrainingGoal.WEIGHT_LOSS:
+            reasons.append(RecommendationReasonCode.WEIGHT_LOSS_GOAL)
+            reasons.append(
+                {
+                    WeightTrendDirection.DOWN: RecommendationReasonCode.WEIGHT_TREND_DOWN,
+                    WeightTrendDirection.STABLE: RecommendationReasonCode.WEIGHT_TREND_STABLE,
+                    WeightTrendDirection.UP: RecommendationReasonCode.WEIGHT_TREND_UP,
+                    WeightTrendDirection.UNKNOWN: RecommendationReasonCode.WEIGHT_TREND_UNKNOWN,
+                }[context.weight_trend.direction]
+            )
+
+        return tuple(reasons)
+
+    @staticmethod
+    def _reason_text(
+        context: PreWorkoutCoachingContext,
+        reason_codes: tuple[RecommendationReasonCode, ...],
+    ) -> str:
+        recovery_reasons = {
+            RecommendationReasonCode.LOW_ENERGY,
+            RecommendationReasonCode.LOW_RECOVERY,
+            RecommendationReasonCode.HIGH_MUSCLE_SORENESS,
+            RecommendationReasonCode.HIGH_STRESS,
+        }
+
+        parts: list[str] = []
+        if any(reason in recovery_reasons for reason in reason_codes):
+            parts.append("Dein heutiger Check-in spricht für eine eher regenerative Einheit.")
+        else:
+            parts.append(
+                "Dein heutiger Check-in spricht für eine lockere Grundlagen-Ausdauereinheit."
+            )
+
+        if RecommendationReasonCode.SHORT_SLEEP in reason_codes:
+            parts.append("Dein Schlaf war kurz, deshalb bleiben wir heute bewusst konservativ.")
+
+        if context.training_goal is TrainingGoal.WEIGHT_LOSS:
+            trend = context.weight_trend
+            if trend.direction is WeightTrendDirection.DOWN:
+                parts.append("Dein geglätteter Gewichtstrend zeigt aktuell nach unten.")
+            elif trend.direction is WeightTrendDirection.STABLE:
+                parts.append("Dein geglätteter Gewichtstrend ist aktuell weitgehend stabil.")
+            elif trend.direction is WeightTrendDirection.UP:
+                parts.append(
+                    "Dein geglätteter Gewichtstrend zeigt aktuell nach oben; "
+                    "wir erhöhen die heutige Belastung deshalb aber nicht automatisch."
+                )
+            else:
+                parts.append(
+                    "Für einen belastbaren Gewichtstrend liegen noch nicht genug Daten vor."
+                )
+
+        return " ".join(parts)

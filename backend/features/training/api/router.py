@@ -66,6 +66,7 @@ async def training_recommendation(
         workout_type=recommendation.workout_type.value,
         total_duration_minutes=(recommendation.total_duration_minutes),
         reason=recommendation.reason,
+        reason_codes=[reason.value for reason in recommendation.reason_codes],
         phases=[
             WorkoutPhaseResponse(
                 phase_type=phase.phase_type.value,

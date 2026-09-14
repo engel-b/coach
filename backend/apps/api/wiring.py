@@ -28,6 +28,8 @@ from features.speech.service.speech_service import SpeechService
 from features.telemetry.service.broadcaster import TelemetryBroadcaster
 from features.telemetry.service.service import TelemetryService
 from features.training.domain.recommendation_engine import TrainingRecommendationEngine
+from features.training.service.pre_workout_coaching_planner import PreWorkoutCoachingPlanner
+from features.training.service.weight_trend_service import WeightTrendService
 from features.workout.persistence.sqlalchemy_workout_repository import (
     SqlAlchemyWorkoutRepository,
 )
@@ -85,6 +87,10 @@ check_in_service = CheckInService(
 )
 
 training_recommendation_engine = TrainingRecommendationEngine()
+weight_trend_service = WeightTrendService()
+pre_workout_coaching_planner = PreWorkoutCoachingPlanner(
+    engine=training_recommendation_engine,
+)
 
 workout_repository = SqlAlchemyWorkoutRepository()
 workout_video_repository = SqlAlchemyWorkoutVideoRepository()

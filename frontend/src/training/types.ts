@@ -13,5 +13,6 @@ export interface TrainingRecommendation {
   workoutType: WorkoutType;
   totalDurationMinutes: number;
   reason: string;
+  reasonCodes: string[];
   phases: WorkoutPhase[];
 }

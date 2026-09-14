@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
+from features.training.domain.pre_workout import RecommendationReasonCode
+
 
 class WorkoutType(StrEnum):
     RECOVERY = "recovery"
@@ -28,3 +30,4 @@ class TrainingRecommendation:
     total_duration_minutes: int
     reason: str
     phases: tuple[WorkoutPhase, ...]
+    reason_codes: tuple[RecommendationReasonCode, ...] = ()

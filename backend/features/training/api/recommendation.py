@@ -4,6 +4,7 @@ from fastapi import HTTPException
 
 from apps.api import wiring
 from features.training.domain.heart_rate import get_max_heart_rate
+from features.training.domain.pre_workout import PreWorkoutCoachingContext
 from features.training.domain.recommendation import TrainingRecommendation
 
 
@@ -31,7 +32,17 @@ def create_training_recommendation(
         datetime.now(UTC).date(),
     )
 
-    return wiring.training_recommendation_engine.recommend(
-        check_in=check_in,
-        max_heart_rate=max_heart_rate,
+    history = wiring.check_in_service.get_history(person_id, limit=90)
+    weight_trend = wiring.weight_trend_service.calculate(
+        check_ins=history,
+        as_of=check_in.timestamp,
+    )
+
+    return wiring.pre_workout_coaching_planner.recommend(
+        PreWorkoutCoachingContext(
+            check_in=check_in,
+            max_heart_rate=max_heart_rate,
+            training_goal=profile.training_goal,
+            weight_trend=weight_trend,
+        )
     )

@@ -48,6 +48,13 @@ class TrainingRecommendationResponse(BaseModel):
         description="Fachliche Begründung für die Empfehlung.",
         examples=["Die aktuelle Tagesform eignet sich für eine moderate Trainingseinheit."],
     )
+    reason_codes: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Strukturierte, stabile Begründungscodes für UI, Tests und spätere LLM-Nutzung."
+        ),
+        examples=[["readiness_good", "weight_loss_goal", "weight_trend_down"]],
+    )
     phases: list[WorkoutPhaseResponse] = Field(
         description=("Geordnete Trainingsphasen mit Dauer und Zielpulsbereich."),
     )
