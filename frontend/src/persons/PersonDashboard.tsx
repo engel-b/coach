@@ -2,8 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 
 import { getCheckInHistory, getLatestCheckIn } from "../api/check-ins";
 import { getPersonProfile } from "../api/persons";
+import { getTrainingRecommendation } from "../api/training";
 import { getWorkoutHistory } from "../api/workouts";
 import type { CheckIn } from "../check-in/types";
+import type { TrainingRecommendation } from "../training/types";
+import {
+  recommendationReasonLabels,
+  weightTrendLabel,
+  workoutTitle,
+} from "../training/recommendationPresentation";
 import type { Workout } from "../workout/types";
 import type { Person, PersonProfile } from "./types";
 
@@ -19,6 +26,7 @@ interface DashboardData {
   latestCheckIn: CheckIn | null;
   checkIns: CheckIn[];
   workouts: Workout[];
+  recommendation: TrainingRecommendation | null;
 }
 
 const EMPTY_DASHBOARD_DATA: DashboardData = {
@@ -26,6 +34,7 @@ const EMPTY_DASHBOARD_DATA: DashboardData = {
   latestCheckIn: null,
   checkIns: [],
   workouts: [],
+  recommendation: null,
 };
 
 function formatDuration(elapsedSeconds: number): string {
@@ -324,12 +333,14 @@ export function PersonDashboard({
          * Solange der neue History-Endpunkt im Backend noch nicht existiert,
          * funktioniert das restliche Dashboard trotzdem vollständig.
          */
-        const [profile, latestCheckIn, workouts, checkIns] = await Promise.all([
-          getPersonProfile(person.id),
-          getLatestCheckIn(person.id),
-          getWorkoutHistory(person.id, 10),
-          getCheckInHistory(person.id, 90).catch(() => []),
-        ]);
+        const [profile, latestCheckIn, workouts, checkIns, recommendation] =
+          await Promise.all([
+            getPersonProfile(person.id),
+            getLatestCheckIn(person.id),
+            getWorkoutHistory(person.id, 10),
+            getCheckInHistory(person.id, 90).catch(() => []),
+            getTrainingRecommendation(person.id).catch(() => null),
+          ]);
 
         if (!cancelled) {
           setData({
@@ -337,6 +348,7 @@ export function PersonDashboard({
             latestCheckIn,
             workouts,
             checkIns,
+            recommendation,
           });
         }
       } catch (loadError) {
@@ -375,6 +387,12 @@ export function PersonDashboard({
       ? latestWeight - firstWeight
       : null;
   const coach = coachMessage(data.latestCheckIn, data.workouts);
+  const recommendationReasonTags =
+    data.recommendation === null
+      ? []
+      : recommendationReasonLabels(data.recommendation);
+  const recommendationWeightTrend =
+    data.recommendation === null ? null : weightTrendLabel(data.recommendation);
   const badges = badgeDefinitions(data);
 
   return (
@@ -488,11 +506,44 @@ export function PersonDashboard({
           <p className="dashboard-coach-text">{coach.text}</p>
 
           <div className="dashboard-coach-recommendation">
-            <span>Empfehlung für heute</span>
-            <strong>
-              Starte den Check-in, damit ich dein Training passend zur aktuellen
-              Tagesform empfehlen kann.
-            </strong>
+            <span>Empfehlung</span>
+
+            {data.recommendation === null ? (
+              <strong>
+                Starte den Check-in, damit ich dein Training passend zur
+                aktuellen Tagesform empfehlen kann.
+              </strong>
+            ) : (
+              <>
+                <strong>
+                  {workoutTitle(data.recommendation.workoutType)} ·{" "}
+                  {data.recommendation.totalDurationMinutes} min
+                </strong>
+                <p className="dashboard-coach-reason">
+                  {data.recommendation.reason}
+                </p>
+
+                {recommendationWeightTrend !== null && (
+                  <div className="dashboard-coach-trend">
+                    <span>Gewichtstrend</span>
+                    <strong>{recommendationWeightTrend}</strong>
+                  </div>
+                )}
+
+                {recommendationReasonTags.length > 0 && (
+                  <div className="dashboard-coach-reason-tags">
+                    {recommendationReasonTags.map((label) => (
+                      <span key={label}>{label}</span>
+                    ))}
+                  </div>
+                )}
+
+                <small>
+                  Basierend auf deinem letzten Check-in. Für eine aktuelle
+                  Empfehlung bitte neu einchecken.
+                </small>
+              </>
+            )}
           </div>
         </aside>
       </div>

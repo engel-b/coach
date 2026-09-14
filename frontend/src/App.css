@@ -2323,3 +2323,66 @@ h1 {
     border-bottom: 1px solid rgba(115, 213, 91, 0.38);
   }
 }
+
+/* Strukturierte Begründungen aus dem Pre-Workout-Coach. */
+.recommendation-reason-tags,
+.dashboard-coach-reason-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.recommendation-reason-tags span,
+.dashboard-coach-reason-tags span {
+  padding: 6px 9px;
+  border: 1px solid rgba(115, 213, 91, 0.2);
+  border-radius: 999px;
+  background: rgba(115, 213, 91, 0.07);
+  color: #b9d8b2;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dashboard-coach-reason {
+  margin: 10px 0 0;
+  color: #c3ccd6;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.dashboard-coach-trend {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(115, 213, 91, 0.12);
+}
+
+.dashboard-coach-trend span,
+.dashboard-coach-trend strong {
+  display: inline;
+  margin: 0;
+}
+
+.dashboard-coach-trend span {
+  color: #8a97a8;
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.dashboard-coach-trend strong {
+  color: #e7ebef;
+  font-size: 13px;
+}
+
+.dashboard-coach-recommendation small {
+  display: block;
+  margin-top: 14px;
+  color: #7f8a98;
+  font-size: 11px;
+  line-height: 1.45;
+}
