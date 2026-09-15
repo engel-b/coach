@@ -2,6 +2,7 @@ from dataclasses import replace
 
 from features.person.domain.profile import TrainingGoal
 from features.training.domain.coach_message import CoachMessageContext
+from features.training.domain.coach_message_generator import CoachMessageGenerator
 from features.training.domain.pre_workout import (
     PreWorkoutCoachingContext,
     RecommendationReasonCode,
@@ -34,10 +35,10 @@ class PreWorkoutCoachingPlanner:
     def __init__(
         self,
         engine: TrainingRecommendationEngine,
-        reason_builder: PreWorkoutReasonBuilder | None = None,
+        message_generator: CoachMessageGenerator | None = None,
     ) -> None:
         self._engine = engine
-        self._reason_builder = reason_builder or PreWorkoutReasonBuilder()
+        self._message_generator = message_generator or PreWorkoutReasonBuilder()
 
     def recommend(
         self,
@@ -63,7 +64,7 @@ class PreWorkoutCoachingPlanner:
 
         return replace(
             recommendation,
-            reason=self._reason_builder.build(
+            reason=self._message_generator.generate(
                 context=CoachMessageContext(
                     workout_type=recommendation.workout_type,
                     total_duration_minutes=recommendation.total_duration_minutes,
@@ -148,4 +149,3 @@ class PreWorkoutCoachingPlanner:
             )
 
         return tuple(reasons)
-

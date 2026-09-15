@@ -160,7 +160,7 @@ def test_short_sleep_caps_long_session_without_alone_forcing_recovery() -> None:
     assert recommendation.total_duration_minutes == 30
     assert RecommendationReasonCode.SHORT_SLEEP in recommendation.reason_codes
     assert RecommendationReasonCode.DURATION_REDUCED_FOR_READINESS in recommendation.reason_codes
-    assert "Schlaf war kurz" in recommendation.reason
+    assert "kurzem Schlaf" in recommendation.reason
 
 
 def test_high_recent_training_load_is_visible_and_caps_duration() -> None:
@@ -207,7 +207,9 @@ def test_weight_goal_distance_is_explained_without_changing_workout_load() -> No
 
     assert recommendation.workout_type is WorkoutType.BASE_ENDURANCE
     assert RecommendationReasonCode.WEIGHT_GOAL_ABOVE_TARGET in recommendation.reason_codes
-    assert "10.4 kg" in recommendation.reason
+    assert recommendation.weight_goal_progress is not None
+    assert recommendation.weight_goal_progress.remaining_kg == 10.4
+    assert recommendation.weight_goal_progress.progress_percent == 42.2
 
 
 def test_missing_current_weight_is_explicit_for_weight_loss_goal() -> None:

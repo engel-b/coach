@@ -42,7 +42,7 @@ def test_duration_cap_combines_readiness_causes_into_one_sentence() -> None:
         RecommendationReasonCode.DURATION_REDUCED_FOR_READINESS,
     )
 
-    text = PreWorkoutReasonBuilder().build(
+    text = PreWorkoutReasonBuilder().generate(
         context=message_context(
             coaching_context=coaching_context,
             reason_codes=reason_codes,
@@ -69,7 +69,7 @@ def test_weight_progress_is_compact_and_does_not_repeat_remaining_distance() -> 
         RecommendationReasonCode.WEIGHT_GOAL_ABOVE_TARGET,
     )
 
-    text = PreWorkoutReasonBuilder().build(
+    text = PreWorkoutReasonBuilder().generate(
         context=message_context(
             coaching_context=coaching_context,
             reason_codes=reason_codes,
@@ -85,7 +85,7 @@ def test_non_capped_short_sleep_gets_one_short_readiness_sentence() -> None:
     coaching_context = context(max_duration_minutes=None)
     reason_codes = (RecommendationReasonCode.SHORT_SLEEP,)
 
-    text = PreWorkoutReasonBuilder().build(
+    text = PreWorkoutReasonBuilder().generate(
         context=message_context(
             coaching_context=coaching_context,
             reason_codes=reason_codes,

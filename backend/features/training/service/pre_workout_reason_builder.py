@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from features.person.domain.profile import TrainingGoal
 from features.training.domain.coach_message import CoachMessageContext
 from features.training.domain.pre_workout import RecommendationReasonCode
@@ -16,19 +18,20 @@ class PreWorkoutReasonBuilder:
     aus der deterministischen Coaching-Schicht zu verlagern.
     """
 
-    _RECOVERY_REASONS = {
-        RecommendationReasonCode.LOW_ENERGY,
-        RecommendationReasonCode.LOW_RECOVERY,
-        RecommendationReasonCode.HIGH_MUSCLE_SORENESS,
-        RecommendationReasonCode.HIGH_STRESS,
-    }
+    _RECOVERY_REASONS: ClassVar[frozenset[RecommendationReasonCode]] = frozenset(
+        {
+            RecommendationReasonCode.LOW_ENERGY,
+            RecommendationReasonCode.LOW_RECOVERY,
+            RecommendationReasonCode.HIGH_MUSCLE_SORENESS,
+            RecommendationReasonCode.HIGH_STRESS,
+        }
+    )
 
-    def build(
+    def generate(
         self,
         *,
         context: CoachMessageContext,
     ) -> str:
-        reason_codes = context.reason_codes
         parts = [self._base_recommendation(context)]
 
         readiness_text = self._readiness_text(context)
@@ -41,6 +44,10 @@ class PreWorkoutReasonBuilder:
                 parts.append(weight_text)
 
         return " ".join(parts)
+
+    def build(self, *, context: CoachMessageContext) -> str:
+        """Kompatibilitätsalias; neue Aufrufer verwenden generate()."""
+        return self.generate(context=context)
 
     def _base_recommendation(self, context: CoachMessageContext) -> str:
         if any(reason in self._RECOVERY_REASONS for reason in context.reason_codes):
@@ -102,7 +109,9 @@ class PreWorkoutReasonBuilder:
                 "wir erhöhen die heutige Belastung deshalb aber nicht automatisch."
             )
         else:
-            sentences.append("Für einen belastbaren Gewichtstrend liegen noch nicht genug Daten vor.")
+            sentences.append(
+                "Für einen belastbaren Gewichtstrend liegen noch nicht genug Daten vor."
+            )
 
         # Fortschritt ist der motivierendere Langzeitkontext. Wenn er vorliegt,
         # reicht eine kompakte Aussage; die verbleibenden kg zeigt das Frontend
