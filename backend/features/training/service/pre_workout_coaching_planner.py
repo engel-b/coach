@@ -1,6 +1,7 @@
 from dataclasses import replace
 
 from features.person.domain.profile import TrainingGoal
+from features.training.domain.coach_message import CoachMessageContext
 from features.training.domain.pre_workout import (
     PreWorkoutCoachingContext,
     RecommendationReasonCode,
@@ -14,6 +15,7 @@ from features.training.domain.recommendation import TrainingRecommendation
 from features.training.domain.recommendation_engine import TrainingRecommendationEngine
 from features.training.domain.weight_goal_progress import WeightGoalStatus
 from features.training.domain.weight_trend import WeightTrendDirection
+from features.training.service.pre_workout_reason_builder import PreWorkoutReasonBuilder
 
 
 class PreWorkoutCoachingPlanner:
@@ -29,8 +31,13 @@ class PreWorkoutCoachingPlanner:
     konservativ begrenzen; subjektive Recovery-Regeln haben Vorrang.
     """
 
-    def __init__(self, engine: TrainingRecommendationEngine) -> None:
+    def __init__(
+        self,
+        engine: TrainingRecommendationEngine,
+        reason_builder: PreWorkoutReasonBuilder | None = None,
+    ) -> None:
         self._engine = engine
+        self._reason_builder = reason_builder or PreWorkoutReasonBuilder()
 
     def recommend(
         self,
@@ -56,7 +63,22 @@ class PreWorkoutCoachingPlanner:
 
         return replace(
             recommendation,
-            reason=self._reason_text(context, reason_codes),
+            reason=self._reason_builder.build(
+                context=CoachMessageContext(
+                    workout_type=recommendation.workout_type,
+                    total_duration_minutes=recommendation.total_duration_minutes,
+                    reason_codes=reason_codes,
+                    training_goal=context.training_goal,
+                    readiness_max_duration_minutes=context.readiness.max_duration_minutes,
+                    weight_trend_direction=context.weight_trend.direction,
+                    weight_trend_kg_per_week=context.weight_trend.weekly_change_kg,
+                    weight_goal_progress=(
+                        context.weight_goal_progress
+                        if context.training_goal is TrainingGoal.WEIGHT_LOSS
+                        else None
+                    ),
+                ),
+            ),
             reason_codes=reason_codes,
             weight_goal_progress=(
                 context.weight_goal_progress
@@ -127,89 +149,3 @@ class PreWorkoutCoachingPlanner:
 
         return tuple(reasons)
 
-    @staticmethod
-    def _reason_text(
-        context: PreWorkoutCoachingContext,
-        reason_codes: tuple[RecommendationReasonCode, ...],
-    ) -> str:
-        recovery_reasons = {
-            RecommendationReasonCode.LOW_ENERGY,
-            RecommendationReasonCode.LOW_RECOVERY,
-            RecommendationReasonCode.HIGH_MUSCLE_SORENESS,
-            RecommendationReasonCode.HIGH_STRESS,
-        }
-
-        parts: list[str] = []
-        if any(reason in recovery_reasons for reason in reason_codes):
-            parts.append("Dein heutiger Check-in spricht für eine eher regenerative Einheit.")
-        else:
-            parts.append(
-                "Dein heutiger Check-in spricht für eine lockere Grundlagen-Ausdauereinheit."
-            )
-
-        if RecommendationReasonCode.SHORT_SLEEP in reason_codes:
-            parts.append("Dein Schlaf war kurz, deshalb bleiben wir heute bewusst konservativ.")
-        if RecommendationReasonCode.HIGH_DAILY_ACTIVITY in reason_codes:
-            parts.append(
-                "Du warst heute bereits viel auf den Beinen; diese Aktivität berücksichtigen wir bei der Trainingsdauer."
-            )
-        if RecommendationReasonCode.HIGH_RECENT_TRAINING_LOAD in reason_codes:
-            parts.append(
-                "In den letzten Tagen kam bereits einiges an Trainingszeit zusammen; deshalb planen wir heute zurückhaltender."
-            )
-        if RecommendationReasonCode.DURATION_REDUCED_FOR_READINESS in reason_codes:
-            parts.append(
-                f"Die heutige Einheit wird deshalb auf maximal {context.readiness.max_duration_minutes} Minuten begrenzt."
-            )
-
-        if context.training_goal is TrainingGoal.WEIGHT_LOSS:
-            trend = context.weight_trend
-            if trend.direction is WeightTrendDirection.DOWN:
-                parts.append("Dein geglätteter Gewichtstrend zeigt aktuell nach unten.")
-            elif trend.direction is WeightTrendDirection.STABLE:
-                parts.append("Dein geglätteter Gewichtstrend ist aktuell weitgehend stabil.")
-            elif trend.direction is WeightTrendDirection.UP:
-                parts.append(
-                    "Dein geglätteter Gewichtstrend zeigt aktuell nach oben; "
-                    "wir erhöhen die heutige Belastung deshalb aber nicht automatisch."
-                )
-            else:
-                parts.append(
-                    "Für einen belastbaren Gewichtstrend liegen noch nicht genug Daten vor."
-                )
-
-            goal_progress = context.weight_goal_progress
-            if (
-                goal_progress.lost_since_start_kg is not None
-                and goal_progress.progress_percent is not None
-            ):
-                if goal_progress.lost_since_start_kg > 0:
-                    parts.append(
-                        f"Seit deinem Startgewicht hast du {goal_progress.lost_since_start_kg:.1f} kg verloren "
-                        f"und damit {goal_progress.progress_percent:.0f} % deines Weges zum Ziel erreicht."
-                    )
-                elif goal_progress.lost_since_start_kg < 0:
-                    parts.append(
-                        f"Dein aktuelles Gewicht liegt {abs(goal_progress.lost_since_start_kg):.1f} kg über deinem Startgewicht."
-                    )
-                else:
-                    parts.append(
-                        "Dein aktuelles Gewicht entspricht deinem hinterlegten Startgewicht."
-                    )
-
-            if goal_progress.status is WeightGoalStatus.ABOVE_TARGET:
-                parts.append(
-                    f"Bis zu deinem hinterlegten Zielgewicht sind es aktuell noch {goal_progress.remaining_kg:.1f} kg."
-                )
-            elif goal_progress.status is WeightGoalStatus.AT_TARGET:
-                parts.append("Dein aktuelles Gewicht entspricht deinem hinterlegten Zielgewicht.")
-            elif goal_progress.status is WeightGoalStatus.BELOW_TARGET:
-                parts.append(
-                    f"Dein aktuelles Gewicht liegt {abs(goal_progress.remaining_kg or 0.0):.1f} kg unter deinem hinterlegten Zielgewicht."
-                )
-            elif goal_progress.status is WeightGoalStatus.NO_CURRENT_WEIGHT:
-                parts.append("Für den Abstand zum Zielgewicht fehlt aktuell ein Gewichtswert.")
-            else:
-                parts.append("Für das Abnehmziel ist aktuell kein Zielgewicht hinterlegt.")
-
-        return " ".join(parts)
