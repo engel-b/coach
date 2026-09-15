@@ -1,4 +1,4 @@
-.PHONY: dev backend device-agent frontend test check check-backend check-frontend format format-check build db-upgrade db-current db-history migration tts-voice
+.PHONY: dev backend device-agent frontend test check check-backend check-frontend format format-check build db-upgrade db-current db-history migration tts-voice llm-model llm-server
 
 
 # ---------------------------------------------------------------------------
@@ -142,3 +142,23 @@ migration:
 
 tts-voice:
 	cd backend && $(PYTHON) -m piper.download_voices --data-dir models/piper de_DE-thorsten-medium
+
+
+# ---------------------------------------------------------------------------
+# Provisioning
+# ---------------------------------------------------------------------------
+
+#provision:
+# 	cd backend && $(PYTHON) scripts/provision_runtime.py
+
+
+# ---------------------------------------------------------------------------
+# LLM
+# ---------------------------------------------------------------------------
+
+llm-model:
+	cd backend && $(PYTHON) scripts/ensure_llm_model.py
+
+llm-server:
+	cd backend && $(PYTHON) scripts/run_llm_server.py
+
