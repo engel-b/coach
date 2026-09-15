@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+from adapters.llm.local_llm_coach_message_generator import LocalLlmCoachMessageGenerator
 from apps.api.live_coaching_event_publisher import LiveCoachingEventPublisher
 from apps.api.live_coaching_lifecycle import LiveCoachingLifecycle
 from features.check_in.persistence.sqlalchemy_check_in_repository import (
@@ -27,9 +28,13 @@ from features.speech.adapters.piper_tts import PiperTtsAdapter
 from features.speech.service.speech_service import SpeechService
 from features.telemetry.service.broadcaster import TelemetryBroadcaster
 from features.telemetry.service.service import TelemetryService
+from features.training.domain.coach_message_generator import CoachMessageGenerator
 from features.training.domain.readiness import ReadinessRules
 from features.training.domain.recommendation_engine import TrainingRecommendationEngine
 from features.training.domain.weight_trend import WeightTrendRules
+from features.training.service.fallback_coach_message_generator import (
+    FallbackCoachMessageGenerator,
+)
 from features.training.service.pre_workout_coaching_planner import PreWorkoutCoachingPlanner
 from features.training.service.pre_workout_reason_builder import PreWorkoutReasonBuilder
 from features.training.service.readiness_service import ReadinessService
@@ -65,6 +70,7 @@ live_coaching_lifecycle = LiveCoachingLifecycle(
     coordinator=live_coaching_coordinator,
     decision_handler=live_coaching_event_publisher.publish,
     runtime_handler=live_coaching_event_publisher.publish_runtime_event,
+    structure_handler=live_coaching_event_publisher.publish_structure_event,
 )
 
 telemetry_service = TelemetryService()
@@ -109,7 +115,29 @@ readiness_rules = ReadinessRules(
     caution_duration_cap_minutes=30,
 )
 readiness_service = ReadinessService(rules=readiness_rules)
-pre_workout_message_generator = PreWorkoutReasonBuilder()
+
+template_pre_workout_message_generator = PreWorkoutReasonBuilder()
+
+pre_workout_message_generator: CoachMessageGenerator
+local_llm_enabled = os.environ.get("HEALTH_COACH_LLM_ENABLED", "").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+if local_llm_enabled:
+    local_llm_message_generator = LocalLlmCoachMessageGenerator(
+        base_url=os.environ.get("HEALTH_COACH_LLM_BASE_URL", "http://127.0.0.1:8080"),
+        model=os.environ.get("HEALTH_COACH_LLM_MODEL", "local-coach"),
+        timeout_seconds=float(os.environ.get("HEALTH_COACH_LLM_TIMEOUT_SECONDS", "4.0")),
+    )
+    pre_workout_message_generator = FallbackCoachMessageGenerator(
+        primary=local_llm_message_generator,
+        fallback=template_pre_workout_message_generator,
+    )
+else:
+    pre_workout_message_generator = template_pre_workout_message_generator
+
 pre_workout_coaching_planner = PreWorkoutCoachingPlanner(
     engine=training_recommendation_engine,
     message_generator=pre_workout_message_generator,

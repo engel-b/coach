@@ -20,6 +20,27 @@ export function coachingSpeechMessage(event: LiveCoachingEvent): string {
     case "coaching.pause_ended":
       return "Weiter geht's.";
 
+    case "coaching.phase_started":
+      if (event.isFinalPhase) {
+        return "Letzte Phase. Nimm dir noch einmal bewusst Zeit für einen sauberen Abschluss.";
+      }
+      switch (event.phaseType) {
+        case "warm_up":
+          return "Wir starten mit dem Aufwärmen. Fahr locker und finde deinen Rhythmus.";
+        case "main":
+          return "Jetzt beginnt die Hauptphase. Fahr gleichmäßig und bleib im Zielbereich.";
+        case "cool_down":
+          return "Jetzt kommt der Cooldown. Nimm Tempo heraus und roll locker aus.";
+        default:
+          return "";
+      }
+
+    case "coaching.phase_ending":
+      return "Noch eine Minute in dieser Phase.";
+
+    case "coaching.workout_halfway":
+      return "Halbzeit. Die Hälfte ist geschafft. Halte deinen Rhythmus.";
+
     case "coaching.decision":
       switch (event.action) {
         case "increase_intensity":
@@ -36,8 +57,6 @@ export function evaluateCoachingSpeech(
   state: CoachingSpeechState,
   nowMs: number,
 ): CoachingSpeechDecision {
-  // Pause und Resume sind seltene Zustandswechsel und sollen immer sofort
-  // gesprochen werden. Sie unterliegen keinem HR-Wiederholungs-Cooldown.
   if (event.type !== "coaching.decision") {
     return {
       speak: true,

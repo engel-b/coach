@@ -16,3 +16,6 @@ dist/
 # Local TTS voice models (downloaded, not versioned)
 backend/models/piper/*.onnx
 backend/models/piper/*.onnx.json
+
+# Local LLM models (downloaded, not versioned)
+backend/models/llm/*.gguf

@@ -48,6 +48,34 @@ class LiveCoachingDecision:
 
 
 @dataclass(frozen=True)
+class LiveCoachingPhaseStarted:
+    """Fachliches Ereignis für den Beginn einer neuen Workout-Phase."""
+
+    phase_index: int
+    phase_type: str
+    duration_minutes: int
+    target_min_bpm: int
+    target_max_bpm: int
+    is_final_phase: bool = False
+
+
+@dataclass(frozen=True)
+class LiveCoachingPhaseEnding:
+    """Fachliches Ereignis kurz vor dem Ende der aktuellen Workout-Phase."""
+
+    phase_index: int
+    phase_type: str
+    remaining_seconds: int
+
+
+@dataclass(frozen=True)
+class LiveCoachingWorkoutHalfway:
+    """Fachliches Ereignis beim Erreichen der Workout-Halbzeit."""
+
+    total_duration_minutes: int
+
+
+@dataclass(frozen=True)
 class LiveCoachingRules:
     """Konfigurierbare Regeln für die erste Live-Coaching-Version."""
 

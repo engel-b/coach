@@ -236,3 +236,44 @@ def test_finish_window_and_overtime_ignore_heart_rate() -> None:
         )
 
         assert decision is None
+
+
+def test_structure_events_are_emitted_when_thresholds_are_crossed() -> None:
+    from features.coaching.domain.live_coaching import (
+        LiveCoachingPhaseEnding,
+        LiveCoachingWorkoutHalfway,
+    )
+
+    session = create_session()
+
+    warm_up_ending = session.update_elapsed_seconds(242)
+    assert len(warm_up_ending) == 1
+    assert isinstance(warm_up_ending[0], LiveCoachingPhaseEnding)
+    assert warm_up_ending[0].phase_index == 0
+
+    session.update_elapsed_seconds(899)
+    halfway = session.update_elapsed_seconds(901)
+    assert len(halfway) == 1
+    assert isinstance(halfway[0], LiveCoachingWorkoutHalfway)
+
+
+def test_final_phase_started_is_marked_as_final() -> None:
+    from features.coaching.domain.live_coaching import LiveCoachingPhaseStarted
+
+    session = create_session()
+    session.update_elapsed_seconds(1499)
+    events = session.update_elapsed_seconds(1500)
+
+    phase_started = next(event for event in events if isinstance(event, LiveCoachingPhaseStarted))
+    assert phase_started.phase_type == "cool_down"
+    assert phase_started.is_final_phase is True
+
+
+def test_structure_event_is_not_repeated_after_threshold_was_crossed() -> None:
+    session = create_session()
+
+    first = session.update_elapsed_seconds(242)
+    second = session.update_elapsed_seconds(250)
+
+    assert first
+    assert second == ()

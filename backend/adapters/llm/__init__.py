@@ -1,0 +1,1 @@
+"""Adapter für lokale Sprachmodelle."""

@@ -57,6 +57,24 @@ describe("coachingSpeechMessage", () => {
     expect(coachingSpeechMessage(pause)).toBe("Pause.");
     expect(coachingSpeechMessage(resume)).toBe("Weiter geht's.");
   });
+
+  it("formats phase-started messages", () => {
+    const phaseStarted: LiveCoachingEvent = {
+      type: "coaching.phase_started",
+      timestamp: "2026-09-13T08:35:00Z",
+      workoutId: "workout-1",
+      phaseIndex: 1,
+      phaseType: "main",
+      durationMinutes: 20,
+      targetMinBpm: 125,
+      targetMaxBpm: 145,
+      isFinalPhase: false,
+    };
+
+    expect(coachingSpeechMessage(phaseStarted)).toBe(
+      "Jetzt beginnt die Hauptphase. Fahr gleichmäßig und bleib im Zielbereich.",
+    );
+  });
 });
 
 describe("evaluateCoachingSpeech", () => {
@@ -90,6 +108,29 @@ describe("evaluateCoachingSpeech", () => {
     expect(result.nextState).toBe(state);
   });
 
+  it("always speaks phase changes immediately", () => {
+    const state: CoachingSpeechState = {
+      lastDecisionAction: "reduce_intensity",
+      lastSpokenAtMs: 1_000,
+    };
+    const phaseStarted: LiveCoachingEvent = {
+      type: "coaching.phase_started",
+      timestamp: "2026-09-13T08:35:00Z",
+      workoutId: "workout-1",
+      phaseIndex: 1,
+      phaseType: "main",
+      durationMinutes: 20,
+      targetMinBpm: 125,
+      targetMaxBpm: 145,
+      isFinalPhase: false,
+    };
+
+    const result = evaluateCoachingSpeech(phaseStarted, state, 1_100);
+
+    expect(result.speak).toBe(true);
+    expect(result.nextState.lastDecisionAction).toBeNull();
+  });
+
   it("always speaks pause and resume runtime events", () => {
     const state: CoachingSpeechState = {
       lastDecisionAction: "reduce_intensity",
@@ -106,4 +147,26 @@ describe("evaluateCoachingSpeech", () => {
     expect(result.speak).toBe(true);
     expect(result.nextState.lastDecisionAction).toBeNull();
   });
+});
+
+it("speaks workout structure milestones immediately", () => {
+  expect(
+    coachingSpeechMessage({
+      type: "coaching.workout_halfway",
+      timestamp: "2026-09-13T08:45:00Z",
+      workoutId: "workout-1",
+      totalDurationMinutes: 30,
+    }),
+  ).toBe("Halbzeit. Die Hälfte ist geschafft. Halte deinen Rhythmus.");
+
+  expect(
+    coachingSpeechMessage({
+      type: "coaching.phase_ending",
+      timestamp: "2026-09-13T08:34:00Z",
+      workoutId: "workout-1",
+      phaseIndex: 0,
+      phaseType: "warm_up",
+      remainingSeconds: 60,
+    }),
+  ).toBe("Noch eine Minute in dieser Phase.");
 });

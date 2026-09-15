@@ -5,9 +5,17 @@ from typing import Literal, Protocol
 
 from features.coaching.api.contracts.live_coaching import (
     LiveCoachingEvent,
+    LiveCoachingPhaseEndingEvent,
+    LiveCoachingPhaseStartedEvent,
     LiveCoachingRuntimeEvent,
+    LiveCoachingWorkoutHalfwayEvent,
 )
-from features.coaching.domain.live_coaching import LiveCoachingDecision
+from features.coaching.domain.live_coaching import (
+    LiveCoachingDecision,
+    LiveCoachingPhaseEnding,
+    LiveCoachingPhaseStarted,
+    LiveCoachingWorkoutHalfway,
+)
 from features.telemetry.domain.health.heart_rate import HeartRateSample
 
 logger = logging.getLogger(__name__)
@@ -37,6 +45,43 @@ class LiveCoachingEventPublisher:
             decision=decision,
         )
         self._schedule(event.model_dump_json(by_alias=True))
+
+    def publish_structure_event(
+        self,
+        workout_id: str,
+        structure_event: LiveCoachingPhaseStarted
+        | LiveCoachingPhaseEnding
+        | LiveCoachingWorkoutHalfway,
+    ) -> None:
+        timestamp = datetime.now(UTC)
+
+        if isinstance(structure_event, LiveCoachingPhaseStarted):
+            message = LiveCoachingPhaseStartedEvent.from_phase_started(
+                workout_id=workout_id,
+                timestamp=timestamp,
+                phase_started=structure_event,
+            ).model_dump_json(by_alias=True)
+        elif isinstance(structure_event, LiveCoachingPhaseEnding):
+            message = LiveCoachingPhaseEndingEvent.from_phase_ending(
+                workout_id=workout_id,
+                timestamp=timestamp,
+                phase_ending=structure_event,
+            ).model_dump_json(by_alias=True)
+        else:
+            message = LiveCoachingWorkoutHalfwayEvent.from_halfway(
+                workout_id=workout_id,
+                timestamp=timestamp,
+                halfway=structure_event,
+            ).model_dump_json(by_alias=True)
+
+        self._schedule(message)
+
+    def publish_phase_started(
+        self,
+        workout_id: str,
+        phase_started: LiveCoachingPhaseStarted,
+    ) -> None:
+        self.publish_structure_event(workout_id, phase_started)
 
     def publish_runtime_event(
         self,

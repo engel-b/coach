@@ -28,5 +28,40 @@ export interface CoachingPauseEndedEvent {
   workoutId: string;
 }
 
+export type WorkoutPhaseType = "warm_up" | "main" | "cool_down";
+
+export interface CoachingPhaseStartedEvent {
+  type: "coaching.phase_started";
+  timestamp: string;
+  workoutId: string;
+  phaseIndex: number;
+  phaseType: WorkoutPhaseType;
+  durationMinutes: number;
+  targetMinBpm: number;
+  targetMaxBpm: number;
+  isFinalPhase: boolean;
+}
+
+export interface CoachingPhaseEndingEvent {
+  type: "coaching.phase_ending";
+  timestamp: string;
+  workoutId: string;
+  phaseIndex: number;
+  phaseType: WorkoutPhaseType;
+  remainingSeconds: number;
+}
+
+export interface CoachingWorkoutHalfwayEvent {
+  type: "coaching.workout_halfway";
+  timestamp: string;
+  workoutId: string;
+  totalDurationMinutes: number;
+}
+
 export type LiveCoachingEvent =
-  HeartRateCoachingEvent | CoachingPauseStartedEvent | CoachingPauseEndedEvent;
+  | HeartRateCoachingEvent
+  | CoachingPauseStartedEvent
+  | CoachingPauseEndedEvent
+  | CoachingPhaseStartedEvent
+  | CoachingPhaseEndingEvent
+  | CoachingWorkoutHalfwayEvent;

@@ -3,11 +3,18 @@ import type {
   HeartRateCoachingEvent,
   HeartRateZoneStatus,
   LiveCoachingEvent,
+  WorkoutPhaseType,
 } from "./types";
 
 const COACHING_ACTIONS: readonly CoachingAction[] = [
   "increase_intensity",
   "reduce_intensity",
+];
+
+const WORKOUT_PHASE_TYPES: readonly WorkoutPhaseType[] = [
+  "warm_up",
+  "main",
+  "cool_down",
 ];
 
 const HEART_RATE_ZONE_STATUSES: readonly HeartRateZoneStatus[] = [
@@ -33,6 +40,67 @@ export function parseLiveCoachingEvent(
       type: value.type,
       timestamp: value.timestamp,
       workoutId: value.workoutId,
+    };
+  }
+
+  if (
+    value.type === "coaching.phase_started" &&
+    typeof value.timestamp === "string" &&
+    typeof value.workoutId === "string" &&
+    Number.isInteger(value.phaseIndex) &&
+    (value.phaseIndex as number) >= 0 &&
+    isWorkoutPhaseType(value.phaseType) &&
+    isFiniteNumber(value.durationMinutes) &&
+    value.durationMinutes > 0 &&
+    isFiniteNumber(value.targetMinBpm) &&
+    isFiniteNumber(value.targetMaxBpm) &&
+    typeof value.isFinalPhase === "boolean"
+  ) {
+    return {
+      type: "coaching.phase_started",
+      timestamp: value.timestamp,
+      workoutId: value.workoutId,
+      phaseIndex: value.phaseIndex as number,
+      phaseType: value.phaseType,
+      durationMinutes: value.durationMinutes,
+      targetMinBpm: value.targetMinBpm,
+      targetMaxBpm: value.targetMaxBpm,
+      isFinalPhase: value.isFinalPhase,
+    };
+  }
+
+  if (
+    value.type === "coaching.phase_ending" &&
+    typeof value.timestamp === "string" &&
+    typeof value.workoutId === "string" &&
+    Number.isInteger(value.phaseIndex) &&
+    (value.phaseIndex as number) >= 0 &&
+    isWorkoutPhaseType(value.phaseType) &&
+    isFiniteNumber(value.remainingSeconds) &&
+    value.remainingSeconds > 0
+  ) {
+    return {
+      type: "coaching.phase_ending",
+      timestamp: value.timestamp,
+      workoutId: value.workoutId,
+      phaseIndex: value.phaseIndex as number,
+      phaseType: value.phaseType,
+      remainingSeconds: value.remainingSeconds,
+    };
+  }
+
+  if (
+    value.type === "coaching.workout_halfway" &&
+    typeof value.timestamp === "string" &&
+    typeof value.workoutId === "string" &&
+    isFiniteNumber(value.totalDurationMinutes) &&
+    value.totalDurationMinutes > 0
+  ) {
+    return {
+      type: "coaching.workout_halfway",
+      timestamp: value.timestamp,
+      workoutId: value.workoutId,
+      totalDurationMinutes: value.totalDurationMinutes,
     };
   }
 
@@ -75,6 +143,13 @@ function parseHeartRateDecision(
     outsideTargetSeconds: value.outsideTargetSeconds,
     reason: value.reason,
   };
+}
+
+function isWorkoutPhaseType(value: unknown): value is WorkoutPhaseType {
+  return (
+    typeof value === "string" &&
+    WORKOUT_PHASE_TYPES.includes(value as WorkoutPhaseType)
+  );
 }
 
 function isCoachingAction(value: unknown): value is CoachingAction {
