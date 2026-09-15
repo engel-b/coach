@@ -3,11 +3,15 @@ import { useEffect, useState } from "react";
 import { getWorkoutVideos } from "../api/workouts";
 import type { Person } from "../persons/types";
 import type { WorkoutVideo } from "../workout/types";
+import {
+  recommendationReasonLabels,
+  workoutTitle,
+} from "./recommendationPresentation";
+import { WeightGoalProgress } from "./WeightGoalProgress";
 import type {
   TrainingRecommendation,
   WorkoutPhase,
   WorkoutPhaseType,
-  WorkoutType,
 } from "./types";
 
 interface TrainingRecommendationViewProps {
@@ -18,19 +22,6 @@ interface TrainingRecommendationViewProps {
   startLoading: boolean;
   startError: string | null;
   onClearStartError: () => void;
-}
-
-function workoutTitle(type: WorkoutType): string {
-  switch (type) {
-    case "recovery":
-      return "Regeneration";
-
-    case "base_endurance":
-      return "Grundlagenausdauer";
-
-    case "moderate":
-      return "Moderates Training";
-  }
 }
 
 function phaseTitle(type: WorkoutPhaseType): string {
@@ -76,6 +67,7 @@ export function TrainingRecommendationView({
   const [videosLoading, setVideosLoading] = useState(true);
   const [videosError, setVideosError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const reasonLabels = recommendationReasonLabels(recommendation);
 
   useEffect(() => {
     let cancelled = false;
@@ -189,6 +181,16 @@ export function TrainingRecommendationView({
           <div className="reason-title">Warum dieses Training?</div>
 
           <p>{recommendation.reason}</p>
+
+          <WeightGoalProgress recommendation={recommendation} />
+
+          {reasonLabels.length > 0 && (
+            <div className="recommendation-reason-tags">
+              {reasonLabels.map((label) => (
+                <span key={label}>{label}</span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="workout-video-selection">

@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Path
 from apps.api import wiring
 from features.training.api.contracts.training import (
     TrainingRecommendationResponse,
+    WeightGoalProgressResponse,
     WorkoutPhaseResponse,
 )
 from features.training.api.recommendation import create_training_recommendation
@@ -66,6 +67,20 @@ async def training_recommendation(
         workout_type=recommendation.workout_type.value,
         total_duration_minutes=(recommendation.total_duration_minutes),
         reason=recommendation.reason,
+        weight_goal_progress=(
+            None
+            if recommendation.weight_goal_progress is None
+            else WeightGoalProgressResponse(
+                status=recommendation.weight_goal_progress.status.value,
+                start_weight_kg=recommendation.weight_goal_progress.start_weight_kg,
+                current_weight_kg=recommendation.weight_goal_progress.current_weight_kg,
+                target_weight_kg=recommendation.weight_goal_progress.target_weight_kg,
+                remaining_kg=recommendation.weight_goal_progress.remaining_kg,
+                lost_since_start_kg=recommendation.weight_goal_progress.lost_since_start_kg,
+                progress_percent=recommendation.weight_goal_progress.progress_percent,
+            )
+        ),
+        reason_codes=[reason.value for reason in recommendation.reason_codes],
         phases=[
             WorkoutPhaseResponse(
                 phase_type=phase.phase_type.value,

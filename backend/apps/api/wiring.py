@@ -27,7 +27,14 @@ from features.speech.adapters.piper_tts import PiperTtsAdapter
 from features.speech.service.speech_service import SpeechService
 from features.telemetry.service.broadcaster import TelemetryBroadcaster
 from features.telemetry.service.service import TelemetryService
+from features.training.domain.readiness import ReadinessRules
 from features.training.domain.recommendation_engine import TrainingRecommendationEngine
+from features.training.domain.weight_trend import WeightTrendRules
+from features.training.service.pre_workout_coaching_planner import PreWorkoutCoachingPlanner
+from features.training.service.pre_workout_reason_builder import PreWorkoutReasonBuilder
+from features.training.service.readiness_service import ReadinessService
+from features.training.service.weight_goal_progress_service import WeightGoalProgressService
+from features.training.service.weight_trend_service import WeightTrendService
 from features.workout.persistence.sqlalchemy_workout_repository import (
     SqlAlchemyWorkoutRepository,
 )
@@ -85,6 +92,28 @@ check_in_service = CheckInService(
 )
 
 training_recommendation_engine = TrainingRecommendationEngine()
+weight_trend_rules = WeightTrendRules(
+    window_days=30,
+    min_sample_count=3,
+    min_span_days=7.0,
+    stable_threshold_kg_per_week=0.10,
+)
+weight_trend_service = WeightTrendService(rules=weight_trend_rules)
+weight_goal_progress_service = WeightGoalProgressService()
+readiness_rules = ReadinessRules(
+    short_sleep_hours=6.0,
+    high_daily_steps=12_000,
+    recent_training_window_days=3,
+    high_recent_training_minutes=90.0,
+    high_recent_workout_count=3,
+    caution_duration_cap_minutes=30,
+)
+readiness_service = ReadinessService(rules=readiness_rules)
+pre_workout_message_generator = PreWorkoutReasonBuilder()
+pre_workout_coaching_planner = PreWorkoutCoachingPlanner(
+    engine=training_recommendation_engine,
+    message_generator=pre_workout_message_generator,
+)
 
 workout_repository = SqlAlchemyWorkoutRepository()
 workout_video_repository = SqlAlchemyWorkoutVideoRepository()
