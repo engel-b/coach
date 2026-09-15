@@ -8,7 +8,9 @@ from features.coaching.domain.live_coaching import (
     CoachingAction,
     HeartRateZoneStatus,
     LiveCoachingDecision,
+    LiveCoachingPhaseEnding,
     LiveCoachingPhaseStarted,
+    LiveCoachingWorkoutHalfway,
 )
 from features.telemetry.domain.health.heart_rate import HeartRateSample
 
@@ -84,6 +86,7 @@ class LiveCoachingPhaseStartedEvent(BaseModel):
     duration_minutes: int = Field(gt=0)
     target_min_bpm: int
     target_max_bpm: int
+    is_final_phase: bool
 
     @classmethod
     def from_phase_started(
@@ -101,4 +104,65 @@ class LiveCoachingPhaseStartedEvent(BaseModel):
             duration_minutes=phase_started.duration_minutes,
             target_min_bpm=phase_started.target_min_bpm,
             target_max_bpm=phase_started.target_max_bpm,
+            is_final_phase=phase_started.is_final_phase,
+        )
+
+
+class LiveCoachingPhaseEndingEvent(BaseModel):
+    """WebSocket-Event eine Minute vor Ende einer Workout-Phase."""
+
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
+
+    type: Literal["coaching.phase_ending"] = "coaching.phase_ending"
+    timestamp: datetime
+    workout_id: str
+    phase_index: int = Field(ge=0)
+    phase_type: str
+    remaining_seconds: int = Field(gt=0)
+
+    @classmethod
+    def from_phase_ending(
+        cls,
+        *,
+        workout_id: str,
+        timestamp: datetime,
+        phase_ending: LiveCoachingPhaseEnding,
+    ) -> "LiveCoachingPhaseEndingEvent":
+        return cls(
+            timestamp=timestamp,
+            workout_id=workout_id,
+            phase_index=phase_ending.phase_index,
+            phase_type=phase_ending.phase_type,
+            remaining_seconds=phase_ending.remaining_seconds,
+        )
+
+
+class LiveCoachingWorkoutHalfwayEvent(BaseModel):
+    """WebSocket-Event beim Erreichen der Workout-Halbzeit."""
+
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
+
+    type: Literal["coaching.workout_halfway"] = "coaching.workout_halfway"
+    timestamp: datetime
+    workout_id: str
+    total_duration_minutes: int = Field(gt=0)
+
+    @classmethod
+    def from_halfway(
+        cls,
+        *,
+        workout_id: str,
+        timestamp: datetime,
+        halfway: LiveCoachingWorkoutHalfway,
+    ) -> "LiveCoachingWorkoutHalfwayEvent":
+        return cls(
+            timestamp=timestamp,
+            workout_id=workout_id,
+            total_duration_minutes=halfway.total_duration_minutes,
         )

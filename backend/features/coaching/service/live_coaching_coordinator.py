@@ -1,13 +1,13 @@
-from features.coaching.domain.live_coaching import (
-    LiveCoachingDecision,
-    LiveCoachingPhaseStarted,
-)
+from features.coaching.domain.live_coaching import LiveCoachingDecision
 from features.coaching.service.heart_rate_deviation_tracker import (
     HeartRateDeviationTracker,
 )
 from features.coaching.service.live_coaching_engine import LiveCoachingEngine
 from features.coaching.service.live_coaching_service import LiveCoachingService
-from features.coaching.service.live_coaching_session import LiveCoachingSession
+from features.coaching.service.live_coaching_session import (
+    LiveCoachingSession,
+    LiveCoachingStructureEvent,
+)
 from features.telemetry.domain.health.heart_rate import HeartRateSample
 from features.workout.domain.runtime import WorkoutRuntimeState
 from features.workout.domain.session import WorkoutSession
@@ -67,7 +67,7 @@ class LiveCoachingCoordinator:
         *,
         workout_id: str,
         elapsed_seconds: int,
-    ) -> LiveCoachingPhaseStarted | None:
+    ) -> tuple[LiveCoachingStructureEvent, ...]:
         session = self._require_session(workout_id)
         return session.update_elapsed_seconds(elapsed_seconds)
 

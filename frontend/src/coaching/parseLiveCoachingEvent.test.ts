@@ -92,7 +92,28 @@ it("accepts phase-started coaching events", () => {
     durationMinutes: 20,
     targetMinBpm: 125,
     targetMaxBpm: 145,
+    isFinalPhase: false,
   };
 
   expect(parseLiveCoachingEvent(event)).toEqual(event);
+});
+
+it("parses workout structure milestone events", () => {
+  const halfway = {
+    type: "coaching.workout_halfway",
+    timestamp: "2026-09-13T08:45:00Z",
+    workoutId: "workout-1",
+    totalDurationMinutes: 30,
+  };
+  expect(parseLiveCoachingEvent(halfway)).toEqual(halfway);
+
+  const ending = {
+    type: "coaching.phase_ending",
+    timestamp: "2026-09-13T08:34:00Z",
+    workoutId: "workout-1",
+    phaseIndex: 0,
+    phaseType: "warm_up",
+    remainingSeconds: 60,
+  };
+  expect(parseLiveCoachingEvent(ending)).toEqual(ending);
 });

@@ -89,4 +89,5 @@ def test_phase_started_event_uses_camel_case_json_contract() -> None:
         "durationMinutes": 20,
         "targetMinBpm": 125,
         "targetMaxBpm": 145,
+        "isFinalPhase": False,
     }

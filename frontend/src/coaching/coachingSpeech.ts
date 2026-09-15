@@ -21,6 +21,9 @@ export function coachingSpeechMessage(event: LiveCoachingEvent): string {
       return "Weiter geht's.";
 
     case "coaching.phase_started":
+      if (event.isFinalPhase) {
+        return "Letzte Phase. Nimm dir noch einmal bewusst Zeit für einen sauberen Abschluss.";
+      }
       switch (event.phaseType) {
         case "warm_up":
           return "Wir starten mit dem Aufwärmen. Fahr locker und finde deinen Rhythmus.";
@@ -31,6 +34,12 @@ export function coachingSpeechMessage(event: LiveCoachingEvent): string {
         default:
           return "";
       }
+
+    case "coaching.phase_ending":
+      return "Noch eine Minute in dieser Phase.";
+
+    case "coaching.workout_halfway":
+      return "Halbzeit. Die Hälfte ist geschafft. Halte deinen Rhythmus.";
 
     case "coaching.decision":
       switch (event.action) {
@@ -48,8 +57,6 @@ export function evaluateCoachingSpeech(
   state: CoachingSpeechState,
   nowMs: number,
 ): CoachingSpeechDecision {
-  // Struktur- und Runtime-Ereignisse sind selten und sollen immer sofort
-  // gesprochen werden. Sie unterliegen keinem HR-Wiederholungs-Cooldown.
   if (event.type !== "coaching.decision") {
     return {
       speak: true,

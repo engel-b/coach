@@ -53,7 +53,8 @@ export function parseLiveCoachingEvent(
     isFiniteNumber(value.durationMinutes) &&
     value.durationMinutes > 0 &&
     isFiniteNumber(value.targetMinBpm) &&
-    isFiniteNumber(value.targetMaxBpm)
+    isFiniteNumber(value.targetMaxBpm) &&
+    typeof value.isFinalPhase === "boolean"
   ) {
     return {
       type: "coaching.phase_started",
@@ -64,6 +65,42 @@ export function parseLiveCoachingEvent(
       durationMinutes: value.durationMinutes,
       targetMinBpm: value.targetMinBpm,
       targetMaxBpm: value.targetMaxBpm,
+      isFinalPhase: value.isFinalPhase,
+    };
+  }
+
+  if (
+    value.type === "coaching.phase_ending" &&
+    typeof value.timestamp === "string" &&
+    typeof value.workoutId === "string" &&
+    Number.isInteger(value.phaseIndex) &&
+    (value.phaseIndex as number) >= 0 &&
+    isWorkoutPhaseType(value.phaseType) &&
+    isFiniteNumber(value.remainingSeconds) &&
+    value.remainingSeconds > 0
+  ) {
+    return {
+      type: "coaching.phase_ending",
+      timestamp: value.timestamp,
+      workoutId: value.workoutId,
+      phaseIndex: value.phaseIndex as number,
+      phaseType: value.phaseType,
+      remainingSeconds: value.remainingSeconds,
+    };
+  }
+
+  if (
+    value.type === "coaching.workout_halfway" &&
+    typeof value.timestamp === "string" &&
+    typeof value.workoutId === "string" &&
+    isFiniteNumber(value.totalDurationMinutes) &&
+    value.totalDurationMinutes > 0
+  ) {
+    return {
+      type: "coaching.workout_halfway",
+      timestamp: value.timestamp,
+      workoutId: value.workoutId,
+      totalDurationMinutes: value.totalDurationMinutes,
     };
   }
 

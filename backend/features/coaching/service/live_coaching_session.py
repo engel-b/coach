@@ -1,12 +1,18 @@
 from features.coaching.domain.live_coaching import (
     LiveCoachingDecision,
+    LiveCoachingPhaseEnding,
     LiveCoachingPhaseStarted,
+    LiveCoachingWorkoutHalfway,
 )
 from features.coaching.service.live_coaching_service import LiveCoachingService
 from features.telemetry.domain.health.heart_rate import HeartRateSample
 from features.workout.domain.phase_progress import get_current_phase
 from features.workout.domain.runtime import WorkoutRuntimeState
 from features.workout.domain.session import WorkoutSession, WorkoutStatus
+
+LiveCoachingStructureEvent = (
+    LiveCoachingPhaseStarted | LiveCoachingPhaseEnding | LiveCoachingWorkoutHalfway
+)
 
 
 class LiveCoachingSession:
@@ -46,37 +52,31 @@ class LiveCoachingSession:
     def update_elapsed_seconds(
         self,
         elapsed_seconds: int,
-    ) -> LiveCoachingPhaseStarted | None:
+    ) -> tuple[LiveCoachingStructureEvent, ...]:
         if elapsed_seconds < 0:
             raise ValueError("elapsed_seconds must not be negative")
 
         if elapsed_seconds < self._elapsed_seconds:
             raise ValueError("elapsed_seconds must not move backwards")
 
+        previous_elapsed_seconds = self._elapsed_seconds
         self._elapsed_seconds = elapsed_seconds
+        events = self._structure_events_crossed(
+            previous_elapsed_seconds=previous_elapsed_seconds,
+            elapsed_seconds=elapsed_seconds,
+        )
+
         progress = get_current_phase(
             self._workout,
             elapsed_seconds=elapsed_seconds,
         )
         next_phase_index = progress.phase_index if progress is not None else None
 
-        if next_phase_index == self._phase_index:
-            return None
+        if next_phase_index != self._phase_index:
+            self._coaching_service.reset()
+            self._phase_index = next_phase_index
 
-        self._coaching_service.reset()
-        self._phase_index = next_phase_index
-
-        if progress is None:
-            return None
-
-        phase = progress.phase
-        return LiveCoachingPhaseStarted(
-            phase_index=progress.phase_index,
-            phase_type=phase.phase_type.value,
-            duration_minutes=phase.duration_minutes,
-            target_min_bpm=phase.target_heart_rate_min,
-            target_max_bpm=phase.target_heart_rate_max,
-        )
+        return events
 
     def update_runtime_state(
         self,
@@ -114,3 +114,69 @@ class LiveCoachingSession:
             target_min_bpm=phase.target_heart_rate_min,
             target_max_bpm=phase.target_heart_rate_max,
         )
+
+    def _structure_events_crossed(
+        self,
+        *,
+        previous_elapsed_seconds: int,
+        elapsed_seconds: int,
+    ) -> tuple[LiveCoachingStructureEvent, ...]:
+        if elapsed_seconds == previous_elapsed_seconds:
+            return ()
+
+        scheduled: list[tuple[int, LiveCoachingStructureEvent]] = []
+        phase_start_seconds = 0
+        phase_count = len(self._workout.phases)
+
+        for phase_index, phase in enumerate(self._workout.phases):
+            phase_duration_seconds = phase.duration_minutes * 60
+            phase_end_seconds = phase_start_seconds + phase_duration_seconds
+
+            if phase_index > 0:
+                scheduled.append(
+                    (
+                        phase_start_seconds,
+                        LiveCoachingPhaseStarted(
+                            phase_index=phase_index,
+                            phase_type=phase.phase_type.value,
+                            duration_minutes=phase.duration_minutes,
+                            target_min_bpm=phase.target_heart_rate_min,
+                            target_max_bpm=phase.target_heart_rate_max,
+                            is_final_phase=phase_index == phase_count - 1,
+                        ),
+                    )
+                )
+
+            one_minute_before_end = phase_end_seconds - 60
+            if phase_duration_seconds > 60:
+                scheduled.append(
+                    (
+                        one_minute_before_end,
+                        LiveCoachingPhaseEnding(
+                            phase_index=phase_index,
+                            phase_type=phase.phase_type.value,
+                            remaining_seconds=60,
+                        ),
+                    )
+                )
+
+            phase_start_seconds = phase_end_seconds
+
+        total_duration_seconds = sum(phase.duration_minutes * 60 for phase in self._workout.phases)
+        if total_duration_seconds >= 120:
+            scheduled.append(
+                (
+                    total_duration_seconds // 2,
+                    LiveCoachingWorkoutHalfway(
+                        total_duration_minutes=self._workout.total_duration_minutes,
+                    ),
+                )
+            )
+
+        crossed = [
+            (threshold, event)
+            for threshold, event in scheduled
+            if previous_elapsed_seconds < threshold <= elapsed_seconds
+        ]
+        crossed.sort(key=lambda item: item[0])
+        return tuple(event for _, event in crossed)

@@ -39,10 +39,29 @@ export interface CoachingPhaseStartedEvent {
   durationMinutes: number;
   targetMinBpm: number;
   targetMaxBpm: number;
+  isFinalPhase: boolean;
+}
+
+export interface CoachingPhaseEndingEvent {
+  type: "coaching.phase_ending";
+  timestamp: string;
+  workoutId: string;
+  phaseIndex: number;
+  phaseType: WorkoutPhaseType;
+  remainingSeconds: number;
+}
+
+export interface CoachingWorkoutHalfwayEvent {
+  type: "coaching.workout_halfway";
+  timestamp: string;
+  workoutId: string;
+  totalDurationMinutes: number;
 }
 
 export type LiveCoachingEvent =
   | HeartRateCoachingEvent
   | CoachingPauseStartedEvent
   | CoachingPauseEndedEvent
-  | CoachingPhaseStartedEvent;
+  | CoachingPhaseStartedEvent
+  | CoachingPhaseEndingEvent
+  | CoachingWorkoutHalfwayEvent;
