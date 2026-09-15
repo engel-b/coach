@@ -81,3 +81,18 @@ it("accepts pause and resume coaching events", () => {
     }),
   ).not.toBeNull();
 });
+
+it("accepts phase-started coaching events", () => {
+  const event = {
+    type: "coaching.phase_started",
+    timestamp: "2026-09-13T08:35:00Z",
+    workoutId: "workout-1",
+    phaseIndex: 1,
+    phaseType: "main",
+    durationMinutes: 20,
+    targetMinBpm: 125,
+    targetMaxBpm: 145,
+  };
+
+  expect(parseLiveCoachingEvent(event)).toEqual(event);
+});

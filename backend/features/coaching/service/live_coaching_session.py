@@ -1,4 +1,7 @@
-from features.coaching.domain.live_coaching import LiveCoachingDecision
+from features.coaching.domain.live_coaching import (
+    LiveCoachingDecision,
+    LiveCoachingPhaseStarted,
+)
 from features.coaching.service.live_coaching_service import LiveCoachingService
 from features.telemetry.domain.health.heart_rate import HeartRateSample
 from features.workout.domain.phase_progress import get_current_phase
@@ -29,6 +32,8 @@ class LiveCoachingSession:
         self._coaching_service = coaching_service
         self._elapsed_seconds = workout.elapsed_seconds
         self._runtime_state = WorkoutRuntimeState.RUNNING
+        progress = get_current_phase(workout, elapsed_seconds=workout.elapsed_seconds)
+        self._phase_index = progress.phase_index if progress is not None else None
 
     @property
     def workout_id(self) -> str:
@@ -41,7 +46,7 @@ class LiveCoachingSession:
     def update_elapsed_seconds(
         self,
         elapsed_seconds: int,
-    ) -> None:
+    ) -> LiveCoachingPhaseStarted | None:
         if elapsed_seconds < 0:
             raise ValueError("elapsed_seconds must not be negative")
 
@@ -49,6 +54,29 @@ class LiveCoachingSession:
             raise ValueError("elapsed_seconds must not move backwards")
 
         self._elapsed_seconds = elapsed_seconds
+        progress = get_current_phase(
+            self._workout,
+            elapsed_seconds=elapsed_seconds,
+        )
+        next_phase_index = progress.phase_index if progress is not None else None
+
+        if next_phase_index == self._phase_index:
+            return None
+
+        self._coaching_service.reset()
+        self._phase_index = next_phase_index
+
+        if progress is None:
+            return None
+
+        phase = progress.phase
+        return LiveCoachingPhaseStarted(
+            phase_index=progress.phase_index,
+            phase_type=phase.phase_type.value,
+            duration_minutes=phase.duration_minutes,
+            target_min_bpm=phase.target_heart_rate_min,
+            target_max_bpm=phase.target_heart_rate_max,
+        )
 
     def update_runtime_state(
         self,

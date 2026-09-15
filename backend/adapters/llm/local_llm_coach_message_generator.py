@@ -36,7 +36,10 @@ class LocalLlmCoachMessageGenerator:
         payload = {
             "model": self._model,
             "temperature": 0.3,
-            "max_tokens": 140,
+            "max_tokens": 100,
+            "chat_template_kwargs": {
+                "enable_thinking": False,
+            },
             "messages": [
                 {
                     "role": "system",
@@ -67,12 +70,12 @@ class LocalLlmCoachMessageGenerator:
     @staticmethod
     def _system_prompt() -> str:
         return (
-            "Du bist die Formulierungsschicht eines lokalen Fitness-Coachs. "
-            "Alle Trainingsentscheidungen wurden bereits deterministisch getroffen. "
-            "Formuliere ausschließlich die gelieferten Fakten auf Deutsch in ein bis zwei "
-            "kurzen, motivierenden Sätzen. Ändere weder Workout-Typ noch Dauer. "
-            "Erfinde keine Werte, Diagnosen oder medizinischen Aussagen. "
-            "Wenn mehrere Gründe vorliegen, priorisiere Readiness vor Gewichtskontext."
+            "Du formulierst einen bereits fachlich geprüften Fitness-Coach-Text. "
+            "Du darfst keine neuen Fakten, Ursachen, Diagnosen oder Zusammenhänge hinzufügen. "
+            "Nenne ausschließlich Informationen, die ausdrücklich in der Eingabe stehen. "
+            "Erfinde insbesondere keine Ursachen für Gewichtsveränderungen. "
+            "Ändere keine Zahlen, keinen Workout-Typ und keine Dauer. "
+            "Antworte auf Deutsch in höchstens zwei kurzen vollständigen Sätzen."
         )
 
     @staticmethod
@@ -125,4 +128,5 @@ class LocalLlmCoachMessageGenerator:
         if not isinstance(content, str):
             raise TypeError("LLM response message contains no text")
 
+        print(f"LLM coach response: {content!r}")
         return content.strip()

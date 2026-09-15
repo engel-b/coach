@@ -8,6 +8,9 @@ export function coachingMessage(event: LiveCoachingEvent): string {
     case "coaching.pause_ended":
       return "Weiter geht's";
 
+    case "coaching.phase_started":
+      return phaseStartedMessage(event.phaseType, event.durationMinutes);
+
     case "coaching.decision": {
       const seconds = Math.round(event.outsideTargetSeconds);
 
@@ -19,5 +22,19 @@ export function coachingMessage(event: LiveCoachingEvent): string {
           return `Dein Puls liegt seit ${seconds} s über dem Zielbereich. Nimm etwas Tempo heraus.`;
       }
     }
+  }
+}
+
+function phaseStartedMessage(
+  phaseType: "warm_up" | "main" | "cool_down",
+  durationMinutes: number,
+): string {
+  switch (phaseType) {
+    case "warm_up":
+      return `Aufwärmen: ${durationMinutes} Minuten locker einrollen.`;
+    case "main":
+      return `Hauptphase: ${durationMinutes} Minuten gleichmäßig im Zielbereich fahren.`;
+    case "cool_down":
+      return `Cooldown: ${durationMinutes} Minuten Tempo herausnehmen und locker ausrollen.`;
   }
 }

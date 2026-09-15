@@ -48,6 +48,17 @@ class LiveCoachingDecision:
 
 
 @dataclass(frozen=True)
+class LiveCoachingPhaseStarted:
+    """Fachliches Ereignis für den Beginn einer neuen Workout-Phase."""
+
+    phase_index: int
+    phase_type: str
+    duration_minutes: int
+    target_min_bpm: int
+    target_max_bpm: int
+
+
+@dataclass(frozen=True)
 class LiveCoachingRules:
     """Konfigurierbare Regeln für die erste Live-Coaching-Version."""
 

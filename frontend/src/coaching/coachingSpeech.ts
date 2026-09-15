@@ -20,6 +20,18 @@ export function coachingSpeechMessage(event: LiveCoachingEvent): string {
     case "coaching.pause_ended":
       return "Weiter geht's.";
 
+    case "coaching.phase_started":
+      switch (event.phaseType) {
+        case "warm_up":
+          return "Wir starten mit dem Aufwärmen. Fahr locker und finde deinen Rhythmus.";
+        case "main":
+          return "Jetzt beginnt die Hauptphase. Fahr gleichmäßig und bleib im Zielbereich.";
+        case "cool_down":
+          return "Jetzt kommt der Cooldown. Nimm Tempo heraus und roll locker aus.";
+        default:
+          return "";
+      }
+
     case "coaching.decision":
       switch (event.action) {
         case "increase_intensity":
@@ -36,7 +48,7 @@ export function evaluateCoachingSpeech(
   state: CoachingSpeechState,
   nowMs: number,
 ): CoachingSpeechDecision {
-  // Pause und Resume sind seltene Zustandswechsel und sollen immer sofort
+  // Struktur- und Runtime-Ereignisse sind selten und sollen immer sofort
   // gesprochen werden. Sie unterliegen keinem HR-Wiederholungs-Cooldown.
   if (event.type !== "coaching.decision") {
     return {

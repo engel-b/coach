@@ -306,3 +306,58 @@ def test_heart_rate_is_ignored_while_paused() -> None:
     )
 
     assert lifecycle.last_decision is None
+
+
+def test_phase_change_emits_phase_started_event_without_heart_rate_sensor() -> None:
+    phase_events: list[tuple[str, object]] = []
+    coordinator = LiveCoachingCoordinator(
+        coaching_engine=LiveCoachingEngine(
+            rules=LiveCoachingRules(
+                deviation_seconds_before_action=20.0,
+            )
+        )
+    )
+    lifecycle = LiveCoachingLifecycle(
+        coordinator=coordinator,
+        phase_handler=lambda workout_id, phase_started: phase_events.append(
+            (workout_id, phase_started)
+        ),
+    )
+    lifecycle.workout_started(create_workout())
+
+    lifecycle.workout_checkpointed(create_workout(elapsed_seconds=299))
+    assert phase_events == []
+
+    lifecycle.workout_checkpointed(create_workout(elapsed_seconds=300))
+
+    assert len(phase_events) == 1
+    workout_id, phase_started = phase_events[0]
+    assert workout_id == "workout-1"
+    assert phase_started.phase_index == 1
+    assert phase_started.phase_type == "main"
+    assert phase_started.duration_minutes == 20
+    assert phase_started.target_min_bpm == 125
+    assert phase_started.target_max_bpm == 145
+
+
+def test_phase_change_is_emitted_only_once_per_phase() -> None:
+    phase_types: list[str] = []
+    coordinator = LiveCoachingCoordinator(
+        coaching_engine=LiveCoachingEngine(
+            rules=LiveCoachingRules(
+                deviation_seconds_before_action=20.0,
+            )
+        )
+    )
+    lifecycle = LiveCoachingLifecycle(
+        coordinator=coordinator,
+        phase_handler=lambda _workout_id, phase_started: phase_types.append(
+            phase_started.phase_type
+        ),
+    )
+    lifecycle.workout_started(create_workout())
+
+    for elapsed_seconds in (300, 301, 900, 1499, 1500, 1501):
+        lifecycle.workout_checkpointed(create_workout(elapsed_seconds=elapsed_seconds))
+
+    assert phase_types == ["main", "cool_down"]

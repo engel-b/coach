@@ -5,9 +5,13 @@ from typing import Literal, Protocol
 
 from features.coaching.api.contracts.live_coaching import (
     LiveCoachingEvent,
+    LiveCoachingPhaseStartedEvent,
     LiveCoachingRuntimeEvent,
 )
-from features.coaching.domain.live_coaching import LiveCoachingDecision
+from features.coaching.domain.live_coaching import (
+    LiveCoachingDecision,
+    LiveCoachingPhaseStarted,
+)
 from features.telemetry.domain.health.heart_rate import HeartRateSample
 
 logger = logging.getLogger(__name__)
@@ -35,6 +39,18 @@ class LiveCoachingEventPublisher:
             workout_id=workout_id,
             sample=sample,
             decision=decision,
+        )
+        self._schedule(event.model_dump_json(by_alias=True))
+
+    def publish_phase_started(
+        self,
+        workout_id: str,
+        phase_started: LiveCoachingPhaseStarted,
+    ) -> None:
+        event = LiveCoachingPhaseStartedEvent.from_phase_started(
+            workout_id=workout_id,
+            timestamp=datetime.now(UTC),
+            phase_started=phase_started,
         )
         self._schedule(event.model_dump_json(by_alias=True))
 

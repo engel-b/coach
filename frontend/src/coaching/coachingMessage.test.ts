@@ -51,4 +51,21 @@ describe("coachingMessage", () => {
     expect(coachingMessage(pause)).toBe("Pause");
     expect(coachingMessage(resume)).toBe("Weiter geht's");
   });
+
+  it("formats phase changes", () => {
+    const phaseStarted: LiveCoachingEvent = {
+      type: "coaching.phase_started",
+      timestamp: "2026-09-13T08:35:00Z",
+      workoutId: "workout-1",
+      phaseIndex: 1,
+      phaseType: "main",
+      durationMinutes: 20,
+      targetMinBpm: 125,
+      targetMaxBpm: 145,
+    };
+
+    expect(coachingMessage(phaseStarted)).toBe(
+      "Hauptphase: 20 Minuten gleichmäßig im Zielbereich fahren.",
+    );
+  });
 });

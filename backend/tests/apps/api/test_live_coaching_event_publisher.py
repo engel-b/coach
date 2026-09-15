@@ -80,3 +80,34 @@ async def test_publisher_schedules_pause_runtime_event() -> None:
     assert message["type"] == "coaching.pause_started"
     assert message["workoutId"] == "workout-1"
     assert isinstance(message["timestamp"], str)
+
+
+async def test_publisher_schedules_phase_started_event() -> None:
+    from features.coaching.domain.live_coaching import LiveCoachingPhaseStarted
+
+    broadcaster = RecordingBroadcaster()
+    publisher = LiveCoachingEventPublisher(broadcaster=broadcaster)
+
+    publisher.publish_phase_started(
+        "workout-1",
+        LiveCoachingPhaseStarted(
+            phase_index=1,
+            phase_type="main",
+            duration_minutes=20,
+            target_min_bpm=125,
+            target_max_bpm=145,
+        ),
+    )
+
+    await asyncio.sleep(0)
+
+    assert len(broadcaster.messages) == 1
+    message = json.loads(broadcaster.messages[0])
+    assert message["type"] == "coaching.phase_started"
+    assert message["workoutId"] == "workout-1"
+    assert message["phaseIndex"] == 1
+    assert message["phaseType"] == "main"
+    assert message["durationMinutes"] == 20
+    assert message["targetMinBpm"] == 125
+    assert message["targetMaxBpm"] == 145
+    assert isinstance(message["timestamp"], str)

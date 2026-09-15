@@ -60,3 +60,33 @@ def test_live_coaching_runtime_event_uses_camel_case_json_contract() -> None:
         "timestamp": "2026-09-13T08:30:00Z",
         "workoutId": "workout-1",
     }
+
+
+def test_phase_started_event_uses_camel_case_json_contract() -> None:
+    from features.coaching.api.contracts.live_coaching import (
+        LiveCoachingPhaseStartedEvent,
+    )
+    from features.coaching.domain.live_coaching import LiveCoachingPhaseStarted
+
+    event = LiveCoachingPhaseStartedEvent.from_phase_started(
+        workout_id="workout-1",
+        timestamp=datetime(2026, 9, 13, 8, 35, tzinfo=UTC),
+        phase_started=LiveCoachingPhaseStarted(
+            phase_index=1,
+            phase_type="main",
+            duration_minutes=20,
+            target_min_bpm=125,
+            target_max_bpm=145,
+        ),
+    )
+
+    assert event.model_dump(mode="json", by_alias=True) == {
+        "type": "coaching.phase_started",
+        "timestamp": "2026-09-13T08:35:00Z",
+        "workoutId": "workout-1",
+        "phaseIndex": 1,
+        "phaseType": "main",
+        "durationMinutes": 20,
+        "targetMinBpm": 125,
+        "targetMaxBpm": 145,
+    }

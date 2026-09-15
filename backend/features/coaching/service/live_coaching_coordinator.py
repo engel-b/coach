@@ -1,4 +1,7 @@
-from features.coaching.domain.live_coaching import LiveCoachingDecision
+from features.coaching.domain.live_coaching import (
+    LiveCoachingDecision,
+    LiveCoachingPhaseStarted,
+)
 from features.coaching.service.heart_rate_deviation_tracker import (
     HeartRateDeviationTracker,
 )
@@ -64,10 +67,9 @@ class LiveCoachingCoordinator:
         *,
         workout_id: str,
         elapsed_seconds: int,
-    ) -> None:
+    ) -> LiveCoachingPhaseStarted | None:
         session = self._require_session(workout_id)
-
-        session.update_elapsed_seconds(elapsed_seconds)
+        return session.update_elapsed_seconds(elapsed_seconds)
 
     def update_runtime_state(
         self,
