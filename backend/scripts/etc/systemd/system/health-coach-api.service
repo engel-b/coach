@@ -1,0 +1,26 @@
+[Unit]
+Description=Health Coach API
+After=health-coach-prepare.service health-coach-llm.service
+Requires=health-coach-prepare.service
+Wants=health-coach-llm.service
+
+[Service]
+Type=simple
+User=coach
+Group=coach
+
+WorkingDirectory=/opt/health-coach/backend
+
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=/etc/health-coach/backend.env
+
+ExecStart=/opt/health-coach/backend/.venv/bin/python \
+    -m uvicorn apps.api.main:app \
+    --host 127.0.0.1 \
+    --port 8000
+
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
