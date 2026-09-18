@@ -1,0 +1,27 @@
+[Unit]
+Description=Health Coach Local LLM
+After=health-coach-prepare.service
+Requires=health-coach-prepare.service
+
+[Service]
+Type=simple
+User=coach
+Group=coach
+
+WorkingDirectory=/opt/health-coach
+
+EnvironmentFile=/etc/health-coach/llm.env
+
+ExecStart=/usr/local/bin/llama-server \
+    -m ${HEALTH_COACH_LLM_MODEL_PATH} \
+    --alias ${HEALTH_COACH_LLM_MODEL} \
+    --host 127.0.0.1 \
+    --port 8080 \
+    -c 2048 \
+    -t 4
+
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
