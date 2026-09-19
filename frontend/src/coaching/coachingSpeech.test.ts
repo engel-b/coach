@@ -55,7 +55,7 @@ describe("coachingSpeechMessage", () => {
     };
 
     expect(coachingSpeechMessage(pause)).toBe("Pause.");
-    expect(coachingSpeechMessage(resume)).toBe("Weiter geht's.");
+    expect(coachingSpeechMessage(resume)).toBe("Weiter geht's!");
   });
 
   it("formats phase-started messages", () => {
@@ -72,7 +72,7 @@ describe("coachingSpeechMessage", () => {
     };
 
     expect(coachingSpeechMessage(phaseStarted)).toBe(
-      "Jetzt beginnt die Hauptphase. Fahr gleichmäßig und bleib im Zielbereich.",
+      "Jetzt geht's in die Hauptphase! Finde deinen Rhythmus und bleib dran.",
     );
   });
 });
@@ -157,7 +157,7 @@ it("speaks workout structure milestones immediately", () => {
       workoutId: "workout-1",
       totalDurationMinutes: 30,
     }),
-  ).toBe("Halbzeit. Die Hälfte ist geschafft. Halte deinen Rhythmus.");
+  ).toBe("Halbzeit! Die Hälfte ist geschafft. Weiter so.");
 
   expect(
     coachingSpeechMessage({
@@ -168,5 +168,5 @@ it("speaks workout structure milestones immediately", () => {
       phaseType: "warm_up",
       remainingSeconds: 60,
     }),
-  ).toBe("Noch eine Minute in dieser Phase.");
+  ).toBe("Noch eine Minute! Bleib dran.");
 });

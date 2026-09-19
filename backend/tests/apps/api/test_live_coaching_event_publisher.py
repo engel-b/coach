@@ -88,7 +88,7 @@ async def test_publisher_schedules_phase_started_event() -> None:
     broadcaster = RecordingBroadcaster()
     publisher = LiveCoachingEventPublisher(broadcaster=broadcaster)
 
-    publisher.publish_phase_started(
+    publisher.publish_structure_event(
         "workout-1",
         LiveCoachingPhaseStarted(
             phase_index=1,

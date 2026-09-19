@@ -24,7 +24,7 @@ from features.person.persistence.sqlalchemy_person_repository import (
 from features.person.service.management_service import PersonManagementService
 from features.person.service.person_service import PersonService
 from features.person.service.profile_service import PersonProfileService
-from features.speech.adapters.piper_tts import PiperTtsAdapter
+from features.speech.adapters.piper_tts import PiperSynthesisSettings, PiperTtsAdapter
 from features.speech.service.speech_service import SpeechService
 from features.telemetry.service.broadcaster import TelemetryBroadcaster
 from features.telemetry.service.service import TelemetryService
@@ -164,6 +164,15 @@ piper_model_path = Path(
         "models/piper/de_DE-thorsten-medium.onnx",
     )
 )
+piper_synthesis_settings = PiperSynthesisSettings(
+    length_scale=float(os.environ.get("HEALTH_COACH_TTS_LENGTH_SCALE", "0.92")),
+    noise_scale=float(os.environ.get("HEALTH_COACH_TTS_NOISE_SCALE", "0.70")),
+    noise_w_scale=float(os.environ.get("HEALTH_COACH_TTS_NOISE_W_SCALE", "0.85")),
+    volume=float(os.environ.get("HEALTH_COACH_TTS_VOLUME", "1.0")),
+)
 speech_service = SpeechService(
-    tts=PiperTtsAdapter(model_path=piper_model_path),
+    tts=PiperTtsAdapter(
+        model_path=piper_model_path,
+        settings=piper_synthesis_settings,
+    ),
 )

@@ -524,6 +524,12 @@ HEALTH_COACH_LLM_ENABLED=1
 HEALTH_COACH_LLM_BASE_URL=http://127.0.0.1:8080
 HEALTH_COACH_LLM_MODEL=health-coach-local
 HEALTH_COACH_LLM_TIMEOUT_SECONDS=15
+
+# Piper Coach-Stimme
+HEALTH_COACH_TTS_LENGTH_SCALE=0.92
+HEALTH_COACH_TTS_NOISE_SCALE=0.70
+HEALTH_COACH_TTS_NOISE_W_SCALE=0.85
+HEALTH_COACH_TTS_VOLUME=1.0
 ```
 
 | Variable | Bedeutung |
@@ -532,6 +538,12 @@ HEALTH_COACH_LLM_TIMEOUT_SECONDS=15
 | `HEALTH_COACH_LLM_BASE_URL` | Basis-URL des lokalen `llama-server` |
 | `HEALTH_COACH_LLM_MODEL` | Gemeinsamer Modellalias von API und `llama-server` |
 | `HEALTH_COACH_LLM_TIMEOUT_SECONDS` | Maximale Wartezeit des Backends auf eine LLM-Antwort |
+| `HEALTH_COACH_TTS_LENGTH_SCALE` | Sprechtempo von Piper; kleiner als `1.0` spricht schneller |
+| `HEALTH_COACH_TTS_NOISE_SCALE` | Variation in der Audioerzeugung |
+| `HEALTH_COACH_TTS_NOISE_W_SCALE` | Variation der Phonemdauern / des Sprechrhythmus |
+| `HEALTH_COACH_TTS_VOLUME` | Lautstaerke-Multiplikator der Synthese |
+
+Die angegebenen TTS-Werte bilden das aktuelle Coach-Preset. Sie koennen auf dem Produktivsystem ohne Codeaenderung angepasst werden; danach reicht ein Neustart der API. Sehr hohe Noise-Werte koennen die Verstaendlichkeit verschlechtern.
 
 Falls das LLM vorübergehend deaktiviert werden soll:
 

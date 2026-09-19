@@ -75,6 +75,11 @@ class LiveCoachingWorkoutHalfway:
     total_duration_minutes: int
 
 
+LiveCoachingStructureEvent = (
+    LiveCoachingPhaseStarted | LiveCoachingPhaseEnding | LiveCoachingWorkoutHalfway
+)
+
+
 @dataclass(frozen=True)
 class LiveCoachingRules:
     """Konfigurierbare Regeln für die erste Live-Coaching-Version."""

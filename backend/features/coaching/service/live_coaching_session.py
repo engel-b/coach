@@ -2,6 +2,7 @@ from features.coaching.domain.live_coaching import (
     LiveCoachingDecision,
     LiveCoachingPhaseEnding,
     LiveCoachingPhaseStarted,
+    LiveCoachingStructureEvent,
     LiveCoachingWorkoutHalfway,
 )
 from features.coaching.service.live_coaching_service import LiveCoachingService
@@ -9,10 +10,6 @@ from features.telemetry.domain.health.heart_rate import HeartRateSample
 from features.workout.domain.phase_progress import get_current_phase
 from features.workout.domain.runtime import WorkoutRuntimeState
 from features.workout.domain.session import WorkoutSession, WorkoutStatus
-
-LiveCoachingStructureEvent = (
-    LiveCoachingPhaseStarted | LiveCoachingPhaseEnding | LiveCoachingWorkoutHalfway
-)
 
 
 class LiveCoachingSession:

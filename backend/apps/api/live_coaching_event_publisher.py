@@ -14,7 +14,7 @@ from features.coaching.domain.live_coaching import (
     LiveCoachingDecision,
     LiveCoachingPhaseEnding,
     LiveCoachingPhaseStarted,
-    LiveCoachingWorkoutHalfway,
+    LiveCoachingStructureEvent,
 )
 from features.telemetry.domain.health.heart_rate import HeartRateSample
 
@@ -49,9 +49,7 @@ class LiveCoachingEventPublisher:
     def publish_structure_event(
         self,
         workout_id: str,
-        structure_event: LiveCoachingPhaseStarted
-        | LiveCoachingPhaseEnding
-        | LiveCoachingWorkoutHalfway,
+        structure_event: LiveCoachingStructureEvent,
     ) -> None:
         timestamp = datetime.now(UTC)
 
@@ -75,13 +73,6 @@ class LiveCoachingEventPublisher:
             ).model_dump_json(by_alias=True)
 
         self._schedule(message)
-
-    def publish_phase_started(
-        self,
-        workout_id: str,
-        phase_started: LiveCoachingPhaseStarted,
-    ) -> None:
-        self.publish_structure_event(workout_id, phase_started)
 
     def publish_runtime_event(
         self,
