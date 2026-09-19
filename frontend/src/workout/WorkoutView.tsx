@@ -7,6 +7,7 @@ import {
   updateWorkoutRuntimeState,
 } from "../api/workouts";
 import { coachingMessage } from "../coaching/coachingMessage";
+import { CoachAvatar } from "../coaching/CoachAvatar";
 import { useCoachSpeech } from "../coaching/useCoachSpeech";
 import type { LiveCoachingEvent } from "../coaching/types";
 import { useLiveCoaching } from "../coaching/useLiveCoaching";
@@ -854,9 +855,7 @@ export function WorkoutView({
             </div>
           )}
 
-          <div className="coach-avatar-face">
-            <span>HC</span>
-          </div>
+          <CoachAvatar className="coach-avatar-face" label="" />
 
           <div
             className={`coach-avatar-status${
