@@ -1,13 +1,13 @@
-from features.coaching.domain.live_coaching import LiveCoachingDecision
+from features.coaching.domain.live_coaching import (
+    LiveCoachingDecision,
+    LiveCoachingStructureEvent,
+)
 from features.coaching.service.heart_rate_deviation_tracker import (
     HeartRateDeviationTracker,
 )
 from features.coaching.service.live_coaching_engine import LiveCoachingEngine
 from features.coaching.service.live_coaching_service import LiveCoachingService
-from features.coaching.service.live_coaching_session import (
-    LiveCoachingSession,
-    LiveCoachingStructureEvent,
-)
+from features.coaching.service.live_coaching_session import LiveCoachingSession
 from features.telemetry.domain.health.heart_rate import HeartRateSample
 from features.workout.domain.runtime import WorkoutRuntimeState
 from features.workout.domain.session import WorkoutSession

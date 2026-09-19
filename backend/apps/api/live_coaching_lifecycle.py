@@ -4,23 +4,20 @@ from typing import Literal
 from features.coaching.domain.live_coaching import (
     CoachingAction,
     LiveCoachingDecision,
-    LiveCoachingPhaseStarted,
+    LiveCoachingStructureEvent,
 )
-from features.coaching.service.live_coaching_session import LiveCoachingStructureEvent
-
-LiveCoachingStructureHandler = Callable[[str, LiveCoachingStructureEvent], None]
 from features.coaching.service.live_coaching_coordinator import LiveCoachingCoordinator
 from features.telemetry.domain.health.heart_rate import HeartRateSample
 from features.workout.domain.runtime import WorkoutRuntimeState
 from features.workout.domain.session import WorkoutSession
 
+LiveCoachingStructureHandler = Callable[[str, LiveCoachingStructureEvent], None]
 LiveCoachingDecisionHandler = Callable[
     [str, HeartRateSample, LiveCoachingDecision],
     None,
 ]
 RuntimeCoachingEventType = Literal["coaching.pause_started", "coaching.pause_ended"]
 LiveCoachingRuntimeHandler = Callable[[str, RuntimeCoachingEventType], None]
-LiveCoachingPhaseHandler = Callable[[str, LiveCoachingPhaseStarted], None]
 
 
 class LiveCoachingLifecycle:
@@ -33,13 +30,11 @@ class LiveCoachingLifecycle:
         decision_handler: LiveCoachingDecisionHandler | None = None,
         runtime_handler: LiveCoachingRuntimeHandler | None = None,
         structure_handler: LiveCoachingStructureHandler | None = None,
-        phase_handler: LiveCoachingPhaseHandler | None = None,
     ) -> None:
         self._coordinator = coordinator
         self._decision_handler = decision_handler
         self._runtime_handler = runtime_handler
         self._structure_handler = structure_handler
-        self._phase_handler = phase_handler
         self._last_decision: LiveCoachingDecision | None = None
         self._last_emitted_action: CoachingAction | None = None
 
@@ -65,15 +60,14 @@ class LiveCoachingLifecycle:
             workout_id=workout.id,
             elapsed_seconds=workout.elapsed_seconds,
         )
-        for event in structure_events:
-            if self._structure_handler is not None:
+        if self._structure_handler is not None:
+            for event in structure_events:
                 self._structure_handler(workout.id, event)
-            if self._phase_handler is not None and isinstance(event, LiveCoachingPhaseStarted):
-                self._phase_handler(workout.id, event)
-            self.workout_runtime_state_changed(
-                workout_id=workout.id,
-                runtime_state=runtime_state,
-            )
+
+        self.workout_runtime_state_changed(
+            workout_id=workout.id,
+            runtime_state=runtime_state,
+        )
 
     def workout_runtime_state_changed(
         self,

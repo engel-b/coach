@@ -18,28 +18,28 @@ export function coachingSpeechMessage(event: LiveCoachingEvent): string {
       return "Pause.";
 
     case "coaching.pause_ended":
-      return "Weiter geht's.";
+      return "Weiter geht's!";
 
     case "coaching.phase_started":
       if (event.isFinalPhase) {
-        return "Letzte Phase. Nimm dir noch einmal bewusst Zeit für einen sauberen Abschluss.";
+        return "Letzte Phase! Stark bis hierhin. Jetzt sauber zu Ende fahren.";
       }
       switch (event.phaseType) {
         case "warm_up":
-          return "Wir starten mit dem Aufwärmen. Fahr locker und finde deinen Rhythmus.";
+          return "Los geht's! Fahr dich locker warm und finde deinen Rhythmus.";
         case "main":
-          return "Jetzt beginnt die Hauptphase. Fahr gleichmäßig und bleib im Zielbereich.";
+          return "Jetzt geht's in die Hauptphase! Finde deinen Rhythmus und bleib dran.";
         case "cool_down":
-          return "Jetzt kommt der Cooldown. Nimm Tempo heraus und roll locker aus.";
+          return "Geschafft! Jetzt Tempo rausnehmen und locker ausrollen.";
         default:
           return "";
       }
 
     case "coaching.phase_ending":
-      return "Noch eine Minute in dieser Phase.";
+      return "Noch eine Minute! Bleib dran.";
 
     case "coaching.workout_halfway":
-      return "Halbzeit. Die Hälfte ist geschafft. Halte deinen Rhythmus.";
+      return "Halbzeit! Die Hälfte ist geschafft. Weiter so.";
 
     case "coaching.decision":
       switch (event.action) {

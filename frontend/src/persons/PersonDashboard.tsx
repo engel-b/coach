@@ -5,6 +5,7 @@ import { getPersonProfile } from "../api/persons";
 import { getTrainingRecommendation } from "../api/training";
 import { getWorkoutHistory } from "../api/workouts";
 import type { CheckIn } from "../check-in/types";
+import { CoachAvatar } from "../coaching/CoachAvatar";
 import { WeightGoalProgress } from "../training/WeightGoalProgress";
 import type { TrainingRecommendation } from "../training/types";
 import {
@@ -223,15 +224,6 @@ function WeightChart({
         <span>{formatDate(points[0].timestamp)}</span>
         <span>{formatDate(points[points.length - 1].timestamp)}</span>
       </div>
-    </div>
-  );
-}
-
-function CoachAvatar() {
-  return (
-    <div className="dashboard-coach-avatar" aria-hidden="true">
-      <div className="dashboard-coach-face">DFC</div>
-      <span>Coach</span>
     </div>
   );
 }
@@ -504,7 +496,7 @@ export function PersonDashboard({
 
         <aside className="dashboard-card dashboard-coach-card">
           <div className="dashboard-coach-heading">
-            <CoachAvatar />
+            <CoachAvatar className="dashboard-coach-avatar" />
             <div>
               <div className="dashboard-section-label">DEIN COACH</div>
               <h2>{coach.title}</h2>

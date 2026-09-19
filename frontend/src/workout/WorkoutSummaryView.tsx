@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { getWorkoutSummary } from "../api/workouts";
+import { CoachAvatar } from "../coaching/CoachAvatar";
 import type { Person } from "../persons/types";
 import type { Workout } from "./types";
 import type { WorkoutSummary } from "./summary-types";
@@ -134,10 +135,7 @@ export function WorkoutSummaryView({
 
         <aside className="dashboard-card dashboard-coach-card">
           <div className="dashboard-coach-heading">
-            <div className="dashboard-coach-avatar" aria-hidden="true">
-              <div className="dashboard-coach-face">DFC</div>
-              <span>Coach</span>
-            </div>
+            <CoachAvatar className="dashboard-coach-avatar" />
             <div>
               <div className="dashboard-section-label">DEIN COACH</div>
               <h2>{completed ? "Gut gemacht!" : "Dein Training zählt."}</h2>

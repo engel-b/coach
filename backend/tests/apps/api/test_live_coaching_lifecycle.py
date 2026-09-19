@@ -317,11 +317,16 @@ def test_phase_change_emits_phase_started_event_without_heart_rate_sensor() -> N
             )
         )
     )
+
+    def record_phase_started(workout_id: str, event: object) -> None:
+        from features.coaching.domain.live_coaching import LiveCoachingPhaseStarted
+
+        if isinstance(event, LiveCoachingPhaseStarted):
+            phase_events.append((workout_id, event))
+
     lifecycle = LiveCoachingLifecycle(
         coordinator=coordinator,
-        phase_handler=lambda workout_id, phase_started: phase_events.append(
-            (workout_id, phase_started)
-        ),
+        structure_handler=record_phase_started,
     )
     lifecycle.workout_started(create_workout())
 
@@ -349,11 +354,16 @@ def test_phase_change_is_emitted_only_once_per_phase() -> None:
             )
         )
     )
+
+    def record_phase_started(_workout_id: str, event: object) -> None:
+        from features.coaching.domain.live_coaching import LiveCoachingPhaseStarted
+
+        if isinstance(event, LiveCoachingPhaseStarted):
+            phase_types.append(event.phase_type)
+
     lifecycle = LiveCoachingLifecycle(
         coordinator=coordinator,
-        phase_handler=lambda _workout_id, phase_started: phase_types.append(
-            phase_started.phase_type
-        ),
+        structure_handler=record_phase_started,
     )
     lifecycle.workout_started(create_workout())
 
@@ -361,3 +371,28 @@ def test_phase_change_is_emitted_only_once_per_phase() -> None:
         lifecycle.workout_checkpointed(create_workout(elapsed_seconds=elapsed_seconds))
 
     assert phase_types == ["main", "cool_down"]
+
+
+def test_checkpoint_updates_runtime_state_without_structure_event() -> None:
+    runtime_events: list[tuple[str, str]] = []
+    coordinator = LiveCoachingCoordinator(
+        coaching_engine=LiveCoachingEngine(
+            rules=LiveCoachingRules(
+                deviation_seconds_before_action=20.0,
+            )
+        )
+    )
+    lifecycle = LiveCoachingLifecycle(
+        coordinator=coordinator,
+        runtime_handler=lambda workout_id, event_type: runtime_events.append(
+            (workout_id, event_type)
+        ),
+    )
+    lifecycle.workout_started(create_workout())
+
+    lifecycle.workout_checkpointed(
+        create_workout(elapsed_seconds=10),
+        runtime_state=WorkoutRuntimeState.PAUSED,
+    )
+
+    assert runtime_events == [("workout-1", "coaching.pause_started")]
