@@ -51,22 +51,18 @@ def isolated_video_catalog(
     )
 
 
-def test_get_workout_videos_returns_only_active_videos() -> None:
+def test_get_workout_videos_returns_complete_catalog() -> None:
     response = client.get("/api/workout-videos")
 
     assert response.status_code == 200
 
     body = response.json()
 
-    assert len(body) == 1
-    assert body[0] == {
-        "id": "Lqhq5UQ-U8A",
-        "title": "Alpen",
-        "description": "Trainingsvideo Alpen",
-        "url": "/videos/cycling/alpen.mp4",
-        "durationSeconds": 3600.0,
-        "active": True,
-    }
+    assert len(body) == 2
+    assert {video["id"] for video in body} == {"Lqhq5UQ-U8A", "inactive-video"}
+
+    inactive = next(video for video in body if video["id"] == "inactive-video")
+    assert inactive["active"] is False
 
 
 def test_get_workout_video_by_id() -> None:
