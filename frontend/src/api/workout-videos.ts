@@ -2,7 +2,7 @@ import type { WorkoutVideoAdmin, WorkoutVideoMutation } from "../workout/types";
 import { readApiError } from "./apiError";
 
 export async function getManagedWorkoutVideos(): Promise<WorkoutVideoAdmin[]> {
-  const response = await fetch("/api/admin/workout-videos");
+  const response = await fetch("/api/workout-videos");
 
   if (!response.ok) {
     throw await readApiError(

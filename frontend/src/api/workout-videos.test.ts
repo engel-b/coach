@@ -31,7 +31,7 @@ describe("workout video management API", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(getManagedWorkoutVideos()).resolves.toEqual(videos);
-    expect(fetchMock).toHaveBeenCalledWith("/api/admin/workout-videos");
+    expect(fetchMock).toHaveBeenCalledWith("/api/workout-videos");
   });
 
   it("creates a video with the mutation contract", async () => {
