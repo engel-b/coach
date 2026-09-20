@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
-import { getWorkoutVideos } from "../api/workouts";
+import { getWorkoutVideosForPerson } from "../api/workouts";
 import type { Person } from "../persons/types";
-import type { WorkoutVideo } from "../workout/types";
+import type { WorkoutVideoSelection } from "../workout/types";
 import {
   recommendationReasonLabels,
   workoutTitle,
@@ -62,7 +62,7 @@ export function TrainingRecommendationView({
   startError,
   onClearStartError,
 }: TrainingRecommendationViewProps) {
-  const [videos, setVideos] = useState<WorkoutVideo[]>([]);
+  const [videos, setVideos] = useState<WorkoutVideoSelection[]>([]);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [videosLoading, setVideosLoading] = useState(true);
   const [videosError, setVideosError] = useState<string | null>(null);
@@ -77,7 +77,7 @@ export function TrainingRecommendationView({
       setVideosError(null);
 
       try {
-        const result = await getWorkoutVideos();
+        const result = await getWorkoutVideosForPerson(person.id);
 
         if (cancelled) {
           return;
@@ -85,12 +85,6 @@ export function TrainingRecommendationView({
 
         setVideos(result);
 
-        /*
-         * Wenn noch keine Auswahl existiert, wählen wir das erste
-         * verfügbare Video vor.
-         *
-         * Der Benutzer kann die Auswahl anschließend per Maus ändern.
-         */
         setSelectedVideoId((currentVideoId) => {
           if (
             currentVideoId !== null &&
@@ -99,7 +93,11 @@ export function TrainingRecommendationView({
             return currentVideoId;
           }
 
-          return result[0]?.id ?? null;
+          return (
+            result.find((video) => video.isLastUsed)?.id ??
+            result[0]?.id ??
+            null
+          );
         });
       } catch (loadError) {
         if (cancelled) {
@@ -126,7 +124,7 @@ export function TrainingRecommendationView({
     return () => {
       cancelled = true;
     };
-  }, [loadAttempt]);
+  }, [loadAttempt, person.id]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
@@ -221,33 +219,27 @@ export function TrainingRecommendationView({
           )}
 
           {!videosLoading && videos.length > 0 && (
-            <div className="workout-video-options">
-              {videos.map((video) => (
-                <button
-                  key={video.id}
-                  type="button"
-                  className={
-                    selectedVideoId === video.id
-                      ? "workout-video-option selected"
-                      : "workout-video-option"
-                  }
-                  aria-pressed={selectedVideoId === video.id}
-                  onClick={() => {
-                    setSelectedVideoId(video.id);
-                    onClearStartError();
-                  }}
-                >
-                  <span className="workout-video-option-title">
-                    {video.title}
-                  </span>
+            <div className="workout-video-combobox">
+              <select
+                value={selectedVideoId ?? ""}
+                onChange={(event) => {
+                  setSelectedVideoId(event.target.value);
+                  onClearStartError();
+                }}
+                aria-label="Trainingsvideo auswählen"
+              >
+                {videos.map((video) => (
+                  <option key={video.id} value={video.id}>
+                    {video.isNew
+                      ? `NEU · ${video.title}`
+                      : `${video.title} · ${video.usageCount}× verwendet`}
+                  </option>
+                ))}
+              </select>
 
-                  {video.description !== null && (
-                    <span className="workout-video-option-description">
-                      {video.description}
-                    </span>
-                  )}
-                </button>
-              ))}
+              {videos.find((video) => video.id === selectedVideoId)?.isNew && (
+                <span className="workout-video-new-badge">NEU</span>
+              )}
             </div>
           )}
         </div>

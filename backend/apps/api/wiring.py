@@ -47,6 +47,7 @@ from features.workout.persistence.sqlalchemy_workout_video_repository import (
     SqlAlchemyWorkoutVideoRepository,
 )
 from features.workout.service.video_catalog_service import VideoCatalogService
+from features.workout.service.video_catalog_sync_service import VideoCatalogSyncService
 from features.workout.service.workout_service import WorkoutService
 
 # Composition Root der HTTP-Anwendung.
@@ -153,6 +154,12 @@ workout_service = WorkoutService(
 
 video_catalog_service = VideoCatalogService(
     repository=workout_video_repository,
+    workout_repository=workout_repository,
+)
+
+video_catalog_sync_service = VideoCatalogSyncService(
+    repository=workout_video_repository,
+    video_directory=Path(os.environ.get("HEALTH_COACH_VIDEO_DIR", "../videos")).resolve(),
 )
 
 telemetry_broadcaster = TelemetryBroadcaster()

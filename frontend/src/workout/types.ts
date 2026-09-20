@@ -29,5 +29,14 @@ export interface WorkoutVideo {
   title: string;
   description: string | null;
   url: string;
+  filePath: string;
   durationSeconds: number | null;
+  active: boolean;
+}
+
+export interface WorkoutVideoSelection extends WorkoutVideo {
+  usageCount: number;
+  isNew: boolean;
+  isLastUsed: boolean;
+  lastUsedAt: string | null;
 }

@@ -15,6 +15,11 @@ class InMemoryWorkoutVideoRepository:
     def get(self, video_id: str) -> WorkoutVideo | None:
         return self._videos.get(video_id)
 
+    def get_by_file_path(self, file_path: str) -> WorkoutVideo | None:
+        return next(
+            (video for video in self._videos.values() if video.file_path == file_path), None
+        )
+
     def get_all(
         self,
         *,

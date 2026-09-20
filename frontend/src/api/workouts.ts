@@ -2,6 +2,7 @@ import type {
   Workout,
   WorkoutRuntimeState,
   WorkoutVideo,
+  WorkoutVideoSelection,
 } from "../workout/types";
 import type { WorkoutSummary } from "../workout/summary-types";
 
@@ -48,6 +49,18 @@ export async function getWorkoutVideos(): Promise<WorkoutVideo[]> {
   }
 
   return (await response.json()) as WorkoutVideo[];
+}
+
+export async function getWorkoutVideosForPerson(
+  personId: number,
+): Promise<WorkoutVideoSelection[]> {
+  const response = await fetch(`/api/persons/${personId}/workout-videos`);
+
+  if (!response.ok) {
+    throw new Error(`Could not load workout videos: HTTP ${response.status}`);
+  }
+
+  return (await response.json()) as WorkoutVideoSelection[];
 }
 
 export async function checkpointWorkout(

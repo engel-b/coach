@@ -65,6 +65,7 @@ def test_get_workout_videos_returns_only_active_videos() -> None:
         "description": "Trainingsvideo Alpen",
         "url": "/videos/cycling/alpen.mp4",
         "durationSeconds": 3600.0,
+        "active": True,
     }
 
 
