@@ -65,7 +65,7 @@ describe("WorkoutVideoManagement", () => {
       target: { value: "Küste" },
     });
     fireEvent.change(screen.getByLabelText(/Dateipfad/), {
-      target: { value: "cycling/kueste.mp4" },
+      target: { value: "/videos/cycling/kueste.mp4" },
     });
     fireEvent.change(screen.getByLabelText("Dauer in Sekunden"), {
       target: { value: "2700" },
