@@ -34,13 +34,13 @@ export interface WorkoutVideo {
 }
 
 export interface WorkoutVideoAdmin extends WorkoutVideo {
-  filePath: string;
+  url: string;
 }
 
 export interface WorkoutVideoMutation {
   title: string;
   description: string | null;
-  filePath: string;
+  url: string;
   durationSeconds: number | null;
   active: boolean;
 }

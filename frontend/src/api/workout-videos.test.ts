@@ -10,7 +10,7 @@ import {
 const request = {
   title: "Alpen",
   description: "Trainingsvideo Alpen",
-  filePath: "cycling/alpen.mp4",
+  url: "/videos/cycling/alpen.mp4",
   durationSeconds: 3600,
   active: true,
 };
@@ -22,7 +22,7 @@ describe("workout video management API", () => {
 
   it("loads all videos through the management endpoint", async () => {
     const videos = [
-      { id: "video-1", url: "/videos/cycling/alpen.mp4", ...request },
+      { id: "video-1", ...request, url: "/videos/cycling/alpen.mp4" },
     ];
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -37,7 +37,6 @@ describe("workout video management API", () => {
   it("creates a video with the mutation contract", async () => {
     const created = {
       id: "video-1",
-      url: "/videos/cycling/alpen.mp4",
       ...request,
     };
     const fetchMock = vi.fn().mockResolvedValue({
@@ -57,7 +56,6 @@ describe("workout video management API", () => {
   it("updates an encoded video ID", async () => {
     const updated = {
       id: "video id",
-      url: "/videos/cycling/alpen.mp4",
       ...request,
     };
     const fetchMock = vi.fn().mockResolvedValue({
