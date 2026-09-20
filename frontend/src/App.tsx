@@ -17,6 +17,7 @@ import { applyTelemetryMessage } from "./telemetry/applyTelemetryMessage";
 import { useTelemetry } from "./telemetry/useTelemetry";
 import { TrainingRecommendationView } from "./training/TrainingRecommendationView";
 import type { TrainingRecommendation } from "./training/types";
+import { WorkoutVideoManagement } from "./workout/WorkoutVideoManagement";
 import { WorkoutSummaryView } from "./workout/WorkoutSummaryView";
 import type { Workout } from "./workout/types";
 import { WorkoutView } from "./workout/WorkoutView";
@@ -27,6 +28,7 @@ function App() {
   const [activePerson, setActivePerson] = useState<Person | null>(null);
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const [personCreateOpen, setPersonCreateOpen] = useState(false);
+  const [videoManagementOpen, setVideoManagementOpen] = useState(false);
   const [checkIn, setCheckIn] = useState<CheckIn | null>(null);
   const [recommendation, setRecommendation] =
     useState<TrainingRecommendation | null>(null);
@@ -231,7 +233,11 @@ function App() {
   if (activePerson === null) {
     return (
       <main className="app">
-        {personCreateOpen ? (
+        {videoManagementOpen ? (
+          <WorkoutVideoManagement
+            onClose={() => setVideoManagementOpen(false)}
+          />
+        ) : personCreateOpen ? (
           <PersonProfileEditor
             key="create"
             person={null}
@@ -250,6 +256,7 @@ function App() {
               persons={persons}
               onSelect={setActivePerson}
               onCreate={() => setPersonCreateOpen(true)}
+              onManageVideos={() => setVideoManagementOpen(true)}
             />
           </>
         )}

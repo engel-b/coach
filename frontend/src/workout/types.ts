@@ -29,6 +29,17 @@ export interface WorkoutVideo {
   title: string;
   description: string | null;
   url: string;
+  durationSeconds: number | null;
+  active: boolean;
+}
+
+export interface WorkoutVideoAdmin extends WorkoutVideo {
+  filePath: string;
+}
+
+export interface WorkoutVideoMutation {
+  title: string;
+  description: string | null;
   filePath: string;
   durationSeconds: number | null;
   active: boolean;

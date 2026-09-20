@@ -1479,6 +1479,8 @@ h1 {
 
 .person-selection-actions {
   display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
   justify-content: center;
   margin-top: 32px;
 }
@@ -1498,6 +1500,209 @@ h1 {
   color: var(--text-muted, #777);
   font-size: 0.85rem;
   line-height: 1.4;
+}
+
+.video-management {
+  width: min(1100px, calc(100% - 48px));
+  margin: 48px auto;
+}
+
+.video-management-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+
+.video-management-header p {
+  margin: 12px 0 0;
+  color: #8a97a8;
+  font-size: 18px;
+}
+
+.video-management-header-actions,
+.video-management-actions,
+.video-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.video-management-list {
+  display: grid;
+  gap: 16px;
+}
+
+.video-management-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 24px;
+  border: 1px solid #303946;
+  border-radius: 18px;
+  background: rgba(25, 31, 40, 0.92);
+}
+
+.video-management-details {
+  min-width: 0;
+}
+
+.video-management-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.video-management-title strong {
+  font-size: 21px;
+}
+
+.video-management-title span {
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.video-management-title span.active {
+  color: #bdf5ce;
+  background: rgba(51, 180, 91, 0.16);
+}
+
+.video-management-title span.inactive {
+  color: #ccd3dc;
+  background: rgba(138, 151, 168, 0.15);
+}
+
+.video-management-details p {
+  margin: 10px 0;
+  color: #aab4c0;
+}
+
+.video-management-details code {
+  color: #ccd3dc;
+  overflow-wrap: anywhere;
+}
+
+.video-management-actions {
+  flex: 0 0 auto;
+}
+
+.video-management-actions .secondary-action,
+.video-management-actions .danger-action {
+  min-width: 0;
+  padding: 11px 16px;
+  border-radius: 11px;
+  font-size: 15px;
+}
+
+.danger-action {
+  border: 1px solid rgba(230, 86, 86, 0.55);
+  color: #ffb7b7;
+  background: rgba(230, 86, 86, 0.1);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.danger-action:disabled,
+.primary-action:disabled,
+.secondary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.video-editor {
+  width: min(720px, 100%);
+  margin: 0 auto;
+}
+
+.video-editor h2 {
+  margin: 0;
+  font-size: 34px;
+}
+
+.video-editor-form {
+  display: grid;
+  gap: 18px;
+  margin-top: 28px;
+}
+
+.video-editor-form label:not(.video-active-field) {
+  display: grid;
+  gap: 7px;
+}
+
+.video-editor-form label > span {
+  font-weight: 700;
+}
+
+.video-editor-form input[type="text"],
+.video-editor-form input[type="number"],
+.video-editor-form textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: #11151b;
+  background: #ffffff;
+  font: inherit;
+}
+
+.video-editor-form textarea {
+  resize: vertical;
+}
+
+.video-editor-form small {
+  color: #8a97a8;
+}
+
+.video-active-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.video-active-field input {
+  width: 20px;
+  height: 20px;
+}
+
+.video-editor .error-message {
+  width: 100%;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.video-editor-actions {
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+@media (max-width: 760px) {
+  .video-management {
+    width: min(100% - 28px, 1100px);
+    margin: 28px auto;
+  }
+
+  .video-management-header,
+  .video-management-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .video-management-header-actions,
+  .video-management-actions {
+    width: 100%;
+  }
+
+  .video-management-header-actions button,
+  .video-management-actions button {
+    flex: 1;
+  }
 }
 
 .check-in-health-fields {
