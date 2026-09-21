@@ -1,4 +1,4 @@
-# Digital Fitness Coach – Architektur- und Entwicklerdokumentation
+# Digital Fitness Coach – arc42-Architekturdokumentation
 
 > **Kanonische Dokumentation**  
 > Sie beschreibt den **implementierten Stand**, ausdrücklich gekennzeichnete **optionale/experimentelle Bausteine** sowie die **geplante Weiterentwicklung**. Deployment-Details werden ergänzend in `DEPLOYMENT.md` gepflegt.
@@ -12,13 +12,14 @@
 | Personen / Profile | ✅ Vorhanden | Mehrpersonenbetrieb, Profil, Trainingsziel, Start-/Zielgewicht, optionale maximale HF |
 | Check-in | ✅ Vorhanden | Energie, Erholung, Muskelkater, Stress, verfügbare Zeit, Gewicht, Schlaf, Schritte, Historie |
 | Trainingsempfehlung | ✅ Vorhanden | deterministischer Pre-Workout-Planner mit Readiness, Gewichtstrend und Gewichtsfortschritt |
-| Workout | ✅ Vorhanden | Phasen, Runtime-State, Pause, Finish-Window, Overtime, Persistenz und Summary |
+| Workout | ✅ Vorhanden | Phasen, Runtime-State, Pause, Finish-Window, Overtime, Persistenz, Summary und Videozuordnung |
+| Trainingsvideos | ✅ Vorhanden | dateibasiertes Videoverzeichnis, Katalog-Synchronisation, Verwaltung, personenspezifische Auswahl und Nutzungshistorie |
 | Telemetrie | ✅ Vorhanden | FTMS + Heart Rate über separaten Device Agent; Sensorik optional |
 | Live-Coaching | ✅ Vorhanden | HR-Abweichung, Pause/Resume, Phasenwechsel, Phasenende, Halbzeit, WebSocket-Events |
 | TTS | ✅ Vorhanden | lokale Piper-Synthese hinter Port/Adapter; konfigurierbares Coach-Preset |
 | Coach-Avatar | ✅ Vorhanden | wiederverwendbarer Avatar im Dashboard und Workout-Frontend |
 | Lokales LLM | 🧪 Optional / experimentell | lokaler OpenAI-kompatibler Adapter mit Timeout und deterministischem Fallback |
-| Appliance-Deployment | ✅ Vorhanden / im Ausbau | Debian, systemd, `provision.sh`, `prepare.sh`, API/Device-Agent/LLM als Services |
+| Appliance-Deployment | ✅ Vorhanden / im Ausbau | Debian, Caddy, systemd, `provision.sh`, `prepare.sh`, API/Device-Agent/LLM als Services |
 | Adaptive Workout-Anpassung | 🧭 Geplant | deterministische Adjustment-/Safety-Policy vor automatischer Änderung |
 | Spracheingabe | 🧭 Geplant | Sprache als zusätzlicher Interaktionskanal, nicht als einziger Bedienpfad |
 
@@ -26,7 +27,22 @@
 
 # 1. Einführung und Ziele
 
-Der **Digital Fitness Coach** ist eine lokal betriebene Fitness- und Gesundheitsanwendung für mehrere Personen. Sie verbindet persönliche Profile, tägliche Check-ins, Gesundheitswerte, Trainingsempfehlungen, Workout-Durchführung, Bluetooth-Sensorik, Live-Coaching, Sprachausgabe und Fortschrittsdarstellung.
+## 1.1 Aufgabenstellung
+
+Der **Digital Fitness Coach** ist eine lokal betriebene Fitness- und Gesundheitsanwendung für mehrere Personen. Sie unterstützt den vollständigen Trainingsablauf von Personenauswahl und täglichem Check-in über Trainingsempfehlung und Workout-Durchführung bis zu Live-Telemetrie, Coaching, Sprachausgabe und Trainingshistorie.
+
+Der funktionale Kern umfasst insbesondere:
+
+- Personen und Profile mit Trainingsziel sowie Start-/Zielgewicht,
+- tägliche Check-ins mit subjektiven und optionalen objektiven Gesundheitswerten,
+- deterministische Pre-Workout-Empfehlungen,
+- strukturierte Workouts mit Phasen und Runtime-Zuständen,
+- Heart-Rate- und FTMS-Telemetrie über einen separaten Device Agent,
+- Live-Coaching mit serverseitig erzeugten Coaching-Ereignissen,
+- lokale TTS-Ausgabe über Piper,
+- optionale lokale LLM-Formulierung mit deterministischem Fallback,
+- einen lokalen Trainingsvideo-Katalog mit Synchronisation des Dateisystems,
+- lokalen Appliance-/Kiosk-Betrieb unter Debian.
 
 Das System soll nicht nur Messwerte anzeigen, sondern auf Basis von **Profil, Tagesform, Trainingshistorie, Workout-Phase und Live-Telemetrie** nachvollziehbar reagieren. Dabei gilt als wichtigstes Architekturprinzip:
 
@@ -35,11 +51,9 @@ Deterministische Fachlogik entscheidet, WAS gilt und WAS passieren darf.
 Optionale generative Komponenten dürfen höchstens beeinflussen, WIE etwas formuliert wird.
 ```
 
-Das gilt insbesondere für Trainingsbelastung, Safety-Grenzen, Gewichtsinterpretation und Live-Coaching.
+Das gilt insbesondere für Trainingsbelastung, Safety-Grenzen, Gewichtsinterpretation und Live-Coaching. Kernfunktionen sollen ohne Cloud-Abhängigkeit funktionieren. Optionale Komponenten wie HR-Sensor, TTS oder lokales LLM dürfen den Workout-Kern nicht unnötig blockieren.
 
-Die Anwendung ist als **lokale Appliance/Kiosk-Lösung** ausgelegt. Kernfunktionen sollen ohne Cloud-Abhängigkeit funktionieren. Optionale Komponenten wie HR-Sensor, TTS oder lokales LLM dürfen den Workout-Kern nicht unnötig blockieren.
-
-## 1.1 Qualitätsziele
+## 1.2 Qualitätsziele
 
 | Priorität | Ziel | Konsequenz |
 |---:|---|---|
@@ -51,32 +65,58 @@ Die Anwendung ist als **lokale Appliance/Kiosk-Lösung** ausgelegt. Kernfunktion
 | 6 | Erweiterbarkeit | LLM, TTS, Sensorik und weitere Coaching-Signale austauschbar ergänzbar |
 | 7 | Verständlichkeit | Architekturdiagramme, ADRs, explizite Verträge und konsistente Entwicklerdokumentation |
 
-## 1.2 Nicht-Ziele und Grenzen
+## 1.3 Stakeholder
+
+| Stakeholder | Interesse / Erwartung |
+|---|---|
+| Trainierende Personen | einfache Bedienung, gut lesbare Workout-Anzeige, nachvollziehbares Coaching und verlässliche Trainingsdaten |
+| Betreiber / Administrator | automatischer Start, kontrollierte Updates, lokale Datenhaltung, nachvollziehbare Logs und einfache Wiederherstellung |
+| Entwickler | klare Modulgrenzen, automatisierte Tests, reproduzierbarer Build und geringe Kopplung an Hardware/Frameworks |
+| Geräteintegratoren | stabile Ports, normalisierte Telemetrie und testbare Parser/Adapter |
+| Wartung / Support | Diagnose über systemd, journalctl, Health-Endpunkt und reproduzierbare Servicezustände |
+
+## 1.4 Nicht-Ziele und Grenzen
 
 Der Coach ist **kein medizinisches Diagnosesystem**. Er darf Trainings- und Gesundheitsdaten für Fitness-Coaching verwenden, soll aber keine Diagnosen oder unbelegten medizinischen Ursachen behaupten.
 
 Gewichtsverlauf und Zielgewicht werden beschreibend ausgewertet. Ohne explizit konfigurierte Ziel-Abnahmerate wird aus einem langsameren oder schnelleren Gewichtsverlauf **keine automatische Intensivierung des Trainings** abgeleitet.
 
+Aktive automatische Bike-Steuerung ist derzeit nicht Bestandteil des stabilen Kerns. Lesen von Telemetrie und aktive Gerätesteuerung bleiben getrennte Fähigkeiten.
+
 ---
 
 # 2. Randbedingungen
 
-## 2.1 Technischer Stack
+## 2.1 Technische Randbedingungen
 
 - Backend: Python, FastAPI, Pydantic, SQLAlchemy, Alembic
 - Persistenz: SQLite
 - Frontend: React + TypeScript + Vite
 - Tests: pytest / mypy / Ruff im Backend, Vitest / ESLint im Frontend
-- Device Agent: separater Python-Prozess
+- Device Agent: separater Python-Prozess auf Basis von `asyncio`/Bleak
 - Bluetooth: FTMS und Heart Rate
-- TTS: lokale Piper-Engine, Browser-Speech höchstens als Fallback
+- TTS: lokale Piper-Engine hinter einem Port/Adapter
 - Lokales LLM: OpenAI-kompatible HTTP-Schnittstelle, aktuell über `llama-server`
-- Produktion: Debian + systemd
+- Produktion: Debian, systemd und Caddy
 - Entwicklung: Windows und Linux
-
-## 2.2 Betriebsrandbedingungen
+- Node.js: 24 LTS; Projektuntergrenze `>=24.15.0 <25`
 
 Zielhardware der aktuellen Appliance ist ein Lenovo ThinkCentre M900z mit Intel Core i3-6100 und 16 GB RAM. Eine dedizierte GPU wird weder für den Kernbetrieb noch für TTS vorausgesetzt.
+
+## 2.2 Organisatorische und betriebliche Randbedingungen
+
+Die Architektur wird inkrementell weiterentwickelt. Dokumentation, Build, Tests, Migrationen und Deployment sind Bestandteil des Produkts und werden gemeinsam mit dem Code versioniert.
+
+Die Produktionsinstallation ist ein Git-Checkout unter `/opt/health-coach`. Laufzeitdaten liegen innerhalb des dafür vorgesehenen `data/`-Baums und werden nicht als Quellcode behandelt:
+
+```text
+/opt/health-coach/data/
+├── db/
+├── models/
+│   ├── llm/
+│   └── piper/
+└── videos/
+```
 
 Die produktiven Prozesse laufen getrennt:
 
@@ -85,17 +125,32 @@ health-coach-prepare.service
 health-coach-api.service
 health-coach-device-agent.service
 health-coach-llm.service       [optional]
-Frontend-Service               [separat]
+Caddy                           [statische UI + Reverse Proxy]
+Chromium-Kiosk                  [grafische Benutzersitzung]
 ```
 
-## 2.3 Fachliche Randbedingungen
+`provision.sh` ist der explizite Update-/Deployment-Pfad und darf Netzwerkzugriff, Dependency-Installation, Builds und Modell-Provisionierung durchführen. `prepare.sh` ist die offline-fähige Boot-Vorbereitung und beschränkt sich auf lokale Runtime-Prüfung und Datenbankmigrationen.
 
-- optionale Gesundheitswerte bleiben `null`, wenn unbekannt;
+## 2.3 Konventionen
+
+- Backend-interne Python-Namen verwenden `snake_case`.
+- JSON-Verträge und TypeScript verwenden `camelCase`.
+- Beispiel: `file_path` im Backend entspricht `filePath` im API-/Frontend-Vertrag.
+- Domänenobjekte importieren keine FastAPI-, SQLAlchemy-, Bleak- oder React-Typen.
+- Datenbankschemaänderungen erfolgen ausschließlich über Alembic-Migrationen.
+- Fehlende fachliche oder sensorische Werte bleiben optional/`null`; sie werden nicht als `0` oder durch Schätzwerte erfunden.
+- Cross-Feature-Orchestrierung gehört in den App-/Composition-Root.
+- Frontend-Code verwendet relative `/api`, `/ws` und `/videos`-Pfade und kennt Produktionsports nicht.
+- Neue Hardware wird über Adapter integriert und vor Übergabe an Domain/UI normalisiert.
+
+## 2.4 Fachliche Randbedingungen
+
 - ein fehlender HR-Sensor verhindert kein Workout;
 - Coaching-Entscheidungen werden serverseitig erzeugt;
 - Workout-Status wird serverseitig final bestimmt;
 - Browser und Backend kommunizieren über explizite HTTP-/WebSocket-Verträge;
-- LLM und TTS sind austauschbare technische Komponenten und keine fachlichen Entscheidungsträger.
+- LLM und TTS sind austauschbare technische Komponenten und keine fachlichen Entscheidungsträger;
+- Workout-Videos werden in der Datenbank mit einem Pfad relativ zum konfigurierten Video-Root gespeichert; die Browser-URL wird daraus abgeleitet.
 
 ---
 
@@ -166,6 +221,25 @@ Das Frontend analysiert keine Rohtelemetrie, um selbst Coaching-Entscheidungen z
 /ws/coaching
     -> fachlich relevante Coach-Ereignisse
 ```
+
+---
+
+
+## 3.3 Externe technische Schnittstellen
+
+| Schnittstelle | Richtung | Protokoll | Zweck |
+|---|---|---|---|
+| Browser ↔ API | bidirektional | HTTP/JSON | Personen, Check-ins, Empfehlungen, Workouts, Videos, Verwaltung |
+| Browser ↔ API | bidirektional | WebSocket | Live-Telemetrie und fachliche Coaching-Ereignisse |
+| Browser → Caddy/FastAPI | lesend | HTTP | statische Trainingsvideos unter `/videos/*` |
+| Device Agent ↔ API | bidirektional | WebSocket | Telemetrie und Gerätezustände |
+| Device Agent ↔ HR-Sensor | bidirektional | BLE/GATT | Heart-Rate-Messwerte |
+| Device Agent ↔ Bike | bidirektional | BLE/GATT/FTMS | Bike-Telemetrie; aktive Steuerung separat/später |
+| Backend ↔ SQLite | bidirektional | SQL/Dateizugriff | lokale Persistenz |
+| Backend → Piper | lokal | Prozess/Library-Adapter | Text-to-Speech |
+| Backend → llama-server | lokal | HTTP/OpenAI-kompatibel | optionale Coach-Formulierung |
+
+Die API und `llama-server` lauschen im Produktivbetrieb nur auf Loopback. Caddy bildet die HTTP-Einstiegsgrenze für den Browser.
 
 ---
 
@@ -259,6 +333,8 @@ Die Empfehlung umfasst strukturierte Gründe und bleibt fachlich unabhängig von
 ### `workout`
 
 Verantwortet Workout-Lebenszyklus, persistierten Status, Dauer, Distanz, Video, Phasen, Summary und Runtime-Zustände.
+
+Der Workout-Video-Katalog synchronisiert ein konfiguriertes Video-Root mit der Datenbank. Neue Dateien werden katalogisiert, wieder erschienene Dateien reaktiviert und fehlende Dateien inaktiv markiert. Ein vollständig fehlendes/unmountbares Video-Root führt nicht zu einer pauschalen Deaktivierung des Katalogs. Verwaltung zeigt aktive und inaktive Einträge; die personenspezifische Trainingsauswahl liefert nur aktive Videos und kann Nutzungshistorie/zuletzt verwendetes Video berücksichtigen.
 
 Relevante Runtime-Zustände:
 
@@ -766,12 +842,13 @@ Die API verwendet für das LLM eine weiche Abhängigkeit (`Wants=` statt `Requir
 ```text
 provision.sh
     = explizites Update / Deployment
-    = git pull --ff-only
+    = git fetch --prune + optional Branch-Switch + pull --ff-only
+    = cleanup-branches.sh
     = Dependencies
     = Frontend Build
     = TTS-/LLM-Modelle
-    = prepare.sh / Migration
-    = Service-Restart
+    = Alembic-Migration
+    = Konfigurationsabgleich + Service-Restart
 
 prepare.sh
     = Boot-Vorbereitung
@@ -972,6 +1049,46 @@ Sie bleiben im Git-Diff, Terminal und einfachen Markdown-Viewern lesbar.
 
 ---
 
+## 8.13 Fehlerbehandlung
+
+Technische Fehler werden möglichst an Infrastrukturgrenzen behandelt und in fachlich verständliche Zustände übersetzt. BLE-Verbindungsabbrüche ändern den Gerätezustand statt den Workout-Prozess zu beenden; ungültige Telemetrie wird validiert/verworfen; Domänenfehler werden im API-Layer in geeignete HTTP-Statuscodes übersetzt. Optionale LLM-/TTS-/Sensorfehler degradieren die Zusatzfunktion, nicht den Workout-Kern.
+
+## 8.14 Nebenläufigkeit und Shutdown
+
+Der Device Agent verwendet `asyncio` für parallele Geräte-, Backend-WebSocket- und Shutdown-Aufgaben. Beim Shutdown werden Geräte-/BLE-Tasks kontrolliert beendet, damit asynchrone Context Manager Verbindungen freigeben können. Nur ein Device Agent soll gleichzeitig auf ein physisches BLE-Gerät zugreifen.
+
+## 8.15 Logging und Diagnose
+
+Produktionsprozesse schreiben auf stdout/stderr; systemd/journald sammelt die Ausgaben. Wichtige Diagnosepfade sind `systemctl status`, `journalctl -u ...`, der `/health`-Endpunkt sowie direkte Prüfungen der lokalen API-/LLM-Ports. Betriebsdetails stehen in `DEPLOYMENT.md`.
+
+## 8.16 Konfiguration
+
+Umgebungsspezifische Werte liegen außerhalb der Domainlogik. Produktive Environment-Dateien befinden sich unter `/etc/health-coach/`; Repo-Vorlagen werden durch `provision.sh` auf fehlende/veraltete Schlüssel geprüft. Beispiele sind LLM-Endpunkt/-Modell, Piper-Modell und Prosodie, Video-Root und Scan-Intervall. Vorhandene lokale Werte werden beim Schlüsselsync nicht ungefragt überschrieben.
+
+## 8.17 Frontend-Build, Routing und Medien
+
+```text
+Development:
+React/Vite -> Proxy -> FastAPI
+
+Production:
+Chromium -> Caddy :80
+             ├─ /api/*    -> FastAPI :8000
+             ├─ /ws/*     -> FastAPI :8000
+             ├─ /videos/* -> FastAPI :8000 -> konfiguriertes Video-Root
+             └─ /*        -> frontend/dist (SPA-Fallback)
+```
+
+Das Frontend baut Trainingsvideo-URLs zentral aus `filePath` als `/videos/<filePath>` auf; die Datenbank speichert keine Browser-URL.
+
+## 8.18 Security und Privacy
+
+Gesundheits- und Trainingsdaten verbleiben grundsätzlich lokal, solange keine externe Integration ausdrücklich eingeführt wird. API und lokales LLM binden im Produktivbetrieb an Loopback; Caddy ist der Browser-Einstiegspunkt. Der Kiosk-/Service-Benutzer erhält nur die für Betrieb, Gerätezugriff und Laufzeitdaten erforderlichen Rechte. Secrets dürfen nicht in Git eingecheckt werden; falls Environment-Dateien später Secrets enthalten, sind restriktivere Dateirechte erforderlich.
+
+## 8.19 Update-Konzept
+
+Der Update-Pfad ist explizit und vom Boot getrennt. `provision.sh` führt `git fetch --prune origin` aus, kann optional nur auf einen tatsächlich auf `origin` vorhandenen Zielbranch wechseln, zieht anschließend per `git pull --ff-only`, ruft `cleanup-branches.sh` auf und provisioniert danach Dependencies, Modelle, Build, Konfiguration, Migrationen und Services. Ohne angegebenen Branch bleibt der aktuelle Branch aktiv. Der normale Boot führt kein Git-Update und keine Downloads aus.
+
 # 9. Architekturentscheidungen (ADRs)
 
 ## ADR-001 – Package-by-Feature
@@ -1139,39 +1256,139 @@ Phasenstart, Phasenende und Halbzeit sind keine Frontend-Timer-Hacks, sondern se
 
 Tempo, Variation und Lautstärke werden über `PiperSynthesisSettings` bzw. Environment-Variablen eingestellt und nicht in Fachlogik eingebaut.
 
+## ADR-034 – Modularer Monolith statt Microservices
+**Status:** Akzeptiert
+
+Für die lokale Appliance bleibt der fachliche Kern ein modularer Monolith. Prozessgrenzen werden nur dort eingeführt, wo technische Lebenszyklen sie rechtfertigen (insbesondere Device Agent und optionales LLM).
+
+## ADR-035 – Ports & Adapters als Abhängigkeitsregel
+**Status:** Akzeptiert
+
+Domain- und Service-Logik hängen nicht von FastAPI, SQLAlchemy, Bleak, Piper oder llama.cpp ab. Infrastruktur implementiert Ports nach innen.
+
+## ADR-036 – FTMS vor proprietären Bike-Protokollen
+**Status:** Akzeptiert
+
+Standardisierte FTMS-Daten werden bevorzugt. Herstellerspezifische Erweiterungen bleiben Adapterdetails und dürfen den fachlichen Telemetrievertrag nicht dominieren.
+
+## ADR-037 – Lesende Bike-Telemetrie und aktive Bike-Steuerung bleiben getrennt
+**Status:** Akzeptiert
+
+Ein Gerät kann Telemetrie liefern, ohne dass daraus automatisch die Berechtigung oder Fähigkeit zur aktiven Widerstands-/Leistungssteuerung folgt. Steuerung erhält einen eigenen Lifecycle und Safety-Regeln.
+
+## ADR-038 – Caddy ist der Produktions-Webserver
+**Status:** Akzeptiert
+
+Caddy liefert den statischen Vite-Build aus und routet `/api/*`, `/ws/*` und `/videos/*` vor dem SPA-Fallback zu FastAPI. Dadurch bleibt das Frontend von konkreten Produktionsports entkoppelt.
+
+## ADR-039 – systemd verwaltet Produktionsprozesse
+**Status:** Akzeptiert
+
+Prepare, API, Device Agent und optionales LLM laufen als systemd-Units. Startreihenfolge, Restart-Policy und Diagnose werden mit Standard-Linux-Werkzeugen abgebildet.
+
+## ADR-040 – Chromium-Kiosk startet in der grafischen Benutzersitzung
+**Status:** Akzeptiert
+
+Der Browser wird über Desktop-Autostart/`start-kiosk.sh` gestartet und nicht als systemweiter Backend-Service modelliert, weil er die grafische Benutzersitzung benötigt.
+
 ---
 
 # 10. Qualitätsanforderungen
 
-- Referenzverletzungen werden durch DB-Constraints sichtbar.
-- Fachliche Regeln sind überwiegend als pure Services/Domainlogik testbar.
-- Cross-Feature-Verknüpfungen befinden sich im Composition Root.
-- Fehlende Messwerte werden nicht erfunden.
-- Optionale Sensorik blockiert keine zentrale Workout-Funktion.
-- Ein einzelner HR-Messwert erzeugt keine aggressive Reaktion.
-- Gewichtstrends verändern nicht unkontrolliert die Tagesbelastung.
-- LLM-Ausfall oder Timeout führt zu Fallback statt Funktionsverlust.
-- TTS-Ausfall darf sichtbares Coaching und Workout nicht blockieren.
-- Coaching-Ausgaben werden gedrosselt bzw. perspektivisch priorisiert.
-- Produktivstart und Update sind reproduzierbar dokumentiert.
-- Modelle werden nicht beim normalen Boot aus dem Internet geladen.
+## 10.1 Qualitätsbaum
+
+```text
+Qualität
+├── Zuverlässigkeit
+│   ├── automatischer Appliance-Start
+│   ├── Datenintegrität / Migrationen
+│   ├── Sensor-/LLM-/TTS-Degradation
+│   └── kontrollierter Shutdown
+├── Wartbarkeit
+│   ├── Package-by-Feature / Ports & Adapter
+│   ├── Testbarkeit
+│   ├── Geräteerweiterbarkeit
+│   └── explizite Verträge
+├── Performance
+│   ├── Live-Telemetrie-Latenz
+│   ├── UI-Reaktionsfähigkeit
+│   └── optionale LLM-Latenz darf Kernpfade nicht blockieren
+├── Benutzbarkeit
+│   ├── Kiosk-Betrieb
+│   ├── verständliches Coaching
+│   └── vollständiger Maus-Bedienpfad
+├── Betriebsfähigkeit
+│   ├── systemd/journald
+│   ├── kontrolliertes Provisioning
+│   ├── Caddy-Validierung
+│   └── Diagnose / Health-Checks
+└── Datenschutz / Sicherheit
+    ├── lokale Datenhaltung
+    ├── minimale Netzwerkexposition
+    └── minimale Benutzerrechte
+```
+
+## 10.2 Qualitätsszenarien
+
+| ID | Situation / Stimulus | Erwartete Reaktion / Akzeptanzkriterium |
+|---|---|---|
+| QS-01 | normaler Appliance-Start | vorbereitete Services und Caddy starten ohne manuelle Terminalinteraktion; Kiosk kann die Anwendung öffnen |
+| QS-02 | neue Heart-Rate-Notification während Workout | Messwert wird normalisiert, übertragen und zeitnah in UI/Coaching verarbeitet; einzelne Messspitzen lösen keine aggressive Regel aus |
+| QS-03 | neue FTMS-Bike-Telemetrie | flags-basiertes Parsing und normalisierte Werte; Parser bleibt ohne reale Hardware unit-testbar |
+| QS-04 | Sensor fällt während Workout aus | Gerät wird als nicht verfügbar markiert; Workout bleibt pausier-/abschließ-/abbrechbar |
+| QS-05 | SIGTERM/SIGINT am Device Agent | BLE-Tasks und Verbindungen werden kontrolliert beendet; anschließender Start kann Geräte erneut verbinden |
+| QS-06 | neues BLE-Gerät desselben fachlichen Typs | neuer Adapter/Parser kann ergänzt werden, ohne Workout-/Frontend-Domainlogik an Herstellerdetails zu koppeln |
+| QS-07 | neue Telemetriegröße | expliziter Contract + Parser-/Service-/Frontend-Anpassung; unbekannte Werte bleiben optional |
+| QS-08 | DB-Schema wird erweitert | Alembic-Migration reproduziert Schemaänderung auf frischer und bestehender DB; keine stillen fachlichen Datenreparaturen |
+| QS-09 | fehlerhafte Telemetrienachricht | Nachricht wird validiert/verworfen bzw. als Fehlerzustand behandelt; API/Device Agent stürzen nicht wegen eines einzelnen Frames ab |
+| QS-10 | Update auf neue Git-Revision | Fetch/optional Branch-Switch/Pull erfolgen kontrolliert; Provisionierung bricht bei Fehlern vor Service-Aktivierung sichtbar ab |
+| QS-11 | `prepare.sh`/Migration schlägt fehl | abhängige Kernservices starten nicht gegen einen unvorbereiteten Runtime-Stand |
+| QS-12 | Entwicklung und Produktion parallel | getrennte Ports/Prozesse dürfen sich nicht ungewollt beeinflussen; nur ein Device Agent greift auf dieselbe BLE-Hardware zu |
+| QS-13 | Entwicklungs-/Produktivdaten | Test-/Dev-Datenbanken und Produktivdaten werden nicht vermischt |
+| QS-14 | doppelter BLE-Zugriff | Betriebsregeln/Diagnose machen Konflikt sichtbar; keine Annahme paralleler exklusiver Geräteverbindungen |
+| QS-15 | Workout-Abschluss | finaler persistierter Status wird serverseitig anhand fachlicher Regeln bestimmt |
+| QS-16 | Frontend-Route oder direkter Reload | Caddy liefert SPA-Routen aus `frontend/dist`; `/api`, `/ws` und `/videos` werden vorher korrekt abgefangen |
+| QS-17 | kein Internet / LLM deaktiviert | Kernbetrieb, Workout und deterministische Coaching-Texte bleiben verfügbar; Boot lädt keine Modelle nach |
+| QS-18 | optionales TTS/LLM fehlerhaft oder langsam | sichtbares Coaching und Workout bleiben bedienbar; deterministischer Fallback greift |
+| QS-19 | Video-Datei neu/entfernt | Scan ergänzt neue Dateien, reaktiviert wieder vorhandene Dateien und markiert fehlende Dateien inaktiv; fehlendes gesamtes Video-Root deaktiviert nicht pauschal alles |
+| QS-20 | Caddy-Konfiguration ändert sich | Provisioning zeigt Diff/Nachfrage; `caddy validate` muss erfolgreich sein, bevor Caddy neu gestartet wird |
+
+## 10.3 Prüfbarkeit
+
+Die Qualitätsszenarien sollen soweit möglich durch Unit-/Integrations-/API-Tests, reproduzierbare Deployment-Schritte oder explizite Betriebschecks prüfbar bleiben. CI führt Backend- und Frontend-Checks aus; Dependabot prüft die npm-, pip- und GitHub-Actions-Abhängigkeiten regelmäßig gemäß `.github/dependabot.yml`.
 
 ---
 
 # 11. Risiken und technische Schulden
 
-| Thema | Aktuelles Risiko / Schuld | Nächster sinnvoller Schritt |
-|---|---|---|
-| Live-Coaching-Dichte | mehrere Events können zeitlich kollidieren | zentrale Priorisierung und Deduplizierung |
-| LLM-Faktentreue | kleine lokale Modelle können Fakten sprachlich verzerren | LLM nur auf sichere Rollen begrenzen / stärkere Validierung / größeres Modell testen |
-| LLM-Latenz | CPU-Inferenz kann mehrere Sekunden benötigen | nicht blockierende Nutzung für optionale Inhalte |
-| Piper-Prosodie | Voice kann trotz Tuning monoton wirken | Presets feinjustieren, alternative Voice/Engine evaluieren |
-| HR-Reconnect | Unterbrechung und Wiederverbindung weiter beobachten | explizite Availability-Events / Tests |
-| TTS-Queue | konkurrierende Meldungen können Audio überlagern | Priorität, Cancel/Replace, Queue-Policy |
-| Adaptive Workouts | automatische Anpassung noch nicht umgesetzt | AdjustmentPolicy + Safety-Grenzen zuerst |
-| Frontend/Deployment | Frontend-Service sollte vollständig als Repo-Referenz gepflegt werden | systemd-Unit in `deploy/systemd/` versionieren |
-| Dokumentation | frühere parallele arc42-Dateien erzeugten Drift | diese Datei als einzige kanonische arc42-Doku verwenden |
-| Kiosk/Recovery | Appliance-Betrieb kann weiter gehärtet werden | Health Checks, Watchdog, Update/Rollback |
+## 11.1 Risiken
+
+| ID | Thema | Risiko / Auswirkung | Gegenmaßnahme / nächster Schritt |
+|---|---|---|---|
+| R-01 | BLE/BlueZ | blockierter Adapter oder verlorene Verbindung | kontrollierter Shutdown, Reconnect, Diagnose über BlueZ/journalctl |
+| R-02 | Doppelter Device Agent | zwei Prozesse konkurrieren um dieselbe Hardware | Dev-/Prod-Agent nicht parallel auf denselben Geräten betreiben |
+| R-03 | DB-Migration/Rollback | Migration kann Rückkehr zu alter Revision erschweren | Backups/Rollback-Strategie weiter ausarbeiten; Migrationen explizit/testbar halten |
+| R-04 | Update-Netzwerk | Dependency-/Modell-Download kann ausfallen | Downloads nur im Provisioning, Boot offline; bei Fehlern vor Restart abbrechen |
+| R-05 | FTMS-Geräteunterschiede | Standardgeräte können Sonderfälle liefern | strikt flags-basierte Parser, aufgezeichnete Frames, Adaptergrenzen |
+| R-06 | WebSocket-Reihenfolge/Reconnect | Zustände können kurz inkonsistent sein | robuste Merge-/Snapshot-/Reconnect-Tests |
+| R-07 | Kiosk-Startreihenfolge | Browser kann vor Webserver/API bereit sein | Kiosk-Launcher wartet auf erfolgreiche HTTP-Antwort |
+| R-08 | Kiosk-/Service-Rechte | unnötig breite Rechte erhöhen Schadenspotenzial | minimale Benutzer-/Gruppenrechte |
+| R-09 | Mediengröße | Videos/Modelle erhöhen lokalen Speicherbedarf | Runtime-Daten getrennt von Quellcode behandeln, Speicherstrategie beobachten |
+| R-10 | LLM-Faktentreue | kleines Modell kann Aussagen sprachlich verzerren | nur Formulierungsrolle, expliziter Kontext, deterministischer Fallback |
+| R-11 | LLM-Latenz | CPU-Inferenz kann mehrere Sekunden dauern | optionale Nutzung; Kernentscheidungen niemals blockieren |
+| R-12 | TTS-Queue/Prosodie | konkurrierende Events oder monotone Stimme | Priorität/Dedupe/Cancel-Policy; Presets/Voice evaluieren |
+| R-13 | Adaptive Workouts | automatische Anpassung birgt Safety-Risiko | AdjustmentPolicy und Grenzen vor Automatisierung |
+| R-14 | Video-Root | Mount/Verzeichnis kann zeitweise fehlen | kein Massendeaktivieren bei fehlendem Root; klare Diagnose |
+| R-15 | Update nicht atomar | Build/Migration/Restart sind kein Blue/Green-Deployment | Backup, Health-Check, Aktivierungs-/Rollback-Konzept weiter härten |
+
+## 11.2 Technische Schulden / offene Architekturthemen
+
+- **Coaching-Priorisierung:** zentrale Event-Priorisierung/Deduplizierung für Safety, Runtime, Phasen, Milestones und Motivation.
+- **Telemetry Publisher Layering:** Transporttypen dürfen nicht in Application/Domain einwandern; WebSocket-Adapter hinter Port halten.
+- **Bike Control:** aktive FTMS-Steuerung bewusst getrennt von lesender Telemetrie; Lifecycle, Safety und manuelle Widerstandsverstellung vor Umsetzung klären.
+- **WebSocket-Robustheit:** Reconnect, Snapshot-vs.-Live-Race und Zustandssynchronisation weiter explizit testen.
+- **Appliance-Härtung:** Health-Checks, Watchdog, Backup und Rollback weiter ausbauen.
+- **Dokumentation:** diese Datei ist die einzige kanonische arc42-Dokumentation; parallele `_old`-/Varianten-Dateien sollen nach Konsolidierung entfernt werden.
 
 ---
 
@@ -1202,11 +1419,14 @@ Tempo, Variation und Lautstärke werden über `PiperSynthesisSettings` bzw. Envi
 | Composition Root | zentrale Verdrahtung von Cross-Feature-Abhängigkeiten |
 | Deviation Tracker | misst die Dauer einer kontinuierlichen HR-Abweichung |
 | Provisionierung | Installation/Update von Code, Dependencies, Assets und Modellen |
+| Video-Root | über `HEALTH_COACH_VIDEO_DIR` konfiguriertes physisches Verzeichnis für Trainingsvideos |
+| filePath | relativer Pfad eines Videos ab Video-Root; daraus wird im Frontend `/videos/...` erzeugt |
+| Caddy | Produktions-Webserver für `frontend/dist` und Reverse Proxy zu FastAPI |
 | Prepare | offline-fähige Runtime-Vorbereitung vor Service-Start |
 
 ---
 
-# 13. Funktionsliste
+# Anhang A – Funktionsliste
 
 Legende: **Vorhanden**, **Teilweise/optional**, **Geplant**.
 
@@ -1227,6 +1447,10 @@ Legende: **Vorhanden**, **Teilweise/optional**, **Geplant**.
 | Workout | Lebenszyklus, Dauer, Distanz | Vorhanden |
 | Workout | Runtime running/paused/finish_window/overtime | Vorhanden |
 | Workout | Summary / serverseitiger Abschlussstatus | Vorhanden |
+| Videos | Katalog-Synchronisation mit `data/videos` / konfiguriertem Video-Root | Vorhanden |
+| Videos | Verwaltung aktiv/inaktiv, CRUD | Vorhanden |
+| Videos | personenspezifische Auswahl nach Nutzung / zuletzt verwendet | Vorhanden |
+| Videos | DB speichert relativen `file_path`, Frontend erzeugt `/videos/...` | Vorhanden |
 | Telemetrie | FTMS / HR | Vorhanden |
 | Telemetrie | separater Device Agent | Vorhanden |
 | Coaching | HR-Zielbereich und Deviation Tracker | Vorhanden |
@@ -1252,7 +1476,7 @@ Legende: **Vorhanden**, **Teilweise/optional**, **Geplant**.
 
 ---
 
-# 14. Feature-Roadmap
+# Anhang B – Feature-Roadmap
 
 ## Phase A – Coaching-Qualität und Event-Priorisierung
 
@@ -1325,7 +1549,7 @@ Vor jeder automatischen Anpassung stehen explizite Safety- und Begrenzungsregeln
 
 ---
 
-# 15. Entwicklerleitfaden: Wo gehört neue Logik hin?
+# Anhang C – Entwicklerleitfaden: Wo gehört neue Logik hin?
 
 ```text
 Ist es eine fachliche Regel?
@@ -1347,7 +1571,7 @@ Ist es reine Darstellung?
     -> Frontend-Komponente
 
 Ist es Frontend-Orchestrierung?
-    -> Hook / Frontend-Service
+    -> Hook / Frontend-State-Service
 
 Ist es Audioerzeugung?
     -> speech adapter hinter TtsPort
@@ -1389,7 +1613,7 @@ Beispiele:
 
 ---
 
-# 16. Pflegehinweise
+# Anhang D – Pflegehinweise
 
 1. **Diese Datei ist die einzige kanonische arc42-Dokumentation.** Neue Varianten mit Suffixen wie `-aktuell`, `-tts` oder `-llm-plan` sollen nicht mehr parallel gepflegt werden.
 2. Implementierte Änderungen aktualisieren mindestens Statusübersicht, Funktionsliste und betroffene Laufzeit-/Bausteinsicht.
@@ -1404,7 +1628,7 @@ Beispiele:
 
 ---
 
-# 17. Verwandte Dokumentation
+# Anhang E – Verwandte Dokumentation
 
 ```text
 arc42-digital-fitness-coach.md   -> diese kanonische Architekturreferenz
@@ -1416,3 +1640,73 @@ backend/docs/websockets.md       -> WebSocket-Verträge / technische Details
 ```
 
 Die früheren arc42-Varianten können nach erfolgreicher Übernahme in Git archiviert oder entfernt werden, damit Architekturänderungen künftig an genau einer Stelle gepflegt werden.
+
+---
+
+# Anhang F – Wichtige Produktionspfade
+
+```text
+/opt/health-coach
+    Git-Checkout / Anwendung
+
+/opt/health-coach/backend/.venv
+    Python-Virtual-Environment
+
+/opt/health-coach/frontend/dist
+    statischer Produktions-Build
+
+/opt/health-coach/data/db/health-coach.db
+    SQLite-Datenbank
+
+/opt/health-coach/data/models/llm
+    lokale LLM-Modelle
+
+/opt/health-coach/data/models/piper
+    Piper-Voice-Modell
+
+/opt/health-coach/data/videos
+    Standard-Video-Root
+
+/etc/health-coach/backend.env
+/etc/health-coach/llm.env
+    produktive Runtime-Konfiguration
+
+/etc/caddy/Caddyfile
+    Frontend + Reverse Proxy
+
+/etc/systemd/system/health-coach-*.service
+    Produktionsservices
+```
+
+# Anhang G – Port- und Routingübersicht
+
+| Port/Pfad | Komponente | Sichtbarkeit/Zweck |
+|---|---|---|
+| `:80` | Caddy | Browser-/Kiosk-Einstieg |
+| `127.0.0.1:8000` | FastAPI | Produktions-API hinter Caddy |
+| `127.0.0.1:8080` | llama-server | optionales lokales LLM |
+| `/api/*` | Caddy → FastAPI | REST |
+| `/ws/*` | Caddy → FastAPI | WebSockets |
+| `/videos/*` | Caddy → FastAPI StaticFiles | Trainingsvideos |
+| `/*` | Caddy → `frontend/dist` | React-SPA |
+
+Entwicklungsports richten sich nach Makefile/Vite-Konfiguration und dürfen vom Produktionsbetrieb abweichen.
+
+# Anhang H – Architekturregeln für zukünftige Erweiterungen
+
+1. Domänenlogik importiert keine Infrastrukturframeworks.
+2. Neue Hardware wird über Adapter integriert.
+3. Gerätewerte werden vor Übergabe an Anwendung/UI normalisiert.
+4. Unbekannte Messwerte bleiben optional; sie werden nicht erfunden.
+5. Neue Datenbankschemata erhalten Alembic-Migrationen.
+6. Neue Live-Telemetrie erhält explizite Contracts und Tests.
+7. Test-/Dev-/Produktivdaten werden nicht unkontrolliert vermischt.
+8. Produktionsprozesse sind über systemd/journald diagnostizierbar.
+9. Hardware-Parser sind ohne reale Hardware unit-testbar.
+10. Lesende Telemetrie und aktive Gerätesteuerung bleiben getrennte Fähigkeiten.
+11. Frontend verwendet relative `/api`, `/ws` und `/videos`-Pfade.
+12. Fehlende optionale Sensorik, TTS oder LLM darf den Workout-Kern nicht verhindern.
+13. Generative Komponenten formulieren, entscheiden aber keine Safety-/Trainingsregeln.
+14. Cross-Feature-Orchestrierung liegt im Composition Root.
+15. Persistierte Medienpfade sind relative fachliche Pfade, keine Browser-URLs.
+
