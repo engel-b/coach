@@ -47,6 +47,8 @@ py --version
 py -m pip --version
 node --version
 npm --version
+
+Für das Frontend wird Node.js **>=24.15.0 <25** benötigt. Die im Projekt getestete Version steht in `.nvmrc`; mit `nvm use` kann sie direkt aktiviert werden.
 git --version
 make --version
 ```
