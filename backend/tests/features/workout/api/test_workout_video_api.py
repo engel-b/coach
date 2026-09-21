@@ -51,21 +51,18 @@ def isolated_video_catalog(
     )
 
 
-def test_get_workout_videos_returns_only_active_videos() -> None:
+def test_get_workout_videos_returns_complete_catalog() -> None:
     response = client.get("/api/workout-videos")
 
     assert response.status_code == 200
 
     body = response.json()
 
-    assert len(body) == 1
-    assert body[0] == {
-        "id": "Lqhq5UQ-U8A",
-        "title": "Alpen",
-        "description": "Trainingsvideo Alpen",
-        "url": "/videos/cycling/alpen.mp4",
-        "durationSeconds": 3600.0,
-    }
+    assert len(body) == 2
+    assert {video["id"] for video in body} == {"Lqhq5UQ-U8A", "inactive-video"}
+
+    inactive = next(video for video in body if video["id"] == "inactive-video")
+    assert inactive["active"] is False
 
 
 def test_get_workout_video_by_id() -> None:
@@ -76,10 +73,47 @@ def test_get_workout_video_by_id() -> None:
     body = response.json()
 
     assert body["id"] == "Lqhq5UQ-U8A"
-    assert body["url"] == "/videos/cycling/alpen.mp4"
+    assert body["filePath"] == "cycling/alpen.mp4"
 
 
 def test_unknown_workout_video_returns_404() -> None:
     response = client.get("/api/workout-videos/does-not-exist")
 
     assert response.status_code == 404
+
+
+def test_create_workout_video_uses_file_path_contract() -> None:
+    response = client.post(
+        "/api/workout-videos",
+        json={
+            "title": "Küste",
+            "description": None,
+            "filePath": "cycling/kueste.mp4",
+            "durationSeconds": 2700,
+            "active": True,
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["filePath"] == "cycling/kueste.mp4"
+    assert "url" not in body
+
+
+def test_update_workout_video_uses_file_path_contract() -> None:
+    response = client.put(
+        "/api/workout-videos/Lqhq5UQ-U8A",
+        json={
+            "title": "Alpenrunde",
+            "description": "Aktualisiert",
+            "filePath": "cycling/alpen-neu.mp4",
+            "durationSeconds": 3700,
+            "active": True,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["title"] == "Alpenrunde"
+    assert body["filePath"] == "cycling/alpen-neu.mp4"
+    assert "url" not in body

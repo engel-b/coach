@@ -25,6 +25,13 @@ export default defineConfig({
         changeOrigin: true,
       },
 
+      // Trainingsvideos werden vom Backend aus dem konfigurierten
+      // HEALTH_COACH_VIDEO_DIR unter /videos ausgeliefert.
+      "/videos": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+      },
+
       // Das brauchen wir wenig später für unseren
       // Backend -> Frontend WebSocket.
       "/ws": {

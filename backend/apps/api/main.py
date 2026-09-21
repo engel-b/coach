@@ -1,8 +1,14 @@
 import logging
+import os
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
+from apps.api import wiring
 from apps.api.routers.health import router as health_router
+from apps.api.video_catalog_lifecycle import VideoCatalogLifecycle
 from features.check_in.api.router import router as check_ins_router
 from features.coaching.api.router import router as coaching_router
 from features.person.api.router import router as persons_router
@@ -17,6 +23,21 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
+
+
+video_catalog_lifecycle = VideoCatalogLifecycle(
+    sync_service=wiring.video_catalog_sync_service,
+    interval_seconds=float(os.environ.get("HEALTH_COACH_VIDEO_SCAN_INTERVAL_SECONDS", "300")),
+)
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
+    await video_catalog_lifecycle.start()
+    try:
+        yield
+    finally:
+        await video_catalog_lifecycle.stop()
 
 
 OPENAPI_TAGS = [
@@ -81,6 +102,7 @@ app = FastAPI(
     ),
     version="0.1.0",
     openapi_tags=OPENAPI_TAGS,
+    lifespan=lifespan,
 )
 
 app.include_router(health_router)
@@ -93,3 +115,12 @@ app.include_router(check_ins_router)
 app.include_router(training_router)
 app.include_router(workouts_router)
 app.include_router(workout_videos_router)
+
+# Die Datenbank speichert nur Pfade relativ zu HEALTH_COACH_VIDEO_DIR.
+# Die physische Ablage kann dadurch frei konfiguriert werden, während der
+# Browser die Dateien stabil unter /videos/<filePath> erreicht.
+app.mount(
+    "/videos",
+    StaticFiles(directory=wiring.video_directory, check_dir=False),
+    name="videos",
+)

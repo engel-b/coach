@@ -40,4 +40,6 @@ make backend
 
 Normal backend startup never downloads the model. If the LLM is disabled, unavailable, times out, or returns no usable text, the deterministic template generator remains available as fallback.
 
+By default the GGUF model is stored in `data/models/llm/qwen3.5-0.8b-q4_0.gguf`.
+
 The model URL can be overridden with `HEALTH_COACH_LLM_MODEL_URL`. The server executable can be overridden with `HEALTH_COACH_LLAMA_SERVER` if it is not on `PATH`.

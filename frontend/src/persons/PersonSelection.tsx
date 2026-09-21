@@ -6,6 +6,7 @@ interface PersonSelectionProps {
   persons: Person[];
   onSelect: (person: Person) => void;
   onCreate: () => void;
+  onManageVideos: () => void;
 }
 
 /**
@@ -26,6 +27,7 @@ export function PersonSelection({
   persons,
   onSelect,
   onCreate,
+  onManageVideos,
 }: PersonSelectionProps) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
@@ -78,6 +80,13 @@ export function PersonSelection({
       <div className="person-selection-actions">
         <button type="button" className="secondary-action" onClick={onCreate}>
           + Person hinzufügen
+        </button>
+        <button
+          type="button"
+          className="secondary-action"
+          onClick={onManageVideos}
+        >
+          Trainingsvideos verwalten
         </button>
       </div>
     </section>

@@ -1,0 +1,20 @@
+:80 {
+        @backend {
+                path /health /api/* /ws/* /videos/* /docs /docs/* /redoc /redoc/* /openapi.json
+        }
+
+        handle @backend {
+                reverse_proxy 127.0.0.1:8000
+        }
+
+        handle /starting.html {
+                root * /opt/health-coach/deploy/startup
+                file_server
+        }
+
+        handle {
+                root * /opt/health-coach/frontend/dist
+                try_files {path} /index.html
+                file_server
+        }
+}

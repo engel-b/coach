@@ -76,6 +76,13 @@ class SqlAlchemyWorkoutVideoRepository:
 
             return self._to_domain(model)
 
+    def get_by_file_path(self, file_path: str) -> WorkoutVideo | None:
+        with self._session_factory() as session:
+            model = session.scalar(
+                select(WorkoutVideoModel).where(WorkoutVideoModel.file_path == file_path)
+            )
+            return None if model is None else self._to_domain(model)
+
     def get_all(
         self,
         *,

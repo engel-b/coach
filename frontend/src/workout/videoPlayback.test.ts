@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { calculateVideoPlaybackRate, isBikeMoving } from "./videoPlayback";
+import {
+  calculateVideoPlaybackRate,
+  isBikeMoving,
+  workoutVideoUrl,
+} from "./videoPlayback";
 
 describe("isBikeMoving", () => {
   it("returns unknown while no bike telemetry is known", () => {
@@ -53,5 +57,19 @@ describe("calculateVideoPlaybackRate", () => {
     expect(calculateVideoPlaybackRate(40)).toBe(2);
 
     expect(calculateVideoPlaybackRate(60)).toBe(2);
+  });
+});
+
+describe("workoutVideoUrl", () => {
+  it("builds the public URL from the relative catalog path", () => {
+    expect(workoutVideoUrl("cycling/alpen.mp4")).toBe(
+      "/videos/cycling/alpen.mp4",
+    );
+  });
+
+  it("encodes individual path segments", () => {
+    expect(workoutVideoUrl("Meine Tour/frühstück.mp4")).toBe(
+      "/videos/Meine%20Tour/fr%C3%BChst%C3%BCck.mp4",
+    );
   });
 });

@@ -157,7 +157,7 @@ can be closed cleanly when the application is stopped.
 Application data is stored locally in SQLite:
 
 ``` text
-data/health-coach.db
+data/db/health-coach.db
 ```
 
 SQLAlchemy provides persistence access. Database schema changes are

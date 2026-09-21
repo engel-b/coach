@@ -47,6 +47,7 @@ from features.workout.persistence.sqlalchemy_workout_video_repository import (
     SqlAlchemyWorkoutVideoRepository,
 )
 from features.workout.service.video_catalog_service import VideoCatalogService
+from features.workout.service.video_catalog_sync_service import VideoCatalogSyncService
 from features.workout.service.workout_service import WorkoutService
 
 # Composition Root der HTTP-Anwendung.
@@ -153,17 +154,38 @@ workout_service = WorkoutService(
 
 video_catalog_service = VideoCatalogService(
     repository=workout_video_repository,
+    workout_repository=workout_repository,
+)
+
+project_root = Path(__file__).resolve().parents[3]
+configured_video_directory = Path(
+    os.environ.get("HEALTH_COACH_VIDEO_DIR", "data/videos")
+).expanduser()
+video_directory = (
+    configured_video_directory
+    if configured_video_directory.is_absolute()
+    else project_root / configured_video_directory
+).resolve()
+
+video_catalog_sync_service = VideoCatalogSyncService(
+    repository=workout_video_repository,
+    video_directory=video_directory,
 )
 
 telemetry_broadcaster = TelemetryBroadcaster()
 
 
-piper_model_path = Path(
+configured_piper_model_path = Path(
     os.environ.get(
         "HEALTH_COACH_PIPER_MODEL",
-        "models/piper/de_DE-thorsten-medium.onnx",
+        "data/models/piper-tts/de_DE-thorsten-medium.onnx",
     )
-)
+).expanduser()
+piper_model_path = (
+    configured_piper_model_path
+    if configured_piper_model_path.is_absolute()
+    else project_root / configured_piper_model_path
+).resolve()
 piper_synthesis_settings = PiperSynthesisSettings(
     length_scale=float(os.environ.get("HEALTH_COACH_TTS_LENGTH_SCALE", "0.92")),
     noise_scale=float(os.environ.get("HEALTH_COACH_TTS_NOISE_SCALE", "0.70")),
