@@ -1,633 +1,174 @@
 # Health Coach
 
-Local digital fitness and health coach with live device telemetry,
-workout recommendations, workout tracking, and training history.
-
-> **Status:** Active development. The application currently supports
-> person selection, check-ins, training recommendations, workout
-> lifecycle/history, and live heart-rate telemetry. Bike telemetry
-> infrastructure is prepared; concrete MERACH integration depends on the
-> device/protocol.
+Local-first digital fitness and health coach for a small number of users. The application combines health/readiness check-ins, deterministic training recommendations, structured workouts, live BLE telemetry, live coaching, local TTS, an optional local LLM and a local training-video catalog.
 
 [![CI](https://github.com/engel-b/coach/actions/workflows/ci.yml/badge.svg)](https://github.com/engel-b/coach/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![Node](https://img.shields.io/badge/node-24_LTS-green)
 ![License](https://img.shields.io/badge/license-private-lightgrey)
 
-# Health Coach
+## Current capabilities
 
-## Overview
+- multiple persons and profiles
+- daily check-ins with weight, sleep, steps and subjective readiness signals
+- deterministic pre-workout recommendation with structured reasons
+- workout phases and runtime states (`running`, `paused`, `finish_window`, `overtime`)
+- Heart Rate and FTMS telemetry through a separate Device Agent
+- server-side live coaching via `/ws/coaching`
+- local Piper TTS
+- optional local OpenAI-compatible LLM with deterministic fallback
+- training-video catalog synchronized with a configurable local video directory
+- SQLite persistence with SQLAlchemy and Alembic
+- Debian appliance deployment with systemd, Caddy and Chromium kiosk mode
 
-Health Coach is designed as a local application for a small number of
-users. It combines health check-ins, rule-based training
-recommendations, workout execution and live telemetry from fitness
-devices.
+The central architecture rule is:
 
-The system is intentionally built as a modular monolith with clear
-boundaries. The backend follows a Ports & Adapters / Hexagonal
-Architecture approach so that domain logic remains independent of
-FastAPI, SQLite, Bluetooth, and other infrastructure.
-
-Typical application flow:
-
-``` text
-Select person
-    ?
-Dashboard / training history
-    ?
-Check-in
-    ?
-Training recommendation
-    ?
-Start workout
-    ?
-Live workout with heart rate / target values
-    ?
-Complete or abort workout
-    ?
-Workout summary
-    ?
-Dashboard / history
+```text
+Deterministic domain logic decides WHAT is true and WHAT may happen.
+Optional generative components may only influence HOW it is worded.
 ```
 
-## Links
+## Repository layout
 
-* Swagger UI, interactive API documentation with "Try it out": http://127.0.0.1:8000/docs 
-* OpenAPI JSON, API contract: http://127.0.0.1:8000/openapi.json 
-* ReDoc, alternative, human readable documentation: http://127.0.0.1:8000/redoc 
-
-## Components
-
-``` text
-+-----------------------------+
-� React / TypeScript Frontend �
-� Vite                        �
-+-----------------------------+
-               � REST + WebSocket
-               ?
-+-----------------------------+
-� FastAPI Backend             �
-�                             �
-� Application Services        �
-� Domain Logic                �
-� Persistence Adapters        �
-+-----------------------------+
-           �          �
-           �          ?
-           �     SQLite
-           �     SQLAlchemy
-           �     Alembic
-           �
-           � WebSocket
-           ?
-+-----------------------------+
-� Device Agent                �
-� Python / Bleak              �
-+-----------------------------+
-               � Bluetooth LE
-               ?
-        Fitness devices
-        e.g. HR sensor
+```text
+health-coach/
+├── backend/
+├── frontend/
+├── data/
+│   ├── db/
+│   ├── models/
+│   │   ├── llm/
+│   │   └── piper/
+│   └── videos/
+├── deploy/
+├── Makefile
+├── README.md
+├── arc42-digital-fitness-coach.md
+├── DEPLOYMENT.md
+├── HOWTO-Entwicklungsumgebung.md
+└── LOCAL-LLM.md
 ```
 
-### Frontend
-
-Technology:
-
--   React
--   TypeScript
--   Vite
--   REST API for application state
--   WebSocket for live telemetry
-
-The frontend contains person selection, dashboard, check-in flow,
-training recommendations, workout view, live heart-rate display, workout
-summary, and training history.
-
-### Backend API
-
-Technology:
-
--   Python
--   FastAPI
--   Pydantic
--   SQLAlchemy
--   Alembic
--   SQLite
--   WebSockets
-
-The backend contains the application and domain logic and exposes REST
-and WebSocket endpoints.
-
-Important architectural areas:
-
-``` text
-backend/
-+-- apps/          # executable applications / entry points
-+-- application/   # use cases and application services
-+-- domains/       # business/domain logic
-+-- adapters/      # persistence, Bluetooth, etc.
-+-- contracts/     # API / message contracts
-+-- tests/         # automated tests
-```
-
-### Device Agent
-
-The Device Agent runs as a separate Python process. It discovers and
-communicates with Bluetooth LE fitness devices and sends normalized
-telemetry messages to the backend.
-
-Current data flow for heart rate:
-
-``` text
-Heart-rate sensor
-    ? Bluetooth LE
-Bleak Device Agent
-    ? WebSocket /ws/device-agent
-FastAPI
-    ? WebSocket /ws/telemetry
-React frontend
-```
-
-The Device Agent has graceful shutdown handling so Bluetooth connections
-can be closed cleanly when the application is stopped.
-
-### Persistence
-
-Application data is stored locally in SQLite:
-
-``` text
-data/db/health-coach.db
-```
-
-SQLAlchemy provides persistence access. Database schema changes are
-managed exclusively through Alembic migrations.
-
-The application creates the `data/` directory automatically if it does
-not exist. On a fresh installation, Alembic still has to create/update
-the database schema.
+`data/` contains local runtime data and assets. Video records store a path relative to the configured video root; browser URLs are built as `/videos/<filePath>`.
 
 ## Requirements
 
-### Operating system
+- Python 3.11+
+- Node.js 24 LTS (`>=24.15.0 <25`; tested version in `.nvmrc`)
+- npm
+- Git
+- GNU Make
+- Linux/BlueZ for real BLE device integration
 
-Development currently targets Linux. Bluetooth support relies on
-BlueZ/Bluetooth LE.
+For the detailed development setup, see `HOWTO-Entwicklungsumgebung.md`.
 
-### Python
+## Quick development setup
 
-Python 3.11 or newer is required according to `pyproject.toml`.
+Backend:
 
-Check:
-
-``` bash
-python3 --version
-```
-
-### Node.js
-
-Node.js 24 LTS is required for the frontend. The project currently requires Node.js >=24.15.0 <25; `.nvmrc` pins the tested LTS version.
-
-Check:
-
-``` bash
-node --version
-npm --version
-```
-
-Using `nvm` is recommended for managing Node.js versions.
-
-### Bluetooth
-
-For BLE devices, a working Bluetooth adapter and BlueZ are required.
-
-Useful checks:
-
-``` bash
-bluetoothctl show
-systemctl status bluetooth
-```
-
-## Initial setup
-
-Clone the repository and enter the project directory:
-
-``` bash
-git clone <repository-url>
-cd Coach
-```
-
-### Backend
-
-Create a virtual environment:
-
-``` bash
+```bash
 cd backend
 python3 -m venv .venv
-source .venv/bin/activate
-```
-
-Install the application including development dependencies:
-
-``` bash
-python -m pip install --upgrade pip
-pip install -e ".[dev]"
-```
-
-Apply all database migrations:
-
-``` bash
-alembic upgrade head
-```
-
-Return to the repository root:
-
-``` bash
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -e ".[dev]"
 cd ..
 ```
 
-### Frontend
+Frontend:
 
-Install Node.js dependencies:
-
-``` bash
+```bash
 cd frontend
 npm ci
 cd ..
 ```
 
-## Starting the application
+Run checks:
 
-From the repository root:
-
-``` bash
-make dev
-```
-
-This starts the main development components:
-
-``` text
-FastAPI backend
-Device Agent
-React/Vite frontend
-```
-
-The backend also applies pending Alembic migrations before starting.
-
-Stop the development environment with:
-
-``` text
-Ctrl+C
-```
-
-The launcher terminates the child processes and the Device Agent
-performs a graceful shutdown of its Bluetooth connection.
-
-### Starting components individually
-
-Backend:
-
-``` bash
-cd backend
-source .venv/bin/activate
-alembic upgrade head
-python -m uvicorn apps.api.main:app \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --reload
-```
-
-Device Agent:
-
-``` bash
-cd backend
-source .venv/bin/activate
-python -m apps.device_agent.main
-```
-
-Frontend:
-
-``` bash
-cd frontend
-npm run dev -- --host 0.0.0.0
-```
-
-## Development commands
-
-Run all automated checks:
-
-``` bash
+```bash
+make format
 make check
 ```
 
-This includes backend and frontend checks such as:
+Start the development environment according to the Makefile/HOWTO:
 
--   Ruff
--   mypy
--   pytest
--   ESLint
--   TypeScript compiler checks
-
-Format backend code:
-
-``` bash
-make format
-```
-
-Check formatting without modifying files:
-
-``` bash
-make format-check
-```
-
-Build/check the project:
-
-``` bash
-make build
-```
-
-Run backend tests:
-
-``` bash
-make test
+```bash
+make dev
 ```
 
 ## Database and migrations
 
-Show the current Alembic revision:
+Application data is stored in:
 
-``` bash
+```text
+data/db/health-coach.db
+```
+
+Schema changes are managed exclusively through Alembic:
+
+```bash
 make db-current
-```
-
-Show migration history:
-
-``` bash
 make db-history
-```
-
-Apply all pending migrations:
-
-``` bash
 make db-upgrade
+make migration m="Beschreibung"
 ```
 
-Create a new migration using the project's migration target, if
-configured:
+Do not use `create_all()` or manual SQLite schema edits as a replacement for migrations.
 
-``` bash
-make migration
+## Production
+
+The production checkout lives under `/opt/health-coach`. Caddy serves `frontend/dist` and proxies `/api/*`, `/ws/*` and `/videos/*` to FastAPI. Runtime configuration lives under `/etc/health-coach/`.
+
+The supported deployment/update entry point is:
+
+```bash
+cd /opt/health-coach
+./deploy/provision.sh
 ```
 
-Do not manually modify the SQLite schema. Schema changes should be
-represented by Alembic migrations so a fresh installation and CI can
-reproduce the same database structure.
+An optional remote branch can be selected during provisioning; without one, the current branch is updated. The normal boot path uses `prepare.sh` and does not download dependencies or models.
 
-## API overview
+See `DEPLOYMENT.md` for installation, Caddy/systemd, update workflow, kiosk operation, troubleshooting and recovery.
 
-Important API areas currently include:
+## Local LLM and TTS
 
-``` text
-/api/persons
-/api/persons/{person_id}/...
-/api/workouts/...
-/api/devices
+The LLM is optional. It is used only for wording/explanation and never replaces deterministic workout or safety decisions. The default local model lives under `data/models/llm/`; Piper voices live under `data/models/piper/`.
 
+See `LOCAL-LLM.md` for the local model runtime and `DEPLOYMENT.md` for production service configuration.
+
+## API and live channels
+
+Typical endpoints/channels include:
+
+```text
+GET  /health
+/api/...
 /ws/device-agent
 /ws/telemetry
+/ws/coaching
+/videos/...
 ```
 
-Examples of workout operations include starting a workout for a person,
-completing or aborting a workout, retrieving workout history, and
-retrieving a workout summary.
+Interactive FastAPI documentation is available directly from the backend at `/docs` when enabled/running.
 
-FastAPI's interactive API documentation is normally available while the
-backend is running at:
+## Testing, CI and dependency updates
 
-``` text
-http://localhost:8000/docs
-```
+GitHub Actions runs the project checks on pushes and pull requests. Typical local checks are:
 
-## Live telemetry
-
-Telemetry between processes uses generic messages rather than
-device-specific frontend contracts.
-
-Currently supported/planned telemetry types include:
-
-``` text
-device.status_changed
-heart_rate.sample
-bike.telemetry
-```
-
-This keeps the workout UI independent from a particular heart-rate
-sensor or bike implementation.
-
-## Testing and CI
-
-GitHub Actions runs the project checks on pushes and pull requests.
-
-A fresh CI runner has no existing SQLite database. Therefore the
-workflow must initialize the database schema before API/persistence
-tests run:
-
-``` bash
-cd backend
-source .venv/bin/activate
-alembic upgrade head
-```
-
-CI should use:
-
-``` bash
+```bash
 make format-check
 make check
 ```
 
-rather than modifying source files with `make format`.
+Dependabot checks npm, pip and GitHub Actions dependencies according to `.github/dependabot.yml` (currently configured for daily checks).
 
-## Troubleshooting
+## Documentation
 
-### `sqlite3.OperationalError: unable to open database file`
+| Document | Purpose |
+|---|---|
+| `README.md` | short project entry point |
+| `arc42-digital-fitness-coach.md` | canonical architecture documentation (arc42 chapters 1–12 plus appendices) |
+| `DEPLOYMENT.md` | Debian appliance deployment, systemd, Caddy, configuration, update and operations |
+| `HOWTO-Entwicklungsumgebung.md` | local developer setup and troubleshooting |
+| `LOCAL-LLM.md` | local LLM runtime/model usage |
 
-SQLite can create a database file, but its parent directory must exist.
-
-The application is expected to create:
-
-``` text
-data/
-```
-
-automatically.
-
-Verify:
-
-``` bash
-ls -ld data
-```
-
-### `sqlite3.OperationalError: no such table: ...`
-
-The SQLite file exists, but the database schema has not been migrated.
-
-Run:
-
-``` bash
-cd backend
-source .venv/bin/activate
-alembic upgrade head
-```
-
-Then start or test the application again.
-
-### Port 8000 is already in use
-
-Check which process owns the port:
-
-``` bash
-ss -ltnp | grep :8000
-```
-
-If an old development process is still running, terminate that process
-and restart:
-
-``` bash
-make dev
-```
-
-### Bluetooth error: `org.bluez.Error.InProgress`
-
-A previous Bluetooth scan or process may still be active.
-
-First check for duplicate Device Agent processes:
-
-``` bash
-ps aux | grep -E "device_agent|python.*Coach" | grep -v grep
-```
-
-Check the adapter:
-
-``` bash
-bluetoothctl show
-```
-
-If BlueZ is stuck, restart Bluetooth:
-
-``` bash
-sudo systemctl restart bluetooth
-```
-
-Then restart Health Coach.
-
-### Heart-rate sensor does not appear
-
-Check that:
-
-1.  Bluetooth is enabled.
-2.  The sensor is awake and being worn/activated.
-3.  No second application is holding the BLE connection.
-4.  Only one Device Agent instance is running.
-5.  The backend and Device Agent WebSocket connection are active.
-
-### Frontend has no live telemetry
-
-Check that all three development components are running via:
-
-``` bash
-make dev
-```
-
-The expected chain is:
-
-``` text
-BLE device
-? Device Agent
-? /ws/device-agent
-? backend
-? /ws/telemetry
-? frontend
-```
-
-Browser developer tools can be used to verify the `/ws/telemetry`
-WebSocket connection.
-
-### Development environment does not stop cleanly
-
-Use `Ctrl+C` on the `make dev` process rather than killing individual
-child processes where possible.
-
-If a stale process remains:
-
-``` bash
-ps aux | grep -E "uvicorn|device_agent|vite" | grep -v grep
-```
-
-Terminate the stale process and, if Bluetooth remains busy, restart
-BlueZ.
-
-## Architecture principles
-
-The project follows a few deliberate rules:
-
--   Domain logic should not depend on FastAPI, SQLite, Bluetooth, or
-    React.
--   External systems are integrated through adapters.
--   Device-specific protocols should be normalized before reaching
-    application/domain logic.
--   Database schema evolution is managed through Alembic.
--   Tests and CI should work from a clean environment.
--   Hardware integrations should be introduced without coupling workout
-    logic to one specific device.
-
-A Java/Spring comparison is roughly:
-
-``` text
-domains/       � domain model / pure business logic
-application/   � application services / use cases
-adapters/      � repository + infrastructure implementations
-apps/api/      � REST/WebSocket application entry point
-contracts/     � DTOs / wire contracts
-SQLAlchemy     � JPA/Hibernate role
-Alembic        � Flyway/Liquibase role
-```
-
-## Current capabilities
-
-The application currently includes:
-
--   Multiple persons
--   Person dashboard
--   Health/readiness check-in
--   Training recommendation
--   Workout start, completion and abort
--   Workout phases and target heart-rate ranges
--   Workout summary
--   Training history
--   Live BLE heart-rate telemetry
--   Device connection status
--   Backend-to-frontend live WebSocket telemetry
--   SQLite persistence with Alembic migrations
--   Generic bike telemetry domain/application model
--   Automated backend/frontend quality checks
-
-## Roadmap
-
-Near-term development includes:
-
--   MERACH bike discovery and integration
--   Live bike telemetry such as power, cadence, speed and resistance
--   Bike-aware workout execution
--   Improved training recommendations using profile, check-in and
-    workout history
--   Further test isolation, especially a dedicated test database
-
-Possible later extensions include additional fitness-device adapters,
-richer coaching, voice interaction, video/gamification, and other
-health/fitness integrations.
-
-## Repository status
-
-This is currently a locally operated application under active
-development. Hardware integrations can depend on the exact capabilities
-and BLE/GATT protocol of the connected device.
+The `_old.md` documentation variants are obsolete after consolidation and should not be maintained in parallel.

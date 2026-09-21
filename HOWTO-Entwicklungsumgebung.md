@@ -38,6 +38,8 @@ Der Installationspfad kann abweichen.
 
 Python, pip, venv, Git, Node.js/npm und Make über den Paketmanager beziehungsweise eine geeignete Node-Versionsverwaltung installieren. Auf Debian/Ubuntu werden beispielsweise die Pakete `python3-venv`, `python3-pip`, `git` und `make` benötigt. Die konkreten Paketnamen und Python-Versionen hängen von der Distribution ab.
 
+Für dieses Projekt reicht die Debian-Standardversion von Node.js je nach Debian-Release nicht aus. Erforderlich ist Node.js **24 LTS (`>=24.15.0 <25`)**. Für die Appliance sollte Node systemweit verfügbar sein; eine nur in einer interaktiven Shell aktivierte `nvm`-Version ist für Deployment-Skripte/systemd nicht ausreichend.
+
 ## 2. Installation prüfen
 
 ### Windows PowerShell
@@ -84,12 +86,20 @@ health-coach/
 │   ├── pyproject.toml
 │   ├── .venv/              # wird lokal erstellt
 │   └── ...
-└── frontend/
-    ├── package.json
-    └── ...
+├── frontend/
+│   ├── package.json
+│   └── ...
+└── data/
+    ├── db/
+    ├── models/
+    │   ├── llm/
+    │   └── piper/
+    └── videos/
 ```
 
 Die virtuelle Umgebung liegt im Ordner `backend`, nicht im Repository-Root. Alle Make-Targets werden aus dem Repository-Root ausgeführt.
+
+Lokale Laufzeitdaten liegen unter `data/`. Insbesondere nutzt die Anwendung standardmäßig `data/db/health-coach.db`, `data/models/llm`, `data/models/piper` und `data/videos`. Diese Verzeichnisse sind keine Python-Package-Struktur.
 
 ## 4. Python-Entwicklungsumgebung installieren
 
@@ -176,6 +186,16 @@ Anschließend die verfügbaren Skripte prüfen:
 npm run
 ```
 
+
+## 6.1 Trainingsvideos in der Entwicklung
+
+Das physische Video-Root kann über `HEALTH_COACH_VIDEO_DIR` gesetzt werden. Ohne projektspezifische Überschreibung ist `data/videos` der vorgesehene lokale Ort. Die Datenbank speichert nur den Pfad relativ zu diesem Root, beispielsweise:
+
+```text
+cycling/alpen.mp4
+```
+
+Das Frontend erzeugt daraus die Browser-URL `/videos/cycling/alpen.mp4`. In der Entwicklung muss Vite `/videos` ebenso wie `/api`/`/ws` an FastAPI weiterreichen.
 
 ## 7. Makefile plattformübergreifend verwenden
 
@@ -335,6 +355,17 @@ Unter Linux/macOS die entsprechenden Befehle mit `.venv/bin/python` ausführen. 
 
 `node --version`, `npm --version` und `npm run` im Frontend prüfen. Die unterstützte Node-Version und die vorhandenen Skripte aus der Projektkonfiguration übernehmen. Anschließend die Frontend-Abhängigkeiten installieren.
 
+Aktuell erwartet das Projekt Node.js `>=24.15.0 <25`. Eine `EBADENGINE`-Warnung ist daher ein Hinweis, die tatsächlich verwendete Node-Version (`which node`, `node --version`) zu prüfen und nicht durch `npm audit fix --force` zu übergehen.
+
+### API-/Video-Request liefert HTML statt JSON/MP4
+
+Wenn Vite statt Backend-Daten die React-`index.html` zurückgibt, den Proxy prüfen. Direktes Backend und Vite separat testen. Für Videos gilt dasselbe für `/videos/*`.
+
+### Bluetooth `org.bluez.Error.InProgress` / keine Live-Telemetrie
+
+Prüfen, dass nicht gleichzeitig Entwicklungs- und Produktions-Device-Agent auf dieselben BLE-Geräte zugreifen. Danach `bluetoothctl show` und gegebenenfalls BlueZ neu starten.
+
+
 ## 11. Git und lokale Dateien
 
 Die virtuelle Umgebung und generierte Abhängigkeiten gehören normalerweise nicht ins Repository. Die `.gitignore` sollte mindestens die relevanten lokalen Verzeichnisse ausschließen:
@@ -351,3 +382,21 @@ Zusätzlich projektspezifische Cache-, Build- und lokale Konfigurationsdateien b
 WSL ist für Python, venv, pip, Node.js, npm und Make nicht erforderlich. Natives Windows reicht für die üblichen Entwicklungsaufgaben aus. WSL kann sinnvoll sein, wenn das Projekt Linux-spezifische Werkzeuge, Shell-Skripte oder eine Linux-nahe Container- und Laufzeitumgebung benötigt.
 
 Wer WSL verwendet, sollte Python-venv und Node-Abhängigkeiten innerhalb der Linux-Umgebung neu installieren und nicht die Windows-venv wiederverwenden. Die beiden Umgebungen besitzen unterschiedliche Interpreter und ausführbare Dateien. Für die tägliche Arbeit sollte eine konsistente Toolchain gewählt werden, statt Windows-, Git-Bash- und WSL-Befehle unkontrolliert zu mischen.
+
+
+## 13. CI und Dependency-Updates
+
+GitHub Actions führt die Projektchecks auf Pushes und Pull Requests aus. Lokal sollte vor einem Push mindestens `make check` laufen; `make format` darf Quellcode verändern und ist deshalb kein CI-Ersatz für `make format-check`.
+
+Dependabot ist für npm (`/frontend`), pip (`/backend`) und GitHub Actions (`/`) konfiguriert. Der aktuelle Schedule steht in `.github/dependabot.yml`; derzeit werden die Abhängigkeiten täglich geprüft.
+
+Die Python-Testabhängigkeiten werden über das `dev`-Extra in `backend/pyproject.toml` verwaltet. FastAPI/Starlette-`TestClient` verwendet im aktuellen Projekt `httpx2`; Warnungen sollten durch konsistente Abhängigkeiten behoben und nicht global unterdrückt werden.
+
+## 14. Weiterführende Dokumentation
+
+- `README.md`: Projekteinstieg
+- `arc42-digital-fitness-coach.md`: kanonische Architektur
+- `DEPLOYMENT.md`: Debian/Caddy/systemd/Provisionierung/Betrieb
+- `LOCAL-LLM.md`: lokale LLM-Runtime
+
+Die früheren `_old.md`-Varianten werden nach dieser Konsolidierung nicht mehr parallel gepflegt.

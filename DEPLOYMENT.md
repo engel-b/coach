@@ -68,11 +68,10 @@ systemd-Units:
 ├── health-coach-prepare.service
 ├── health-coach-api.service
 ├── health-coach-device-agent.service
-├── health-coach-llm.service
-└── <Frontend-Service>
+└── health-coach-llm.service
 ```
 
-Der Frontend-Service existiert bereits separat. Seine konkrete Unit ist in diesem Dokument erst vollständig dokumentierbar, sobald deren aktueller `ExecStart` bzw. die Art der Auslieferung bekannt ist.
+Das gebaute Frontend wird **nicht** durch einen eigenen Health-Coach-Frontend-Service ausgeliefert. Caddy liefert `frontend/dist` statisch aus und übernimmt gleichzeitig den Reverse Proxy zu FastAPI. Chromium läuft in der grafischen Kiosk-Sitzung.
 
 ---
 
@@ -86,8 +85,8 @@ Es wird nicht bei jedem normalen Boot ausgeführt.
 
 Verantwortlichkeiten:
 
-1. Repository aktualisieren (`git pull --ff-only`).
-2. Aktuellen Branch und Commit ausgeben.
+1. Remote-Refs aktualisieren (`git fetch --prune origin`). Optional angegebenen Zielbranch nur verwenden, wenn `origin/<branch>` existiert; anschließend `git switch` und `git pull --ff-only`. Ohne Zielbranch bleibt der aktuelle Branch aktiv.
+2. Nach erfolgreichem Pull `cleanup-branches.sh` aufrufen und anschließend aktuellen Branch und Commit ausgeben.
 3. Python Virtual Environment anlegen, falls erforderlich.
 4. Backend-Abhängigkeiten installieren bzw. aktualisieren.
 5. TTS-Modell/-Stimme provisionieren.
@@ -118,6 +117,16 @@ cd /opt/health-coach
 ./deploy/provision.sh
 ```
 
+Optional kann ein Remote-Branch gewählt werden:
+
+```bash
+./deploy/provision.sh --branch feature/mein-branch
+# alternativ als Kurzform:
+./deploy/provision.sh feature/mein-branch
+```
+
+Der Branch wird erst nach `git fetch --prune origin` akzeptiert, wenn er auf `origin` existiert.
+
 Die Konfigurationsabgleiche sind absichtlich interaktiv. Für eine bewusst vollautomatische Aktualisierung können alle Rückfragen mit `--yes` bestätigt werden:
 
 ```bash
@@ -134,7 +143,7 @@ Ein Reboot ist nach einem erfolgreichen Update grundsätzlich nicht erforderlich
 
 `deploy/prepare.sh` ist die **Boot-Vorbereitung**.
 
-Es wird durch `health-coach-prepare.service` bei einem normalen Systemstart ausgeführt und zusätzlich von `provision.sh` nach erfolgreicher Installation aufgerufen.
+Es wird durch `health-coach-prepare.service` bei einem normalen Systemstart ausgeführt. Das aktuelle `provision.sh` führt die Alembic-Migration im Update-Ablauf ebenfalls explizit aus und startet anschließend den Prepare-Service neu; der normale Boot bleibt davon getrennt.
 
 Verantwortlichkeiten:
 
@@ -187,7 +196,7 @@ Die Migration wird bewusst auch beim Boot ausgeführt. Ist das Schema bereits ak
 | Thema | `provision.sh` | `prepare.sh` |
 |---|---|---|
 | Zweck | Update / Deployment | Runtime-Vorbereitung beim Boot |
-| Aufruf | manuell | automatisch durch systemd; zusätzlich aus `provision.sh` |
+| Aufruf | manuell | automatisch durch systemd beim Boot bzw. bei explizitem Service-Restart |
 | `git pull` | ja | nein |
 | Netzwerk erlaubt | ja | nein |
 | Python-Dependencies | installieren/aktualisieren | nein |
@@ -195,7 +204,7 @@ Die Migration wird bewusst auch beim Boot ausgeführt. Ist das Schema bereits ak
 | Frontend-Build | ja | nein |
 | TTS-Modell | provisionieren | nur vorhandenen Stand verwenden |
 | LLM-Modell | provisionieren | nur vorhandenen Stand verwenden |
-| Alembic-Migration | indirekt über `prepare.sh` | ja |
+| Alembic-Migration | ja, im Update-Ablauf | ja |
 | Services neu starten | ja | nein |
 | Muss schnell sein | nicht zwingend | ja |
 | Muss offline funktionieren | nein | ja |
@@ -222,7 +231,13 @@ Administrator
      v
 deploy/provision.sh
      |
+     +--> git fetch --prune origin
+     |
+     +--> optional Remote-Branch prüfen / git switch
+     |
      +--> git pull --ff-only
+     |
+     +--> cleanup-branches.sh
      |
      +--> Branch + Commit ausgeben
      |
@@ -248,22 +263,17 @@ deploy/provision.sh
 Neue Version aktiv
 ```
 
-Ein sinnvoller Git-Abschnitt in `provision.sh` ist:
+Der Git-Abschnitt in `provision.sh` folgt diesem Ablauf:
 
-```bash
-cd "${ROOT_DIR}"
-
-echo "Updating repository ..."
-git pull --ff-only
-
-CURRENT_BRANCH="$(git branch --show-current)"
-CURRENT_COMMIT="$(git rev-parse --short HEAD)"
-
-echo "Current branch: ${CURRENT_BRANCH}"
-echo "Current commit: ${CURRENT_COMMIT}"
+```text
+git fetch --prune origin
+    -> optional: existiert origin/<branch>?
+    -> optional: git switch <branch> (ggf. Tracking-Branch anlegen)
+    -> git pull --ff-only
+    -> cleanup-branches.sh
 ```
 
-`--ff-only` verhindert, dass das Produktivsystem bei divergierenden Git-Ständen automatisch einen Merge erzeugt.
+Ohne Branchparameter wird der aktuelle Branch nach dem Fetch weiterverwendet. Ein nicht auf `origin` vorhandener Zielbranch führt vor dem Switch zum Abbruch. `--ff-only` verhindert, dass das Produktivsystem bei divergierenden Git-Ständen automatisch einen Merge erzeugt.
 
 ### 5.2 Normaler Boot-Ablauf
 
@@ -287,7 +297,7 @@ health-coach-llm.service    health-coach-api.service
                         health-coach-device-agent.service
 ```
 
-Der Frontend-Service wird ebenfalls durch systemd gestartet und verwendet das bereits durch `provision.sh` gebaute Frontend.
+Caddy wird als eigener Systemdienst gestartet und verwendet das bereits durch `provision.sh` gebaute `frontend/dist`. Chromium startet anschließend in der grafischen Kiosk-Sitzung.
 
 ---
 
@@ -498,24 +508,22 @@ Verantwortung:
 
 Die API ist eine harte Voraussetzung für den Device Agent.
 
-### 7.5 Frontend-Service
+### 7.5 Caddy und Chromium-Kiosk
 
-Das Frontend läuft im Produktivsystem bereits als eigener Service.
+Caddy ist der Produktions-Webserver für das gebaute React-Frontend und Reverse Proxy für FastAPI. Es existiert daher kein separater Health-Coach-Frontend-Service.
 
-Die konkrete Unit sollte ebenfalls in das Repository aufgenommen und hier dokumentiert werden.
+Produktionsfluss:
 
-Da der aktuelle `ExecStart` bzw. die konkrete Auslieferungsart des Frontends noch nicht vorliegt, wird an dieser Stelle bewusst **keine hypothetische systemd-Konfiguration erfunden**.
+```text
+Chromium-Kiosk
+    -> Caddy :80
+       ├─ /api/*    -> FastAPI 127.0.0.1:8000
+       ├─ /ws/*     -> FastAPI 127.0.0.1:8000
+       ├─ /videos/* -> FastAPI 127.0.0.1:8000
+       └─ /*        -> /opt/health-coach/frontend/dist
+```
 
-Sobald die bestehende Frontend-Unit aufgenommen wurde, sollte diese Sektion mindestens dokumentieren:
-
-- Unit-Dateiname,
-- `User` / `Group`,
-- `WorkingDirectory`,
-- `ExecStart`,
-- Port bzw. Bind-Adresse,
-- Abhängigkeit von `health-coach-prepare.service`,
-- Restart-Policy,
-- gegebenenfalls Kiosk-/Browser-Abhängigkeiten.
+Chromium wird aus der grafischen Benutzersitzung über `deploy/start-kiosk.sh` gestartet. Der Launcher soll auf eine erfolgreiche HTTP-Antwort von Caddy warten, damit kein Fehler-/Leerbildschirm vor dem Webserver erscheint.
 
 ---
 
@@ -546,11 +554,15 @@ HEALTH_COACH_LLM_MODEL=health-coach-local
 HEALTH_COACH_LLM_TIMEOUT_SECONDS=15
 
 # Piper Coach-Stimme
-HEALTH_COACH_PIPER_MODEL=/opt/health-coach/data/models/piper-tts/de_DE-thorsten-medium.onnx
+HEALTH_COACH_PIPER_MODEL=/opt/health-coach/data/models/piper/de_DE-thorsten-medium.onnx
 HEALTH_COACH_TTS_LENGTH_SCALE=0.92
 HEALTH_COACH_TTS_NOISE_SCALE=0.70
 HEALTH_COACH_TTS_NOISE_W_SCALE=0.85
 HEALTH_COACH_TTS_VOLUME=1.0
+
+# Trainingsvideos
+HEALTH_COACH_VIDEO_DIR=/opt/health-coach/data/videos
+HEALTH_COACH_VIDEO_SCAN_INTERVAL_SECONDS=300
 ```
 
 | Variable | Bedeutung |
@@ -564,6 +576,8 @@ HEALTH_COACH_TTS_VOLUME=1.0
 | `HEALTH_COACH_TTS_NOISE_SCALE` | Variation in der Audioerzeugung |
 | `HEALTH_COACH_TTS_NOISE_W_SCALE` | Variation der Phonemdauern / des Sprechrhythmus |
 | `HEALTH_COACH_TTS_VOLUME` | Lautstaerke-Multiplikator der Synthese |
+| `HEALTH_COACH_VIDEO_DIR` | Physisches Root-Verzeichnis der Trainingsvideos; DB-Pfade sind relativ dazu |
+| `HEALTH_COACH_VIDEO_SCAN_INTERVAL_SECONDS` | Intervall der periodischen Katalog-Synchronisation; `0` deaktiviert den periodischen Scan |
 
 Die angegebenen TTS-Werte bilden das aktuelle Coach-Preset. Sie koennen auf dem Produktivsystem ohne Codeaenderung angepasst werden; danach reicht ein Neustart der API. Sehr hohe Noise-Werte koennen die Verstaendlichkeit verschlechtern.
 
@@ -706,7 +720,7 @@ Damit wird der bisherige manuelle Ablauf aus `git pull` plus Reboot durch einen 
 ### 10.2 Empfohlene Reihenfolge in `provision.sh`
 
 ```text
-1.  git pull --ff-only
+1.  git fetch --prune origin / optional Branch prüfen+wechseln / git pull --ff-only / cleanup-branches.sh
 2.  Branch und Commit ausgeben
 3.  venv sicherstellen
 4.  pip aktualisieren
@@ -720,30 +734,26 @@ Damit wird der bisherige manuelle Ablauf aus `git pull` plus Reboot durch einen 
 12. LLM neu starten
 13. API neu starten
 14. Device Agent neu starten
-15. Frontend-Service ggf. neu starten
+15. Caddy validieren und neu starten
 16. Status ausgeben
 ```
 
-Beispiel für den Git-Teil:
+Git-Ablauf:
 
-```bash
-echo "Updating repository ..."
-cd "${ROOT_DIR}"
-git pull --ff-only
-
-echo "Current branch: $(git branch --show-current)"
-echo "Current commit: $(git rev-parse --short HEAD)"
+```text
+git fetch --prune origin
+    -> optional: existiert origin/<branch>?
+    -> optional: git switch <branch> (ggf. Tracking-Branch anlegen)
+    -> git pull --ff-only
+    -> cleanup-branches.sh
+    -> Branch + Commit ausgeben
 ```
 
-### 10.3 Runtime-Vorbereitung nicht duplizieren
+Ohne Branchparameter bleibt der aktuelle Branch aktiv. Ein Zielbranch, der nicht auf `origin` existiert, führt vor dem Switch zum Abbruch.
 
-`provision.sh` sollte nach Installation und Build einfach aufrufen:
+### 10.3 Migration und Boot-Vorbereitung
 
-```bash
-"${ROOT_DIR}/deploy/prepare.sh"
-```
-
-und die Alembic-Migration nicht zusätzlich selbst duplizieren.
+Die Migration muss sowohl im kontrollierten Update-Pfad als auch beim Boot einer bereits installierten Revision sicher ausführbar sein. Das aktuelle `provision.sh` führt `alembic upgrade head` im Update-Ablauf explizit aus; `prepare.sh` führt dieselbe idempotente Migration beim Boot aus. Ist das Schema bereits aktuell, nimmt Alembic keine weitere Schemaänderung vor.
 
 ### 10.4 Service-Restart am Ende
 
@@ -757,7 +767,7 @@ sudo systemctl restart health-coach-api.service
 sudo systemctl restart health-coach-device-agent.service
 ```
 
-Der Frontend-Service ist ebenfalls neu zu starten, falls seine Laufzeit dies nach einem neuen Frontend-Build erfordert.
+Das statische Frontend benötigt keinen eigenen Service-Restart; Caddy liest die Dateien aus `frontend/dist`. Caddy wird nach erfolgreicher Konfigurationsvalidierung durch `provision.sh` neu gestartet.
 
 ---
 
@@ -812,10 +822,11 @@ Heart Rate
 Geräte-Lebenszyklus
 ```
 
-### Frontend-Service
+### Caddy / Kiosk
 
 ```text
-Produktiv-Frontend bereitstellen
+Caddy: frontend/dist + Reverse Proxy bereitstellen
+Chromium: Anwendung in der grafischen Kiosk-Sitzung öffnen
 ```
 
 ---
@@ -837,7 +848,7 @@ sudo systemctl enable health-coach-api.service
 sudo systemctl enable health-coach-device-agent.service
 ```
 
-Zusätzlich den bestehenden Frontend-Service aktivieren.
+Caddy muss separat als Systemdienst aktiviert sein; Chromium-Autostart gehört zur grafischen Kiosk-Sitzung.
 
 Direkter Start:
 
@@ -891,7 +902,7 @@ journalctl -u health-coach-llm.service -f
 Beispiel:
 
 ```text
-git pull
+git fetch / switch / pull
     OK
 npm ci
     FEHLER
@@ -1065,37 +1076,147 @@ sudo systemctl restart health-coach-device-agent.service
 
 ---
 
-## 18. Empfohlene Repository-Struktur
+## 18. Relevante Repository-Struktur
 
 ```text
 deploy/
 ├── provision.sh
 ├── prepare.sh
-├── systemd/
-│   ├── health-coach-prepare.service
-│   ├── health-coach-llm.service
-│   ├── health-coach-api.service
-│   ├── health-coach-device-agent.service
-│   └── <Frontend-Service>
-├── env/
-│   ├── backend.env.example
-│   └── llm.env.example
-└── DEPLOYMENT.md
+├── start-kiosk.sh
+└── etc/
+    ├── caddy/
+    │   └── Caddyfile
+    ├── health-coach/
+    │   ├── backend.env
+    │   └── llm.env
+    └── systemd/system/
+        ├── health-coach-prepare.service
+        ├── health-coach-llm.service
+        ├── health-coach-api.service
+        └── health-coach-device-agent.service
 ```
 
-Dabei gilt:
-
-- echte Environment-Dateien unter `/etc/health-coach` werden nicht zwingend versioniert,
-- `.example`-Dateien dokumentieren alle erforderlichen Variablen,
-- systemd-Units im Repository sind die Referenzkonfiguration,
-- `/etc/systemd/system` enthält die tatsächlich installierte Kopie.
+Die Dateien unter `deploy/etc/` sind Referenz-/Sollkonfigurationen. `provision.sh` vergleicht sie mit den installierten Dateien unter `/etc`, zeigt Abweichungen und fragt vor Änderungen nach (oder bestätigt sie mit `--yes`).
 
 ---
 
-## 19. Offener Punkt: Frontend-Service
+## 19. Kiosk-Betrieb
 
-Für eine vollständig geschlossene Deployment-Dokumentation sollte noch die aktuell eingesetzte Frontend-systemd-Unit in das Repository aufgenommen werden.
+Der Kiosk-Benutzer wird in die grafische Sitzung angemeldet; Chromium wird aus dem Desktop-Autostart über `/opt/health-coach/deploy/start-kiosk.sh` gestartet. Der Browser gehört bewusst nicht in einen systemweiten Service, weil er die grafische Benutzer-Session benötigt.
 
-Danach kann dieses Dokument um die exakte Frontend-Konfiguration und deren Restart-Verhalten ergänzt werden.
+Manueller Test:
 
-Bis dahin sind Backend, Device Agent, Prepare und lokales LLM vollständig beschrieben.
+```bash
+/opt/health-coach/deploy/start-kiosk.sh
+```
+
+Wenn der Launcher auf `Waiting for Health Coach ...` stehen bleibt, zuerst Caddy prüfen:
+
+```bash
+curl -I http://127.0.0.1/
+```
+
+---
+
+## 20. Troubleshooting
+
+### Node/npm im Provisioning nicht verfügbar oder zu alt
+
+Das Provisioning erwartet eine systemweit erreichbare Node.js-24-LTS-Installation (mindestens 24.15.0). Ein nur über interaktives `nvm` aktiviertes Node steht systemd/Skripten nicht zuverlässig zur Verfügung. Prüfen:
+
+```bash
+node --version
+npm --version
+which node
+which npm
+```
+
+### Frontend erhält HTML statt JSON (`Unexpected token '<'`)
+
+Direkt gegen FastAPI und danach über Caddy prüfen:
+
+```bash
+curl -i http://127.0.0.1:8000/api/persons
+curl -i http://127.0.0.1/api/persons
+```
+
+Wenn nur die Caddy-Anfrage HTML liefert, muss `/api/*` vor dem SPA-Fallback an FastAPI weitergeleitet werden. Entsprechendes gilt für `/videos/*`: ein Video-Request darf nicht in `index.html` fallen.
+
+### Trainingsvideo wird nicht abgespielt
+
+Zuerst den in der DB/API gespeicherten `filePath` prüfen. Er muss relativ zum Video-Root sein, z. B. `cycling/alpen.mp4`. Danach beide Pfade testen:
+
+```bash
+curl -I http://127.0.0.1:8000/videos/cycling/alpen.mp4
+curl -I http://127.0.0.1/videos/cycling/alpen.mp4
+```
+
+Beide Antworten sollen einen Video-Content-Type liefern. Liefert Port 80 HTML, fehlt `/videos/*` im Caddy-Reverse-Proxy.
+
+### Caddy-Konfiguration prüfen
+
+```bash
+sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+sudo systemctl status caddy
+journalctl -u caddy -n 100
+```
+
+### Caddy zeigt die Default-Seite oder falsche Inhalte
+
+Aktive Konfiguration und Build prüfen:
+
+```bash
+sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+ls -lh /opt/health-coach/frontend/dist/index.html
+curl -I http://127.0.0.1/
+```
+
+Die Repo-Vorlage liegt unter `deploy/etc/caddy/Caddyfile`; `provision.sh` kann Abweichungen anzeigen und nach Bestätigung aktualisieren.
+
+### Port bereits belegt
+
+Produktion verwendet FastAPI auf `127.0.0.1:8000`, Caddy auf Port 80 und das lokale LLM auf `127.0.0.1:8080`. Prüfen:
+
+```bash
+ss -ltnp | grep -E ':(80|8000|8080)\b'
+```
+
+Entwicklungsports richten sich nach der aktuellen Makefile-/Vite-Konfiguration.
+
+### SQLite kann Datei nicht öffnen
+
+```bash
+ls -ld /opt/health-coach/data /opt/health-coach/data/db
+ls -l /opt/health-coach/data/db/health-coach.db
+```
+
+Verzeichnis und Datei müssen für den Service-Benutzer `coach` zugreifbar sein.
+
+### SQLite meldet fehlende Tabellen
+
+```bash
+cd /opt/health-coach/backend
+.venv/bin/python -m alembic upgrade head
+```
+
+### Bluetooth `org.bluez.Error.InProgress` / keine Telemetrie
+
+Sicherstellen, dass nur ein Device Agent auf die Hardware zugreift:
+
+```bash
+ps aux | grep -E "device_agent|python.*health-coach|python.*Coach" | grep -v grep
+bluetoothctl show
+```
+
+Falls BlueZ hängt:
+
+```bash
+sudo systemctl restart bluetooth
+sudo systemctl restart health-coach-device-agent.service
+```
+
+Erwartete Telemetrie-Kette:
+
+```text
+BLE device -> Device Agent -> /ws/device-agent -> FastAPI -> /ws/telemetry -> frontend
+```
