@@ -8,31 +8,35 @@ from pathlib import Path
 VOICE_NAME = "de_DE-thorsten-medium"
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_ROOT = PROJECT_ROOT / "backend"
-DEFAULT_MODEL_PATH = PROJECT_ROOT / "data" / "models" / "piper-tts" / f"{VOICE_NAME}.onnx"
-
-configured_model_path = Path(
-    os.environ.get("HEALTH_COACH_PIPER_MODEL", str(DEFAULT_MODEL_PATH))
-).expanduser()
-MODEL_PATH = (
-    configured_model_path
-    if configured_model_path.is_absolute()
-    else (PROJECT_ROOT / configured_model_path).resolve()
-)
-VOICE_DIR = MODEL_PATH.parent
-CONFIG_PATH = MODEL_PATH.with_suffix(MODEL_PATH.suffix + ".json")
+DEFAULT_MODEL_PATH = Path(f"data/models/piper-tts/{VOICE_NAME}.onnx")
 
 
-def voice_is_installed() -> bool:
-    return MODEL_PATH.is_file() and CONFIG_PATH.is_file()
+def _configured_model_path() -> Path:
+    configured = Path(
+        os.environ.get("HEALTH_COACH_PIPER_MODEL", str(DEFAULT_MODEL_PATH))
+    ).expanduser()
+    return configured if configured.is_absolute() else PROJECT_ROOT / configured
+
+
+def _config_path(model_path: Path) -> Path:
+    return model_path.with_suffix(model_path.suffix + ".json")
+
+
+def voice_is_installed(model_path: Path) -> bool:
+    return model_path.is_file() and _config_path(model_path).is_file()
 
 
 def ensure_tts_voice() -> None:
-    if voice_is_installed():
-        print(f"Piper voice already installed: {MODEL_PATH}")
+    model_path = _configured_model_path().resolve()
+    voice_dir = model_path.parent
+    config_path = _config_path(model_path)
+
+    if voice_is_installed(model_path):
+        print(f"Piper voice already installed: {model_path}")
         return
 
-    VOICE_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"Piper voice missing; downloading {VOICE_NAME} to {VOICE_DIR} ...")
+    voice_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Piper voice missing; downloading {VOICE_NAME} to {voice_dir} ...")
 
     subprocess.run(
         [
@@ -40,20 +44,20 @@ def ensure_tts_voice() -> None:
             "-m",
             "piper.download_voices",
             "--data-dir",
-            str(VOICE_DIR),
+            str(voice_dir),
             VOICE_NAME,
         ],
         cwd=BACKEND_ROOT,
         check=True,
     )
 
-    if not voice_is_installed():
+    if not voice_is_installed(model_path):
         raise RuntimeError(
             "Piper voice download completed, but model/config files are still missing: "
-            f"{MODEL_PATH} / {CONFIG_PATH}"
+            f"{model_path} / {config_path}"
         )
 
-    print(f"Piper voice installed: {MODEL_PATH}")
+    print(f"Piper voice installed: {model_path}")
 
 
 if __name__ == "__main__":

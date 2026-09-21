@@ -94,10 +94,13 @@ Verantwortlichkeiten:
 6. LLM-Modell provisionieren.
 7. Frontend-Abhängigkeiten reproduzierbar mit `npm ci` installieren.
 8. Frontend bauen.
-9. `prepare.sh` ausführen, damit Runtime-Vorbereitung und Migrationen nur an einer Stelle definiert sind.
-10. systemd-Konfiguration neu laden.
-11. Health-Coach-Services neu starten.
-12. Fehler sichtbar abbrechen, statt eine teilweise installierte Version weiterzustarten.
+9. Laufzeitdatenverzeichnisse unter `data/` sicherstellen und bekannte Altpfade einmalig migrieren.
+10. `/etc/health-coach/backend.env` und `/etc/health-coach/llm.env` gegen die Repo-Vorlagen abgleichen. Fehlende bzw. veraltete Schlüssel werden interaktiv zur Ergänzung/Entfernung angeboten; bestehende Werte bleiben erhalten.
+11. systemd-Units gegen die Repo-Vorlagen vergleichen und Änderungen nach Rückfrage installieren.
+12. Datenbankschema mit Alembic aktualisieren.
+13. Health-Coach-Services neu starten.
+14. `/etc/caddy/Caddyfile` gegen die Repo-Vorlage vergleichen, optional aktualisieren, mit `caddy validate` prüfen und Caddy nur bei erfolgreicher Validierung neu starten.
+15. Fehler sichtbar abbrechen, statt eine teilweise installierte Version weiterzustarten.
 
 `provision.sh` darf:
 
@@ -113,6 +116,14 @@ Typischer Aufruf:
 cd /opt/health-coach
 ./deploy/provision.sh
 ```
+
+Die Konfigurationsabgleiche sind absichtlich interaktiv. Für eine bewusst vollautomatische Aktualisierung können alle Rückfragen mit `--yes` bestätigt werden:
+
+```bash
+./deploy/provision.sh --yes
+```
+
+Vor Änderungen unter `/etc` legt das Skript Sicherungen mit Zeitstempel (`*.bak.YYYYMMDD-HHMMSS`) an.
 
 Ein Reboot ist nach einem erfolgreichen Update grundsätzlich nicht erforderlich.
 
@@ -534,6 +545,7 @@ HEALTH_COACH_LLM_MODEL=health-coach-local
 HEALTH_COACH_LLM_TIMEOUT_SECONDS=15
 
 # Piper Coach-Stimme
+HEALTH_COACH_PIPER_MODEL=/opt/health-coach/data/models/piper-tts/de_DE-thorsten-medium.onnx
 HEALTH_COACH_TTS_LENGTH_SCALE=0.92
 HEALTH_COACH_TTS_NOISE_SCALE=0.70
 HEALTH_COACH_TTS_NOISE_W_SCALE=0.85
@@ -546,7 +558,7 @@ HEALTH_COACH_TTS_VOLUME=1.0
 | `HEALTH_COACH_LLM_BASE_URL` | Basis-URL des lokalen `llama-server` |
 | `HEALTH_COACH_LLM_MODEL` | Gemeinsamer Modellalias von API und `llama-server` |
 | `HEALTH_COACH_LLM_TIMEOUT_SECONDS` | Maximale Wartezeit des Backends auf eine LLM-Antwort |
-| `HEALTH_COACH_PIPER_MODEL` | Pfad zur lokalen Piper-ONNX-Stimme; Standard im Projekt: `data/models/piper-tts/de_DE-thorsten-medium.onnx` |
+| `HEALTH_COACH_PIPER_MODEL` | Pfad zum lokalen Piper-ONNX-Modell |
 | `HEALTH_COACH_TTS_LENGTH_SCALE` | Sprechtempo von Piper; kleiner als `1.0` spricht schneller |
 | `HEALTH_COACH_TTS_NOISE_SCALE` | Variation in der Audioerzeugung |
 | `HEALTH_COACH_TTS_NOISE_W_SCALE` | Variation der Phonemdauern / des Sprechrhythmus |
@@ -588,6 +600,40 @@ sudo chmod 644 /etc/health-coach/*.env
 ```
 
 Falls später Secrets aufgenommen werden, müssen die Berechtigungen entsprechend restriktiver werden.
+
+### 8.5 Automatischer Konfigurationsabgleich
+
+Die Dateien unter `deploy/etc/health-coach/` sind die Soll-Vorlagen für die beiden Environment-Dateien. `provision.sh` vergleicht dabei **Schlüsselnamen**, nicht die lokalen Werte:
+
+- fehlende Schlüssel können mit dem Vorlagenwert ergänzt werden,
+- nicht mehr in der Vorlage vorhandene Schlüssel können entfernt werden,
+- vorhandene lokale Werte werden nicht automatisch überschrieben.
+
+Die systemd-Units werden als komplette Dateien gegen `deploy/etc/systemd/system/` verglichen. `backend/alembic.ini` wird bewusst **nicht** automatisch mit Dateien unter `/etc` synchronisiert; es ist Teil der Anwendung und keine maschinenspezifische Runtime-Konfiguration.
+
+### 8.6 Caddy
+
+Die kanonische Appliance-Konfiguration liegt unter:
+
+```text
+deploy/etc/caddy/Caddyfile
+```
+
+Neben API und WebSockets wird auch `/videos/*` an FastAPI weitergeleitet. Dadurch kann das Backend das über `HEALTH_COACH_VIDEO_DIR` konfigurierte Verzeichnis unabhängig von seinem physischen Speicherort unter der stabilen Browser-URL `/videos/...` ausliefern.
+
+Bei einer Abweichung von `/etc/caddy/Caddyfile` zeigt `provision.sh` einen Diff und fragt vor dem Ersetzen nach. Anschließend wird immer validiert:
+
+```bash
+sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+```
+
+Nur bei erfolgreicher Validierung folgt:
+
+```bash
+sudo systemctl restart caddy.service
+```
+
+Schlägt die Validierung nach einer Aktualisierung fehl, wird die vorherige Caddy-Konfiguration aus dem Backup wiederhergestellt und Caddy nicht neu gestartet.
 
 ---
 
