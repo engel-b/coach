@@ -1,4 +1,5 @@
 from features.check_in.domain.check_in import CheckIn
+from features.training.domain.heart_rate_target_policy import HeartRateTargetPolicy
 from features.training.domain.recommendation import (
     TrainingRecommendation,
     WorkoutPhase,
@@ -20,21 +21,27 @@ class TrainingRecommendationEngine:
     erklären und persönlicher formulieren.
     """
 
+    def __init__(self, heart_rate_target_policy: HeartRateTargetPolicy | None = None) -> None:
+        self._heart_rate_target_policy = heart_rate_target_policy or HeartRateTargetPolicy()
+
     def recommend(
         self,
         *,
         check_in: CheckIn,
         max_heart_rate: int,
+        resting_heart_rate: int | None = None,
     ) -> TrainingRecommendation:
         if self._needs_recovery(check_in):
             return self._create_recovery(
                 check_in,
                 max_heart_rate,
+                resting_heart_rate,
             )
 
         return self._create_base_endurance(
             check_in,
             max_heart_rate,
+            resting_heart_rate,
         )
 
     @staticmethod
@@ -52,14 +59,19 @@ class TrainingRecommendationEngine:
         self,
         check_in: CheckIn,
         max_heart_rate: int,
+        resting_heart_rate: int | None,
     ) -> TrainingRecommendation:
         duration = min(
             check_in.available_training_minutes,
             30,
         )
 
-        minimum = round(max_heart_rate * 0.50)
-        maximum = round(max_heart_rate * 0.60)
+        target = self._heart_rate_target_policy.calculate(
+            workout_type=WorkoutType.RECOVERY,
+            phase_type=WorkoutPhaseType.MAIN,
+            max_heart_rate_bpm=max_heart_rate,
+            resting_heart_rate_bpm=resting_heart_rate,
+        )
 
         return TrainingRecommendation(
             workout_type=WorkoutType.RECOVERY,
@@ -69,8 +81,8 @@ class TrainingRecommendationEngine:
                 WorkoutPhase(
                     phase_type=WorkoutPhaseType.MAIN,
                     duration_minutes=duration,
-                    target_heart_rate_min=minimum,
-                    target_heart_rate_max=maximum,
+                    target_heart_rate_min=target.minimum_bpm,
+                    target_heart_rate_max=target.maximum_bpm,
                 ),
             ),
         )
@@ -79,6 +91,7 @@ class TrainingRecommendationEngine:
         self,
         check_in: CheckIn,
         max_heart_rate: int,
+        resting_heart_rate: int | None,
     ) -> TrainingRecommendation:
         total = check_in.available_training_minutes
 
@@ -89,32 +102,50 @@ class TrainingRecommendationEngine:
         phases: list[WorkoutPhase] = []
 
         if warm_up > 0:
+            target = self._heart_rate_target_policy.calculate(
+                workout_type=WorkoutType.BASE_ENDURANCE,
+                phase_type=WorkoutPhaseType.WARM_UP,
+                max_heart_rate_bpm=max_heart_rate,
+                resting_heart_rate_bpm=resting_heart_rate,
+            )
             phases.append(
                 WorkoutPhase(
                     phase_type=WorkoutPhaseType.WARM_UP,
                     duration_minutes=warm_up,
-                    target_heart_rate_min=round(max_heart_rate * 0.50),
-                    target_heart_rate_max=round(max_heart_rate * 0.60),
+                    target_heart_rate_min=target.minimum_bpm,
+                    target_heart_rate_max=target.maximum_bpm,
                 )
             )
 
         if main > 0:
+            target = self._heart_rate_target_policy.calculate(
+                workout_type=WorkoutType.BASE_ENDURANCE,
+                phase_type=WorkoutPhaseType.MAIN,
+                max_heart_rate_bpm=max_heart_rate,
+                resting_heart_rate_bpm=resting_heart_rate,
+            )
             phases.append(
                 WorkoutPhase(
                     phase_type=WorkoutPhaseType.MAIN,
                     duration_minutes=main,
-                    target_heart_rate_min=round(max_heart_rate * 0.60),
-                    target_heart_rate_max=round(max_heart_rate * 0.70),
+                    target_heart_rate_min=target.minimum_bpm,
+                    target_heart_rate_max=target.maximum_bpm,
                 )
             )
 
         if cool_down > 0:
+            target = self._heart_rate_target_policy.calculate(
+                workout_type=WorkoutType.BASE_ENDURANCE,
+                phase_type=WorkoutPhaseType.COOL_DOWN,
+                max_heart_rate_bpm=max_heart_rate,
+                resting_heart_rate_bpm=resting_heart_rate,
+            )
             phases.append(
                 WorkoutPhase(
                     phase_type=WorkoutPhaseType.COOL_DOWN,
                     duration_minutes=cool_down,
-                    target_heart_rate_min=round(max_heart_rate * 0.50),
-                    target_heart_rate_max=round(max_heart_rate * 0.60),
+                    target_heart_rate_min=target.minimum_bpm,
+                    target_heart_rate_max=target.maximum_bpm,
                 )
             )
 

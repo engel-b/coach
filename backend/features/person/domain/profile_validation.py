@@ -22,6 +22,19 @@ def validate_person_profile(profile: PersonProfile) -> None:
     if profile.max_heart_rate_bpm is not None and not 100 <= profile.max_heart_rate_bpm <= 230:
         raise InvalidPersonProfileError("Der Maximalpuls muss zwischen 100 und 230 liegen.")
 
+    if (
+        profile.resting_heart_rate_bpm is not None
+        and not 35 <= profile.resting_heart_rate_bpm <= 120
+    ):
+        raise InvalidPersonProfileError("Der Ruhepuls muss zwischen 35 und 120 liegen.")
+
+    if (
+        profile.resting_heart_rate_bpm is not None
+        and profile.max_heart_rate_bpm is not None
+        and profile.resting_heart_rate_bpm >= profile.max_heart_rate_bpm
+    ):
+        raise InvalidPersonProfileError("Der Ruhepuls muss unter dem Maximalpuls liegen.")
+
     for weight in (
         profile.start_weight_kg,
         profile.target_weight_kg,

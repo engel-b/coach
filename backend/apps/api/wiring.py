@@ -58,6 +58,7 @@ from features.workout.service.workout_service import WorkoutService
 live_coaching_engine = LiveCoachingEngine(
     rules=LiveCoachingRules(
         deviation_seconds_before_action=20.0,
+        target_tolerance_bpm=5,
     )
 )
 live_coaching_coordinator = LiveCoachingCoordinator(

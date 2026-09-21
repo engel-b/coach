@@ -38,3 +38,4 @@ class PreWorkoutCoachingContext:
     weight_trend: WeightTrend
     weight_goal_progress: WeightGoalProgress
     readiness: ReadinessContext
+    resting_heart_rate: int | None = None

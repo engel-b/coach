@@ -144,3 +144,24 @@ def test_negative_outside_target_duration_is_rejected() -> None:
                 outside_target_seconds=-1.0,
             )
         )
+
+
+def test_target_tolerance_avoids_coaching_for_small_deviation() -> None:
+    engine = LiveCoachingEngine(
+        rules=LiveCoachingRules(
+            deviation_seconds_before_action=20.0,
+            target_tolerance_bpm=5,
+        )
+    )
+
+    decision = engine.evaluate(
+        LiveCoachingContext(
+            heart_rate_bpm=144,
+            target_min_bpm=126,
+            target_max_bpm=140,
+            outside_target_seconds=60.0,
+        )
+    )
+
+    assert decision.zone_status is HeartRateZoneStatus.IN_TARGET
+    assert decision.action is CoachingAction.NONE

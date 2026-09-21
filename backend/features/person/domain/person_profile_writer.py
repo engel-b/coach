@@ -20,6 +20,7 @@ class PersonProfileWriter(Protocol):
         height_cm: int,
         training_goal: TrainingGoal,
         max_heart_rate_bpm: int | None,
+        resting_heart_rate_bpm: int | None,
         start_weight_kg: float | None,
         target_weight_kg: float | None,
     ) -> tuple[Person, PersonProfile]: ...

@@ -85,3 +85,4 @@ class LiveCoachingRules:
     """Konfigurierbare Regeln für die erste Live-Coaching-Version."""
 
     deviation_seconds_before_action: float = 20.0
+    target_tolerance_bpm: int = 0

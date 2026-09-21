@@ -33,6 +33,7 @@ class PersonManagementService:
         height_cm: int,
         training_goal: TrainingGoal,
         max_heart_rate_bpm: int | None,
+        resting_heart_rate_bpm: int | None,
         start_weight_kg: float | None,
         target_weight_kg: float | None,
     ) -> tuple[Person, PersonProfile]:
@@ -44,6 +45,7 @@ class PersonManagementService:
             height_cm=height_cm,
             training_goal=training_goal,
             max_heart_rate_bpm=max_heart_rate_bpm,
+            resting_heart_rate_bpm=resting_heart_rate_bpm,
             start_weight_kg=start_weight_kg,
             target_weight_kg=target_weight_kg,
         )
@@ -56,6 +58,7 @@ class PersonManagementService:
             height_cm=height_cm,
             training_goal=training_goal,
             max_heart_rate_bpm=max_heart_rate_bpm,
+            resting_heart_rate_bpm=resting_heart_rate_bpm,
             start_weight_kg=start_weight_kg,
             target_weight_kg=target_weight_kg,
         )

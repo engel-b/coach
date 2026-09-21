@@ -38,12 +38,14 @@ class HeartRateDeviationTracker:
         heart_rate_bpm: int,
         target_min_bpm: int,
         target_max_bpm: int,
+        target_tolerance_bpm: int = 0,
     ) -> HeartRateDeviation:
         self._validate(
             timestamp_seconds=timestamp_seconds,
             heart_rate_bpm=heart_rate_bpm,
             target_min_bpm=target_min_bpm,
             target_max_bpm=target_max_bpm,
+            target_tolerance_bpm=target_tolerance_bpm,
         )
 
         if (
@@ -68,6 +70,7 @@ class HeartRateDeviationTracker:
             heart_rate_bpm=heart_rate_bpm,
             target_min_bpm=target_min_bpm,
             target_max_bpm=target_max_bpm,
+            target_tolerance_bpm=target_tolerance_bpm,
         )
 
         if status is HeartRateZoneStatus.IN_TARGET:
@@ -102,11 +105,12 @@ class HeartRateDeviationTracker:
         heart_rate_bpm: int,
         target_min_bpm: int,
         target_max_bpm: int,
+        target_tolerance_bpm: int,
     ) -> HeartRateZoneStatus:
-        if heart_rate_bpm < target_min_bpm:
+        if heart_rate_bpm < target_min_bpm - target_tolerance_bpm:
             return HeartRateZoneStatus.BELOW_TARGET
 
-        if heart_rate_bpm > target_max_bpm:
+        if heart_rate_bpm > target_max_bpm + target_tolerance_bpm:
             return HeartRateZoneStatus.ABOVE_TARGET
 
         return HeartRateZoneStatus.IN_TARGET
@@ -118,6 +122,7 @@ class HeartRateDeviationTracker:
         heart_rate_bpm: int,
         target_min_bpm: int,
         target_max_bpm: int,
+        target_tolerance_bpm: int,
     ) -> None:
         if timestamp_seconds < 0:
             raise ValueError("timestamp_seconds must not be negative")
@@ -133,3 +138,6 @@ class HeartRateDeviationTracker:
 
         if target_min_bpm > target_max_bpm:
             raise ValueError("target_min_bpm must not be greater than target_max_bpm")
+
+        if target_tolerance_bpm < 0:
+            raise ValueError("target_tolerance_bpm must not be negative")

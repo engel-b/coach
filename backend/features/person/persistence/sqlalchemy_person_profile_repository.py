@@ -35,6 +35,7 @@ class SqlAlchemyPersonProfileRepository(PersonProfileRepository):
                     height_cm=profile.height_cm,
                     training_goal=profile.training_goal.value,
                     max_heart_rate_bpm=profile.max_heart_rate_bpm,
+                    resting_heart_rate_bpm=profile.resting_heart_rate_bpm,
                     start_weight_kg=profile.start_weight_kg,
                     target_weight_kg=profile.target_weight_kg,
                 )
@@ -44,6 +45,7 @@ class SqlAlchemyPersonProfileRepository(PersonProfileRepository):
                 model.height_cm = profile.height_cm
                 model.training_goal = profile.training_goal.value
                 model.max_heart_rate_bpm = profile.max_heart_rate_bpm
+                model.resting_heart_rate_bpm = profile.resting_heart_rate_bpm
                 model.start_weight_kg = profile.start_weight_kg
                 model.target_weight_kg = profile.target_weight_kg
 
@@ -59,6 +61,7 @@ class SqlAlchemyPersonProfileRepository(PersonProfileRepository):
             height_cm=model.height_cm,
             training_goal=TrainingGoal(model.training_goal),
             max_heart_rate_bpm=model.max_heart_rate_bpm,
+            resting_heart_rate_bpm=model.resting_heart_rate_bpm,
             start_weight_kg=model.start_weight_kg,
             target_weight_kg=model.target_weight_kg,
         )

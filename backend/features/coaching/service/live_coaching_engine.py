@@ -22,6 +22,10 @@ class LiveCoachingEngine:
     def __init__(self, rules: LiveCoachingRules | None = None) -> None:
         self._rules = rules or LiveCoachingRules()
 
+    @property
+    def target_tolerance_bpm(self) -> int:
+        return self._rules.target_tolerance_bpm
+
     def evaluate(self, context: LiveCoachingContext) -> LiveCoachingDecision:
         self._validate(context)
 
@@ -58,12 +62,11 @@ class LiveCoachingEngine:
             reason="heart_rate_above_target_long_enough",
         )
 
-    @staticmethod
-    def _zone_status(context: LiveCoachingContext) -> HeartRateZoneStatus:
-        if context.heart_rate_bpm < context.target_min_bpm:
+    def _zone_status(self, context: LiveCoachingContext) -> HeartRateZoneStatus:
+        if context.heart_rate_bpm < context.target_min_bpm - self._rules.target_tolerance_bpm:
             return HeartRateZoneStatus.BELOW_TARGET
 
-        if context.heart_rate_bpm > context.target_max_bpm:
+        if context.heart_rate_bpm > context.target_max_bpm + self._rules.target_tolerance_bpm:
             return HeartRateZoneStatus.ABOVE_TARGET
 
         return HeartRateZoneStatus.IN_TARGET
@@ -103,3 +106,6 @@ class LiveCoachingEngine:
 
         if self._rules.deviation_seconds_before_action < 0:
             raise InvalidLiveCoachingContextError("Deviation threshold must not be negative")
+
+        if self._rules.target_tolerance_bpm < 0:
+            raise InvalidLiveCoachingContextError("Target tolerance must not be negative")

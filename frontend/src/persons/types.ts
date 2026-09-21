@@ -19,6 +19,7 @@ export interface PersonProfile {
   heightCm: number;
   trainingGoal: TrainingGoal;
   maxHeartRateBpm: number | null;
+  restingHeartRateBpm: number | null;
   startWeightKg: number | null;
   targetWeightKg: number | null;
 }
@@ -29,6 +30,7 @@ export interface UpdatePersonProfileRequest {
   heightCm: number;
   trainingGoal: TrainingGoal;
   maxHeartRateBpm: number | null;
+  restingHeartRateBpm: number | null;
   startWeightKg: number | null;
   targetWeightKg: number | null;
 }

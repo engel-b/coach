@@ -25,6 +25,7 @@ class SqlAlchemyPersonProfileWriter(PersonProfileWriter):
         height_cm: int,
         training_goal: TrainingGoal,
         max_heart_rate_bpm: int | None,
+        resting_heart_rate_bpm: int | None,
         start_weight_kg: float | None,
         target_weight_kg: float | None,
     ) -> tuple[Person, PersonProfile]:
@@ -48,6 +49,7 @@ class SqlAlchemyPersonProfileWriter(PersonProfileWriter):
                 height_cm=height_cm,
                 training_goal=training_goal.value,
                 max_heart_rate_bpm=max_heart_rate_bpm,
+                resting_heart_rate_bpm=resting_heart_rate_bpm,
                 start_weight_kg=start_weight_kg,
                 target_weight_kg=target_weight_kg,
             )
@@ -66,6 +68,7 @@ class SqlAlchemyPersonProfileWriter(PersonProfileWriter):
                     height_cm=height_cm,
                     training_goal=training_goal,
                     max_heart_rate_bpm=max_heart_rate_bpm,
+                    resting_heart_rate_bpm=resting_heart_rate_bpm,
                     start_weight_kg=start_weight_kg,
                     target_weight_kg=target_weight_kg,
                 ),
@@ -101,6 +104,7 @@ class SqlAlchemyPersonProfileWriter(PersonProfileWriter):
                     height_cm=profile.height_cm,
                     training_goal=profile.training_goal.value,
                     max_heart_rate_bpm=profile.max_heart_rate_bpm,
+                    resting_heart_rate_bpm=profile.resting_heart_rate_bpm,
                     start_weight_kg=profile.start_weight_kg,
                     target_weight_kg=profile.target_weight_kg,
                 )
@@ -110,6 +114,7 @@ class SqlAlchemyPersonProfileWriter(PersonProfileWriter):
                 profile_model.height_cm = profile.height_cm
                 profile_model.training_goal = profile.training_goal.value
                 profile_model.max_heart_rate_bpm = profile.max_heart_rate_bpm
+                profile_model.resting_heart_rate_bpm = profile.resting_heart_rate_bpm
                 profile_model.start_weight_kg = profile.start_weight_kg
                 profile_model.target_weight_kg = profile.target_weight_kg
 

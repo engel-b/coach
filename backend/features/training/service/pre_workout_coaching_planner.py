@@ -59,6 +59,7 @@ class PreWorkoutCoachingPlanner:
         recommendation = self._engine.recommend(
             check_in=effective_check_in,
             max_heart_rate=context.max_heart_rate,
+            resting_heart_rate=context.resting_heart_rate,
         )
         reason_codes = self._reason_codes(context)
 

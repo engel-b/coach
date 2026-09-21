@@ -49,6 +49,16 @@ class PersonProfileRequest(BaseModel):
         ),
         examples=[190],
     )
+    resting_heart_rate_bpm: int | None = Field(
+        default=None,
+        ge=35,
+        le=120,
+        description=(
+            "Optionaler persoenlicher Ruhepuls in Schlaegen pro Minute. "
+            "Er wird fuer individualisierte Trainings-Zielpulsbereiche verwendet."
+        ),
+        examples=[70],
+    )
     start_weight_kg: float | None = Field(
         default=None,
         gt=0,

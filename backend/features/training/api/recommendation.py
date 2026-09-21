@@ -61,6 +61,7 @@ def create_training_recommendation(
         PreWorkoutCoachingContext(
             check_in=check_in,
             max_heart_rate=max_heart_rate,
+            resting_heart_rate=profile.resting_heart_rate_bpm,
             training_goal=profile.training_goal,
             weight_trend=weight_trend,
             weight_goal_progress=weight_goal_progress,

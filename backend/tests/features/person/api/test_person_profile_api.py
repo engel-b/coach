@@ -78,6 +78,7 @@ def valid_profile_request() -> dict[str, object]:
         "heightCm": 175,
         "trainingGoal": "weight_loss",
         "maxHeartRateBpm": 190,
+        "restingHeartRateBpm": 72,
         "startWeightKg": 92.5,
         "targetWeightKg": 82.0,
     }
@@ -96,6 +97,7 @@ def test_get_profile_returns_camel_case(
         "heightCm": 180,
         "trainingGoal": "general_fitness",
         "maxHeartRateBpm": None,
+        "restingHeartRateBpm": None,
         "startWeightKg": None,
         "targetWeightKg": None,
     }
@@ -225,6 +227,7 @@ def test_post_person_creates_person_and_profile(
             "heightCm": 172,
             "trainingGoal": "general_fitness",
             "maxHeartRateBpm": None,
+            "restingHeartRateBpm": None,
             "startWeightKg": None,
             "targetWeightKg": None,
         },

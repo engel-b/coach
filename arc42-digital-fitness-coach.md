@@ -308,7 +308,7 @@ feature/
 
 ### `person`
 
-Verantwortet Person und Profil: Anzeigename, Geburtsdatum, Größe, Trainingsziel, optionale maximale Herzfrequenz, Startgewicht und Zielgewicht. Person und Profil sind getrennte 1:1-Aggregate in der Persistenz.
+Verantwortet Person und Profil: Anzeigename, Geburtsdatum, Größe, Trainingsziel, optionale maximale Herzfrequenz, optionaler Ruhepuls, Startgewicht und Zielgewicht. Person und Profil sind getrennte 1:1-Aggregate in der Persistenz.
 
 ### `check_in`
 
@@ -415,6 +415,12 @@ Für einen belastbaren Trend wird eine Mindestanzahl an Messungen und ein Mindes
 ### Gewichtsfortschritt
 
 `WeightGoalProgress` beschreibt Start, aktuelles Ziel, verlorenes Gewicht und prozentualen Fortschritt. Prozentwerte werden für die Darstellung begrenzt; unplausible oder fehlende Zielkonfiguration erzeugt keinen erfundenen Fortschritt.
+
+### Personalisierte Herzfrequenz-Zielbereiche
+
+Die Trainingsphasen verwenden eine zentrale `HeartRateTargetPolicy`. Ist ein persönlicher Ruhepuls im Profil hinterlegt, werden Zielbereiche aus der Herzfrequenzreserve (`HFmax - Ruhepuls`) abgeleitet. Ein hoher oder niedriger Ruhepuls wird für diese Berechnung auf einen konservativen Referenzbereich begrenzt, damit er die Trainingsziele nicht unbegrenzt verschiebt. Fehlt der Ruhepuls, bleibt die bisherige Prozent-von-HFmax-Berechnung als kompatibler Fallback aktiv.
+
+Die Zielbereiche beschreiben die gewünschte Trainingsbelastung und sind keine medizinisch garantierten Sicherheitsgrenzen. Live-Coaching bewertet kleine Abweichungen mit einer zusätzlichen Toleranz und reagiert weiterhin erst auf zeitlich anhaltende Abweichungen. HFmax bzw. daraus abgeleitete technische Grenzwerte bleiben unabhängig vom Ruhepuls.
 
 ## 5.4 Live-Coaching-Bausteine
 
@@ -1180,6 +1186,11 @@ Runtime beantwortet „Was passiert zeitlich?“, Coaching beantwortet „Wie is
 **Status:** Akzeptiert
 
 Ein einzelner HR-Wert löst keine Belastungsanweisung aus.
+
+## ADR-018a – Zielpulsbereiche werden über eine zentrale Policy personalisiert
+**Status:** Akzeptiert
+
+Ein optionaler Ruhepuls personalisiert Trainingszonen über die Herzfrequenzreserve. Die Policy begrenzt den für die Berechnung verwendeten Ruhepuls konservativ und fällt bei fehlendem Ruhepuls auf die bisherige HFmax-Prozentlogik zurück. Kleine Abweichungen erhalten im Live-Coaching eine BPM-Toleranz; die zeitliche Abweichungsbewertung bleibt davon getrennt.
 
 ## ADR-019 – Cross-Feature-Coaching-Orchestrierung liegt im App-Layer
 **Status:** Akzeptiert

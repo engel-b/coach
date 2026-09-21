@@ -34,6 +34,10 @@ class PersonProfileModel(Base):
         Integer,
         nullable=True,
     )
+    resting_heart_rate_bpm: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
     start_weight_kg: Mapped[float | None] = mapped_column(
         Float,
         nullable=True,
