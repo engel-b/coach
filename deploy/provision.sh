@@ -20,12 +20,115 @@ SYSTEMD_TEMPLATE_DIR="${ROOT_DIR}/deploy/etc/systemd/system"
 SYSTEMD_TARGET_DIR="/etc/systemd/system"
 
 ASSUME_YES=0
-if [[ "${1:-}" == "--yes" ]]; then
-    ASSUME_YES=1
-elif [[ $# -gt 0 ]]; then
-    echo "Usage: $0 [--yes]" >&2
-    exit 2
-fi
+TARGET_BRANCH=""
+GIT_REMOTE="origin"
+
+usage() {
+    echo "Usage: $0 [--yes] [--branch BRANCH | BRANCH]" >&2
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --yes)
+            ASSUME_YES=1
+            shift
+            ;;
+        --branch)
+            if [[ $# -lt 2 || -z "${2:-}" ]]; then
+                echo "ERROR: --branch requires a branch name." >&2
+                usage
+                exit 2
+            fi
+            if [[ -n "${TARGET_BRANCH}" ]]; then
+                echo "ERROR: branch specified more than once." >&2
+                usage
+                exit 2
+            fi
+            TARGET_BRANCH="$2"
+            shift 2
+            ;;
+        --branch=*)
+            if [[ -n "${TARGET_BRANCH}" ]]; then
+                echo "ERROR: branch specified more than once." >&2
+                usage
+                exit 2
+            fi
+            TARGET_BRANCH="${1#--branch=}"
+            if [[ -z "${TARGET_BRANCH}" ]]; then
+                echo "ERROR: --branch requires a branch name." >&2
+                usage
+                exit 2
+            fi
+            shift
+            ;;
+        --*)
+            echo "ERROR: unknown option: $1" >&2
+            usage
+            exit 2
+            ;;
+        *)
+            if [[ -n "${TARGET_BRANCH}" ]]; then
+                echo "ERROR: branch specified more than once." >&2
+                usage
+                exit 2
+            fi
+            TARGET_BRANCH="$1"
+            shift
+            ;;
+    esac
+done
+
+
+update_repository() {
+    local current_branch
+    local cleanup_script="${ROOT_DIR}/cleanup-branches.sh"
+
+    if ! git remote get-url "${GIT_REMOTE}" >/dev/null 2>&1; then
+        echo "ERROR: Git remote '${GIT_REMOTE}' does not exist." >&2
+        exit 1
+    fi
+
+    echo "Fetching repository from ${GIT_REMOTE} ..."
+    git fetch --prune "${GIT_REMOTE}"
+
+    if [[ -n "${TARGET_BRANCH}" ]]; then
+        if ! git check-ref-format --branch "${TARGET_BRANCH}" >/dev/null 2>&1; then
+            echo "ERROR: invalid branch name: ${TARGET_BRANCH}" >&2
+            exit 1
+        fi
+
+        if ! git show-ref --verify --quiet "refs/remotes/${GIT_REMOTE}/${TARGET_BRANCH}"; then
+            echo "ERROR: branch '${TARGET_BRANCH}' does not exist on remote '${GIT_REMOTE}'." >&2
+            exit 1
+        fi
+
+        echo "Switching to branch ${TARGET_BRANCH} ..."
+        if git show-ref --verify --quiet "refs/heads/${TARGET_BRANCH}"; then
+            git switch "${TARGET_BRANCH}"
+        else
+            git switch -c "${TARGET_BRANCH}" --track "${GIT_REMOTE}/${TARGET_BRANCH}"
+        fi
+
+        echo "Pulling ${GIT_REMOTE}/${TARGET_BRANCH} ..."
+        git pull --ff-only "${GIT_REMOTE}" "${TARGET_BRANCH}"
+    else
+        current_branch="$(git branch --show-current)"
+        if [[ -z "${current_branch}" ]]; then
+            echo "ERROR: repository is in detached HEAD state; specify --branch BRANCH." >&2
+            exit 1
+        fi
+
+        echo "Pulling current branch ${current_branch} ..."
+        git pull --ff-only
+    fi
+
+    if [[ -f "${cleanup_script}" ]]; then
+        echo "Cleaning up orphaned local branches ..."
+        bash "${cleanup_script}"
+    else
+        echo "WARNING: cleanup script not found: ${cleanup_script}" >&2
+    fi
+}
 
 confirm() {
     local prompt="$1"
@@ -317,7 +420,7 @@ echo "=== Health Coach: update started ==="
 cd "${ROOT_DIR}"
 
 echo "Updating repository ..."
-git pull --ff-only
+update_repository
 
 echo "Current branch: $(git branch --show-current)"
 echo "Current commit: $(git rev-parse --short HEAD)"
