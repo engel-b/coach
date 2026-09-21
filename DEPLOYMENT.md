@@ -92,15 +92,16 @@ Verantwortlichkeiten:
 4. Backend-Abhängigkeiten installieren bzw. aktualisieren.
 5. TTS-Modell/-Stimme provisionieren.
 6. LLM-Modell provisionieren.
-7. Frontend-Abhängigkeiten reproduzierbar mit `npm ci` installieren.
-8. Frontend bauen.
-9. Laufzeitdatenverzeichnisse unter `data/` sicherstellen und bekannte Altpfade einmalig migrieren.
-10. `/etc/health-coach/backend.env` und `/etc/health-coach/llm.env` gegen die Repo-Vorlagen abgleichen. Fehlende bzw. veraltete Schlüssel werden interaktiv zur Ergänzung/Entfernung angeboten; bestehende Werte bleiben erhalten.
-11. systemd-Units gegen die Repo-Vorlagen vergleichen und Änderungen nach Rückfrage installieren.
-12. Datenbankschema mit Alembic aktualisieren.
-13. Health-Coach-Services neu starten.
-14. `/etc/caddy/Caddyfile` gegen die Repo-Vorlage vergleichen, optional aktualisieren, mit `caddy validate` prüfen und Caddy nur bei erfolgreicher Validierung neu starten.
-15. Fehler sichtbar abbrechen, statt eine teilweise installierte Version weiterzustarten.
+7. Node.js 24 LTS prüfen (mindestens 24.15.0; getestete Version siehe `.nvmrc`).
+8. Frontend-Abhängigkeiten reproduzierbar mit `npm ci` installieren.
+9. Frontend bauen.
+10. Laufzeitdatenverzeichnisse unter `data/` sicherstellen und bekannte Altpfade einmalig migrieren.
+11. `/etc/health-coach/backend.env` und `/etc/health-coach/llm.env` gegen die Repo-Vorlagen abgleichen. Fehlende bzw. veraltete Schlüssel werden interaktiv zur Ergänzung/Entfernung angeboten; bestehende Werte bleiben erhalten.
+12. systemd-Units gegen die Repo-Vorlagen vergleichen und Änderungen nach Rückfrage installieren.
+13. Datenbankschema mit Alembic aktualisieren.
+14. Health-Coach-Services neu starten.
+15. `/etc/caddy/Caddyfile` gegen die Repo-Vorlage vergleichen, optional aktualisieren, mit `caddy validate` prüfen und Caddy nur bei erfolgreicher Validierung neu starten.
+16. Fehler sichtbar abbrechen, statt eine teilweise installierte Version weiterzustarten.
 
 `provision.sh` darf:
 

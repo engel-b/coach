@@ -21,7 +21,7 @@ dev = [
     "pytest-asyncio",
     "ruff",
     "mypy",
-    "httpx",
+    "httpx2>=2,<3",
 ]
 
 [tool.pytest.ini_options]

@@ -186,7 +186,7 @@ python3 --version
 
 ### Node.js
 
-Node.js 24 LTS is recommended for the frontend.
+Node.js 24 LTS is required for the frontend. The project currently requires Node.js >=24.15.0 <25; `.nvmrc` pins the tested LTS version.
 
 Check:
 

@@ -329,7 +329,7 @@ sync_env_file "LLM environment" "${LLM_ENV_TEMPLATE}" "${LLM_ENV_TARGET}"
 load_runtime_environment
 
 echo "Ensuring Python virtual environment ..."
-if [[ ! -d "${BACKEND_DIR}/.venv" ]]; then
+if [ ! -d "${BACKEND_DIR}/.venv" ]; then
     python3 -m venv "${BACKEND_DIR}/.venv"
 fi
 
@@ -342,6 +342,25 @@ echo "Provisioning TTS voice ..."
 
 echo "Provisioning LLM model ..."
 "${PYTHON}" "${BACKEND_DIR}/scripts/ensure_llm_model.py"
+
+echo "Checking Node.js runtime ..."
+if ! command -v node >/dev/null 2>&1; then
+    echo "ERROR: Node.js is not installed. Node.js >=24.15.0 <25 is required." >&2
+    exit 1
+fi
+
+if ! node -e '
+const [major, minor] = process.versions.node.split(".").map(Number);
+process.exit(major === 24 && minor >= 15 ? 0 : 1);
+'; then
+    echo "ERROR: Node.js >=24.15.0 <25 is required." >&2
+    echo "Installed: $(node --version)" >&2
+    echo "Expected project version: $(cat "${ROOT_DIR}/.nvmrc")" >&2
+    exit 1
+fi
+
+echo "Node.js: $(node --version)"
+echo "npm: $(npm --version)"
 
 echo "Installing frontend dependencies ..."
 cd "${FRONTEND_DIR}"
