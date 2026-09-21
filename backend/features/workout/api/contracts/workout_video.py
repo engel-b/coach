@@ -22,9 +22,12 @@ class WorkoutVideoResponse(BaseModel):
         description="Optionale Beschreibung des Videos.",
         examples=["Eine virtuelle Radtour durch die Alpen."],
     )
-    url: str = Field(
-        description="Relative URL zur MP4-Datei des Trainingsvideos.",
-        examples=["/videos/cycling/alpen.mp4"],
+    file_path: str = Field(
+        serialization_alias="filePath",
+        description=(
+            "Relativer Pfad zur MP4-Datei innerhalb des konfigurierten Videoverzeichnisses."
+        ),
+        examples=["cycling/alpen.mp4"],
     )
     duration_seconds: float | None = Field(
         serialization_alias="durationSeconds",
@@ -43,7 +46,10 @@ class WorkoutVideoResponse(BaseModel):
 class WorkoutVideoMutationRequest(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     description: str | None = None
-    file_path: str = Field(serialization_alias="filePath", validation_alias="filePath")
+    file_path: str = Field(
+        serialization_alias="filePath",
+        validation_alias="filePath",
+    )
     duration_seconds: float | None = Field(
         default=None,
         ge=0,
@@ -67,7 +73,7 @@ def to_workout_video_response(video: WorkoutVideo) -> WorkoutVideoResponse:
         id=video.id,
         title=video.title,
         description=video.description,
-        url=f"/videos/{file_path}",
+        file_path=file_path,
         duration_seconds=video.duration_seconds,
         active=video.active,
     )

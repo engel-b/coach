@@ -4,9 +4,18 @@ import os
 import urllib.request
 from pathlib import Path
 
-BACKEND_ROOT = Path(__file__).resolve().parents[1]
-MODEL_DIR = BACKEND_ROOT / "models" / "llm"
-MODEL_PATH = MODEL_DIR / "qwen3.5-0.8b-q4_0.gguf"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_MODEL_PATH = PROJECT_ROOT / "data" / "models" / "llm" / "qwen3.5-0.8b-q4_0.gguf"
+
+configured_model_path = Path(
+    os.environ.get("HEALTH_COACH_LLM_MODEL_PATH", str(DEFAULT_MODEL_PATH))
+).expanduser()
+MODEL_PATH = (
+    configured_model_path
+    if configured_model_path.is_absolute()
+    else (PROJECT_ROOT / configured_model_path).resolve()
+)
+MODEL_DIR = MODEL_PATH.parent
 MODEL_URL = os.environ.get(
     "HEALTH_COACH_LLM_MODEL_URL",
     "https://huggingface.co/ggml-org/Qwen3.5-0.8B-GGUF/resolve/main/Qwen3.5-0.8B-Q4_0.gguf",

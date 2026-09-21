@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from apps.api import wiring
 from apps.api.routers.health import router as health_router
@@ -114,3 +115,12 @@ app.include_router(check_ins_router)
 app.include_router(training_router)
 app.include_router(workouts_router)
 app.include_router(workout_videos_router)
+
+# Die Datenbank speichert nur Pfade relativ zu HEALTH_COACH_VIDEO_DIR.
+# Die physische Ablage kann dadurch frei konfiguriert werden, während der
+# Browser die Dateien stabil unter /videos/<filePath> erreicht.
+app.mount(
+    "/videos",
+    StaticFiles(directory=wiring.video_directory, check_dir=False),
+    name="videos",
+)

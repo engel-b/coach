@@ -20,7 +20,7 @@ describe("getWorkoutVideo", () => {
         id: "Lqhq5UQ-U8A",
         title: "Alpen",
         description: "Trainingsvideo Alpen",
-        url: "/videos/cycling/alpen.mp4",
+        filePath: "cycling/alpen.mp4",
         durationSeconds: 3600,
       }),
     });
@@ -31,7 +31,7 @@ describe("getWorkoutVideo", () => {
 
     expect(fetchMock).toHaveBeenCalledWith("/api/workout-videos/Lqhq5UQ-U8A");
     expect(video.id).toBe("Lqhq5UQ-U8A");
-    expect(video.url).toBe("/videos/cycling/alpen.mp4");
+    expect(video.filePath).toBe("cycling/alpen.mp4");
     expect(video.durationSeconds).toBe(3600);
   });
 
@@ -42,7 +42,7 @@ describe("getWorkoutVideo", () => {
         id: "video mit leerzeichen",
         title: "Test",
         description: null,
-        url: "/videos/cycling/test.mp4",
+        filePath: "cycling/test.mp4",
         durationSeconds: null,
       }),
     });
@@ -81,7 +81,7 @@ describe("getWorkoutVideos", () => {
         id: "Lqhq5UQ-U8A",
         title: "Alpen",
         description: "Trainingsvideo Alpen",
-        url: "/videos/cycling/alpen.mp4",
+        filePath: "cycling/alpen.mp4",
         durationSeconds: 3600,
       },
     ];

@@ -34,9 +34,17 @@ Relevante Verzeichnisse:
 /opt/health-coach/
 ├── backend/
 │   ├── .venv/
+│   └── ...
+├── data/
+│   ├── db/
+│   |   └── health-coach.db
 │   └── models/
-│       ├── llm/
-│       └── ...
+│   |   ├── llm/
+│   │   |   └── qwen3.5-0.8b-q4_0.gguf
+│   |   ├── piper-tts/
+│   |   |   ├── de_DE-thorsten-medium.onnx
+│   |   |   └── de_DE-thorsten-medium.onnx.json
+│   └── videos/
 ├── frontend/
 │   └── ...
 └── deploy/
@@ -538,6 +546,7 @@ HEALTH_COACH_TTS_VOLUME=1.0
 | `HEALTH_COACH_LLM_BASE_URL` | Basis-URL des lokalen `llama-server` |
 | `HEALTH_COACH_LLM_MODEL` | Gemeinsamer Modellalias von API und `llama-server` |
 | `HEALTH_COACH_LLM_TIMEOUT_SECONDS` | Maximale Wartezeit des Backends auf eine LLM-Antwort |
+| `HEALTH_COACH_PIPER_MODEL` | Pfad zur lokalen Piper-ONNX-Stimme; Standard im Projekt: `data/models/piper-tts/de_DE-thorsten-medium.onnx` |
 | `HEALTH_COACH_TTS_LENGTH_SCALE` | Sprechtempo von Piper; kleiner als `1.0` spricht schneller |
 | `HEALTH_COACH_TTS_NOISE_SCALE` | Variation in der Audioerzeugung |
 | `HEALTH_COACH_TTS_NOISE_W_SCALE` | Variation der Phonemdauern / des Sprechrhythmus |
@@ -560,7 +569,7 @@ Datei:
 ```
 
 ```ini
-HEALTH_COACH_LLM_MODEL_PATH=/opt/health-coach/backend/models/llm/qwen3.5-0.8b-q4_0.gguf
+HEALTH_COACH_LLM_MODEL_PATH=/opt/health-coach/data/models/llm/qwen3.5-0.8b-q4_0.gguf
 HEALTH_COACH_LLM_MODEL=health-coach-local
 ```
 
@@ -605,13 +614,13 @@ Prüfung:
 Erwarteter Modellpfad:
 
 ```text
-/opt/health-coach/backend/models/llm/qwen3.5-0.8b-q4_0.gguf
+/opt/health-coach/data/models/llm/qwen3.5-0.8b-q4_0.gguf
 ```
 
 Prüfung:
 
 ```bash
-ls -lh /opt/health-coach/backend/models/llm/qwen3.5-0.8b-q4_0.gguf
+ls -lh /opt/health-coach/data/models/llm/qwen3.5-0.8b-q4_0.gguf
 ```
 
 Das Modell wird durch `provision.sh` bzw. das dort aufgerufene Modell-Provisionierungsskript sichergestellt. Es wird **nicht** bei einem normalen Boot heruntergeladen.

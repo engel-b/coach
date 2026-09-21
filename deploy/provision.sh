@@ -27,6 +27,13 @@ echo "Installing backend dependencies ..."
 "${PIP}" install --upgrade pip
 "${PIP}" install -e "${BACKEND_DIR}"
 
+echo "Preparing runtime data directories ..."
+mkdir -p \
+    "${ROOT_DIR}/data/db" \
+    "${ROOT_DIR}/data/models/llm" \
+    "${ROOT_DIR}/data/models/piper-tts" \
+    "${ROOT_DIR}/data/videos"
+
 echo "Provisioning TTS voice ..."
 "${PYTHON}" "${BACKEND_DIR}/scripts/ensure_tts_voice.py"
 

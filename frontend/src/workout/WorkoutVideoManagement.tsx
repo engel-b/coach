@@ -47,7 +47,7 @@ function WorkoutVideoForm({
     onSubmit({
       title: String(formData.get("title") ?? "").trim(),
       description: description === "" ? null : description,
-      url: String(formData.get("filePath") ?? "").trim(),
+      filePath: String(formData.get("filePath") ?? "").trim(),
       durationSeconds: optionalDuration(durationValue),
       active: formData.get("active") === "on",
     });
@@ -86,8 +86,8 @@ function WorkoutVideoForm({
           <input
             name="filePath"
             type="text"
-            defaultValue={video?.url ?? ""}
-            placeholder="/videos/cycling/alpen.mp4"
+            defaultValue={video?.filePath ?? ""}
+            placeholder="cycling/alpen.mp4"
             required
           />
           <small>Relativer MP4-Pfad innerhalb des Videoverzeichnisses.</small>
@@ -190,7 +190,7 @@ export function WorkoutVideoManagement({
       return;
     }
 
-    if (request.url === "") {
+    if (request.filePath === "") {
       setFormError("Bitte gib einen Dateipfad ein.");
       return;
     }
@@ -327,7 +327,7 @@ export function WorkoutVideoManagement({
                   </span>
                 </div>
                 <p>{video.description ?? "Keine Beschreibung"}</p>
-                <code>{video.url}</code>
+                <code>{video.filePath}</code>
               </div>
 
               <div className="video-management-actions">

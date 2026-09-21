@@ -1,14 +1,25 @@
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 VOICE_NAME = "de_DE-thorsten-medium"
-BACKEND_ROOT = Path(__file__).resolve().parents[1]
-VOICE_DIR = BACKEND_ROOT / "models" / "piper"
-MODEL_PATH = VOICE_DIR / f"{VOICE_NAME}.onnx"
-CONFIG_PATH = VOICE_DIR / f"{VOICE_NAME}.onnx.json"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+BACKEND_ROOT = PROJECT_ROOT / "backend"
+DEFAULT_MODEL_PATH = PROJECT_ROOT / "data" / "models" / "piper-tts" / f"{VOICE_NAME}.onnx"
+
+configured_model_path = Path(
+    os.environ.get("HEALTH_COACH_PIPER_MODEL", str(DEFAULT_MODEL_PATH))
+).expanduser()
+MODEL_PATH = (
+    configured_model_path
+    if configured_model_path.is_absolute()
+    else (PROJECT_ROOT / configured_model_path).resolve()
+)
+VOICE_DIR = MODEL_PATH.parent
+CONFIG_PATH = MODEL_PATH.with_suffix(MODEL_PATH.suffix + ".json")
 
 
 def voice_is_installed() -> bool:
@@ -17,11 +28,11 @@ def voice_is_installed() -> bool:
 
 def ensure_tts_voice() -> None:
     if voice_is_installed():
-        print(f"Piper voice already installed: {VOICE_NAME}")
+        print(f"Piper voice already installed: {MODEL_PATH}")
         return
 
     VOICE_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"Piper voice missing; downloading {VOICE_NAME} ...")
+    print(f"Piper voice missing; downloading {VOICE_NAME} to {VOICE_DIR} ...")
 
     subprocess.run(
         [

@@ -31,7 +31,7 @@ const video = {
   id: "video-1",
   title: "Alpen",
   description: "Trainingsvideo Alpen",
-  url: "/videos/cycling/alpen.mp4",
+  filePath: "cycling/alpen.mp4",
   durationSeconds: 3600,
   active: true,
 };
@@ -52,7 +52,7 @@ describe("WorkoutVideoManagement", () => {
       id: "video-2",
       title: "Küste",
       description: null,
-      url: "/videos/cycling/kueste.mp4",
+      filePath: "cycling/kueste.mp4",
       durationSeconds: 2700,
     };
     createWorkoutVideoMock.mockResolvedValue(created);
@@ -65,7 +65,7 @@ describe("WorkoutVideoManagement", () => {
       target: { value: "Küste" },
     });
     fireEvent.change(screen.getByLabelText(/Dateipfad/), {
-      target: { value: "/videos/cycling/kueste.mp4" },
+      target: { value: "cycling/kueste.mp4" },
     });
     fireEvent.change(screen.getByLabelText("Dauer in Sekunden"), {
       target: { value: "2700" },
@@ -76,7 +76,7 @@ describe("WorkoutVideoManagement", () => {
       expect(createWorkoutVideoMock).toHaveBeenCalledWith({
         title: "Küste",
         description: null,
-        url: "/videos/cycling/kueste.mp4",
+        filePath: "cycling/kueste.mp4",
         durationSeconds: 2700,
         active: true,
       });
@@ -102,7 +102,7 @@ describe("WorkoutVideoManagement", () => {
     expect(updateWorkoutVideoMock).toHaveBeenCalledWith("video-1", {
       title: "Alpenrunde",
       description: "Trainingsvideo Alpen",
-      url: "/videos/cycling/alpen.mp4",
+      filePath: "cycling/alpen.mp4",
       durationSeconds: 3600,
       active: true,
     });

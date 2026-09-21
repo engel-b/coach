@@ -10,7 +10,7 @@ import {
 const request = {
   title: "Alpen",
   description: "Trainingsvideo Alpen",
-  url: "/videos/cycling/alpen.mp4",
+  filePath: "cycling/alpen.mp4",
   durationSeconds: 3600,
   active: true,
 };
@@ -21,9 +21,7 @@ describe("workout video management API", () => {
   });
 
   it("loads all videos through the management endpoint", async () => {
-    const videos = [
-      { id: "video-1", ...request, url: "/videos/cycling/alpen.mp4" },
-    ];
+    const videos = [{ id: "video-1", ...request }];
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => videos,

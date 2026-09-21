@@ -157,20 +157,35 @@ video_catalog_service = VideoCatalogService(
     workout_repository=workout_repository,
 )
 
+project_root = Path(__file__).resolve().parents[3]
+configured_video_directory = Path(
+    os.environ.get("HEALTH_COACH_VIDEO_DIR", "data/videos")
+).expanduser()
+video_directory = (
+    configured_video_directory
+    if configured_video_directory.is_absolute()
+    else project_root / configured_video_directory
+).resolve()
+
 video_catalog_sync_service = VideoCatalogSyncService(
     repository=workout_video_repository,
-    video_directory=Path(os.environ.get("HEALTH_COACH_VIDEO_DIR", "../videos")).resolve(),
+    video_directory=video_directory,
 )
 
 telemetry_broadcaster = TelemetryBroadcaster()
 
 
-piper_model_path = Path(
+configured_piper_model_path = Path(
     os.environ.get(
         "HEALTH_COACH_PIPER_MODEL",
-        "models/piper/de_DE-thorsten-medium.onnx",
+        "data/models/piper-tts/de_DE-thorsten-medium.onnx",
     )
-)
+).expanduser()
+piper_model_path = (
+    configured_piper_model_path
+    if configured_piper_model_path.is_absolute()
+    else project_root / configured_piper_model_path
+).resolve()
 piper_synthesis_settings = PiperSynthesisSettings(
     length_scale=float(os.environ.get("HEALTH_COACH_TTS_LENGTH_SCALE", "0.92")),
     noise_scale=float(os.environ.get("HEALTH_COACH_TTS_NOISE_SCALE", "0.70")),

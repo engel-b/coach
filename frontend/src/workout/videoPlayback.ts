@@ -1,3 +1,12 @@
+export function workoutVideoUrl(filePath: string): string {
+  const encodedPath = filePath
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+
+  return `/videos/${encodedPath}`;
+}
+
 const REFERENCE_SPEED_KMH = 20;
 
 const MIN_PLAYBACK_RATE = 0.5;

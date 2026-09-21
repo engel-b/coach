@@ -141,7 +141,7 @@ migration:
 # ---------------------------------------------------------------------------
 
 tts-voice:
-	cd backend && $(PYTHON) -m piper.download_voices --data-dir models/piper de_DE-thorsten-medium
+	cd backend && $(PYTHON) scripts/ensure_tts_voice.py
 
 
 # ---------------------------------------------------------------------------

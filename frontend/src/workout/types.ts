@@ -28,19 +28,17 @@ export interface WorkoutVideo {
   id: string;
   title: string;
   description: string | null;
-  url: string;
+  filePath: string;
   durationSeconds: number | null;
   active: boolean;
 }
 
-export interface WorkoutVideoAdmin extends WorkoutVideo {
-  url: string;
-}
+export type WorkoutVideoAdmin = WorkoutVideo;
 
 export interface WorkoutVideoMutation {
   title: string;
   description: string | null;
-  url: string;
+  filePath: string;
   durationSeconds: number | null;
   active: boolean;
 }

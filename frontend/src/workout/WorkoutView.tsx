@@ -14,7 +14,11 @@ import { useLiveCoaching } from "../coaching/useLiveCoaching";
 import type { DeviceState } from "../devices/types";
 import type { Person } from "../persons/types";
 import type { Workout, WorkoutPhase, WorkoutRuntimeState } from "./types";
-import { calculateVideoPlaybackRate, isBikeMoving } from "./videoPlayback";
+import {
+  calculateVideoPlaybackRate,
+  isBikeMoving,
+  workoutVideoUrl,
+} from "./videoPlayback";
 import { playWorkoutFinishSound } from "./workoutSound";
 import { WorkoutVideo } from "./WorkoutVideo";
 import {
@@ -32,7 +36,7 @@ import {
 
 type VideoLoadState =
   | { status: "loading"; videoId: string }
-  | { status: "ready"; videoId: string; url: string }
+  | { status: "ready"; videoId: string; src: string }
   | { status: "error"; videoId: string; message: string };
 
 interface WorkoutViewProps {
@@ -329,7 +333,7 @@ export function WorkoutView({
           setVideoLoadState({
             status: "ready",
             videoId: workout.videoId,
-            url: video.url,
+            src: workoutVideoUrl(video.filePath),
           });
         }
       })
@@ -726,7 +730,7 @@ export function WorkoutView({
         videoLoadState.status === "ready" ? (
           <WorkoutVideo
             key={workout.videoId}
-            src={videoLoadState.url}
+            src={videoLoadState.src}
             paused={!shouldPlayWorkoutVideo(engineState) || finishConfirmation}
             playbackRate={videoPlaybackRate}
             initialPositionSeconds={workout.videoPositionSeconds}

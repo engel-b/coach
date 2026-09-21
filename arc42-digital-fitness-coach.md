@@ -1,9 +1,6 @@
 # Digital Fitness Coach – Architektur- und Entwicklerdokumentation
 
 > **Kanonische Dokumentation**  
-> Stand: 19. September 2026  
-> Diese Datei ersetzt die früheren Varianten `arc42-digital-fitness-coach.md`, `arc42-digital-fitness-coach-aktuell.md`, `arc42-digital-fitness-coach-mit-llm-plan.md` und `arc42-digital-fitness-coach-tts-aktualisiert.md` als zentrale Referenz.
->
 > Sie beschreibt den **implementierten Stand**, ausdrücklich gekennzeichnete **optionale/experimentelle Bausteine** sowie die **geplante Weiterentwicklung**. Deployment-Details werden ergänzend in `DEPLOYMENT.md` gepflegt.
 
 ---
