@@ -7,6 +7,7 @@ from features.training.domain.recommendation import (
     WorkoutPhaseType,
     WorkoutType,
 )
+from features.workout.domain.bike_summary import WorkoutBikeSummary
 from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 from features.workout.domain.session import (
     WorkoutSession,
@@ -78,6 +79,26 @@ class SqlAlchemyWorkoutRepository:
                         if workout.heart_rate_summary is not None
                         else None
                     ),
+                    bike_power_sample_count=(
+                        workout.bike_summary.power_sample_count
+                        if workout.bike_summary is not None
+                        else None
+                    ),
+                    bike_average_power_w=(
+                        workout.bike_summary.average_power_w
+                        if workout.bike_summary is not None
+                        else None
+                    ),
+                    bike_cadence_sample_count=(
+                        workout.bike_summary.cadence_sample_count
+                        if workout.bike_summary is not None
+                        else None
+                    ),
+                    bike_average_cadence_rpm=(
+                        workout.bike_summary.average_cadence_rpm
+                        if workout.bike_summary is not None
+                        else None
+                    ),
                 )
 
                 model.phases = [
@@ -116,6 +137,11 @@ class SqlAlchemyWorkoutRepository:
                     existing.heart_rate_above_target_percent = (
                         workout.heart_rate_summary.above_target_percent
                     )
+                if workout.bike_summary is not None:
+                    existing.bike_power_sample_count = workout.bike_summary.power_sample_count
+                    existing.bike_average_power_w = workout.bike_summary.average_power_w
+                    existing.bike_cadence_sample_count = workout.bike_summary.cadence_sample_count
+                    existing.bike_average_cadence_rpm = workout.bike_summary.average_cadence_rpm
 
             session.commit()
 
@@ -189,6 +215,17 @@ class SqlAlchemyWorkoutRepository:
                 and model.heart_rate_below_target_percent is not None
                 and model.heart_rate_in_target_percent is not None
                 and model.heart_rate_above_target_percent is not None
+                else None
+            ),
+            bike_summary=(
+                WorkoutBikeSummary(
+                    power_sample_count=model.bike_power_sample_count or 0,
+                    average_power_w=model.bike_average_power_w,
+                    cadence_sample_count=model.bike_cadence_sample_count or 0,
+                    average_cadence_rpm=model.bike_average_cadence_rpm,
+                )
+                if model.bike_power_sample_count is not None
+                or model.bike_cadence_sample_count is not None
                 else None
             ),
             phases=tuple(

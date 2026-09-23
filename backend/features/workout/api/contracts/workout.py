@@ -201,6 +201,17 @@ class WorkoutHeartRateSummaryResponse(BaseModel):
     above_target_percent: int = Field(ge=0, le=100)
 
 
+class WorkoutBikeSummaryResponse(BaseModel):
+    """Persistierte FTMS-Auswertung der Hauptphase."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    power_sample_count: int = Field(ge=0)
+    average_power_w: int | None = Field(default=None, ge=0)
+    cadence_sample_count: int = Field(ge=0)
+    average_cadence_rpm: float | None = Field(default=None, ge=0)
+
+
 class WorkoutSummaryResponse(BaseModel):
     """Zusammenfassung der geplanten und absolvierten Trainingsleistung."""
 
@@ -234,5 +245,12 @@ class WorkoutSummaryResponse(BaseModel):
         description=(
             "Herzfrequenz-Auswertung der Hauptphase, sofern ausreichend "
             "Live-Herzfrequenzdaten vorhanden waren."
+        ),
+    )
+    bike_summary: WorkoutBikeSummaryResponse | None = Field(
+        default=None,
+        description=(
+            "FTMS-Leistungs-/Kadenz-Auswertung der Hauptphase, sofern Bike-Telemetrie "
+            "vorhanden war."
         ),
     )

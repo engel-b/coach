@@ -211,6 +211,35 @@ export function WorkoutSummaryView({
                 </div>
               </>
             )}
+          {summary?.bikeSummary !== null &&
+            summary?.bikeSummary !== undefined && (
+              <>
+                {summary.bikeSummary.averagePowerW !== null && (
+                  <div>
+                    <span>Ø Leistung Hauptphase</span>
+                    <strong>{summary.bikeSummary.averagePowerW} W</strong>
+                    <small>
+                      {summary.bikeSummary.powerSampleCount} Messwerte
+                    </small>
+                  </div>
+                )}
+                {summary.bikeSummary.averageCadenceRpm !== null && (
+                  <div>
+                    <span>Ø Kadenz Hauptphase</span>
+                    <strong>
+                      {summary.bikeSummary.averageCadenceRpm.toLocaleString(
+                        "de-DE",
+                        { maximumFractionDigits: 1 },
+                      )}{" "}
+                      rpm
+                    </strong>
+                    <small>
+                      {summary.bikeSummary.cadenceSampleCount} Messwerte
+                    </small>
+                  </div>
+                )}
+              </>
+            )}
         </div>
       </section>
 

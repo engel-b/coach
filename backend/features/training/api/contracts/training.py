@@ -123,6 +123,21 @@ class HeartRateHistoryResponse(BaseModel):
             "neueren vergleichbaren Workouts in Prozentpunkten."
         ),
     )
+    load_adjusted_trend: str = Field(
+        default="insufficient_data",
+        description=(
+            "Deskriptive Einordnung des HF-Trends unter Berücksichtigung der "
+            "durchschnittlichen Bike-Leistung vergleichbarer Workouts."
+        ),
+    )
+    median_power_w: int | None = Field(default=None, ge=0)
+    power_change_percent: int | None = Field(
+        default=None,
+        description=(
+            "Relative Änderung der mittleren Bike-Leistung zwischen älteren und "
+            "neueren vergleichbaren Workouts."
+        ),
+    )
 
 
 class TrainingRecommendationResponse(BaseModel):

@@ -4,6 +4,7 @@ from features.training.domain.heart_rate_history import (
     HeartRateHistoryRules,
     HeartRateHistoryStatus,
     HeartRateResponseTrend,
+    LoadAdjustedHeartRateTrend,
 )
 from features.training.domain.recommendation import (
     WorkoutPhase,
@@ -11,6 +12,7 @@ from features.training.domain.recommendation import (
     WorkoutType,
 )
 from features.training.service.heart_rate_history_service import HeartRateHistoryService
+from features.workout.domain.bike_summary import WorkoutBikeSummary
 from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 from features.workout.domain.session import WorkoutSession, WorkoutStatus
 
@@ -25,6 +27,8 @@ def workout(
     status: WorkoutStatus = WorkoutStatus.COMPLETED,
     workout_type: WorkoutType = WorkoutType.BASE_ENDURANCE,
     average_bpm: int = 135,
+    average_power_w: int | None = None,
+    power_sample_count: int = 120,
 ) -> WorkoutSession:
     return WorkoutSession(
         id=f"workout-{index}",
@@ -49,6 +53,16 @@ def workout(
             below_target_percent=below,
             in_target_percent=in_target,
             above_target_percent=above,
+        ),
+        bike_summary=(
+            WorkoutBikeSummary(
+                power_sample_count=power_sample_count,
+                average_power_w=average_power_w,
+                cadence_sample_count=0,
+                average_cadence_rpm=None,
+            )
+            if average_power_w is not None
+            else None
         ),
     )
 
@@ -204,3 +218,83 @@ def test_response_trend_requires_four_comparable_workouts() -> None:
     assert result.response_trend is HeartRateResponseTrend.INSUFFICIENT_DATA
     assert result.median_target_position_percent == 50
     assert result.target_position_change_points is None
+
+
+def test_load_adjusted_trend_detects_lower_hr_at_similar_power() -> None:
+    result = service().analyze(
+        workout_type=WorkoutType.BASE_ENDURANCE,
+        workouts=[
+            workout(1, in_target=70, above=15, below=15, average_bpm=128, average_power_w=121),
+            workout(2, in_target=70, above=15, below=15, average_bpm=130, average_power_w=119),
+            workout(3, in_target=70, above=15, below=15, average_bpm=136, average_power_w=120),
+            workout(4, in_target=70, above=15, below=15, average_bpm=138, average_power_w=118),
+        ],
+    )
+
+    assert result.load_adjusted_trend is LoadAdjustedHeartRateTrend.LOWER_AT_SIMILAR_POWER
+    assert result.median_power_w == 120
+    assert result.power_change_percent is not None
+    assert abs(result.power_change_percent) <= 10
+
+
+def test_load_adjusted_trend_does_not_call_lower_hr_comparable_when_power_drops() -> None:
+    result = service().analyze(
+        workout_type=WorkoutType.BASE_ENDURANCE,
+        workouts=[
+            workout(1, in_target=70, above=15, below=15, average_bpm=128, average_power_w=90),
+            workout(2, in_target=70, above=15, below=15, average_bpm=130, average_power_w=92),
+            workout(3, in_target=70, above=15, below=15, average_bpm=136, average_power_w=125),
+            workout(4, in_target=70, above=15, below=15, average_bpm=138, average_power_w=120),
+        ],
+    )
+
+    assert result.load_adjusted_trend is LoadAdjustedHeartRateTrend.LOWER_WITH_LOWER_POWER
+    assert result.power_change_percent is not None
+    assert result.power_change_percent < -10
+
+
+def test_load_adjusted_trend_requires_sufficient_power_samples() -> None:
+    result = service().analyze(
+        workout_type=WorkoutType.BASE_ENDURANCE,
+        workouts=[
+            workout(
+                1,
+                in_target=70,
+                above=15,
+                below=15,
+                average_bpm=128,
+                average_power_w=120,
+                power_sample_count=10,
+            ),
+            workout(
+                2,
+                in_target=70,
+                above=15,
+                below=15,
+                average_bpm=130,
+                average_power_w=120,
+                power_sample_count=10,
+            ),
+            workout(
+                3,
+                in_target=70,
+                above=15,
+                below=15,
+                average_bpm=136,
+                average_power_w=120,
+                power_sample_count=10,
+            ),
+            workout(
+                4,
+                in_target=70,
+                above=15,
+                below=15,
+                average_bpm=138,
+                average_power_w=120,
+                power_sample_count=10,
+            ),
+        ],
+    )
+
+    assert result.load_adjusted_trend is LoadAdjustedHeartRateTrend.INSUFFICIENT_DATA
+    assert result.median_power_w is None

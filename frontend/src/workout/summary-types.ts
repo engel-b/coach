@@ -7,6 +7,13 @@ export interface WorkoutHeartRateSummary {
   aboveTargetPercent: number;
 }
 
+export interface WorkoutBikeSummary {
+  powerSampleCount: number;
+  averagePowerW: number | null;
+  cadenceSampleCount: number;
+  averageCadenceRpm: number | null;
+}
+
 export interface WorkoutSummary {
   plannedSeconds: number;
   elapsedSeconds: number;
@@ -14,4 +21,5 @@ export interface WorkoutSummary {
   completionPercent: number;
   status: "running" | "completed" | "aborted";
   heartRateSummary: WorkoutHeartRateSummary | null;
+  bikeSummary: WorkoutBikeSummary | null;
 }

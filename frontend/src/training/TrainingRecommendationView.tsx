@@ -176,6 +176,34 @@ function HeartRateTargetExplanation({
                 }
               </p>
             )}
+            {recommendation.heartRateHistory.loadAdjustedTrend !==
+              "insufficient_data" && (
+              <p className="heart-rate-history-trend">
+                {recommendation.heartRateHistory.loadAdjustedTrend ===
+                "lower_at_similar_power"
+                  ? "Die Herzfrequenz-Reaktion war bei den neueren Einheiten niedriger, obwohl die durchschnittliche Bike-Leistung ähnlich blieb."
+                  : recommendation.heartRateHistory.loadAdjustedTrend ===
+                      "higher_at_similar_power"
+                    ? "Die Herzfrequenz-Reaktion war bei den neueren Einheiten höher, obwohl die durchschnittliche Bike-Leistung ähnlich blieb."
+                    : recommendation.heartRateHistory.loadAdjustedTrend ===
+                        "stable_at_similar_power"
+                      ? "Herzfrequenz-Reaktion und durchschnittliche Bike-Leistung blieben über die vergleichbaren Einheiten weitgehend stabil."
+                      : recommendation.heartRateHistory.loadAdjustedTrend ===
+                          "lower_with_lower_power"
+                        ? "Die niedrigere Herzfrequenz ging mit einer niedrigeren durchschnittlichen Bike-Leistung einher; deshalb wird sie nicht als günstigere Reaktion interpretiert."
+                        : recommendation.heartRateHistory.loadAdjustedTrend ===
+                            "higher_with_higher_power"
+                          ? "Die höhere Herzfrequenz ging mit einer höheren durchschnittlichen Bike-Leistung einher; die Belastung war also nicht vergleichbar."
+                          : "Die Bike-Leistung hat sich zwischen älteren und neueren Einheiten deutlich verändert; der Herzfrequenz-Trend wird deshalb nicht isoliert interpretiert."}
+                {recommendation.heartRateHistory.powerChangePercent !== null &&
+                  ` Leistungsänderung: ${recommendation.heartRateHistory.powerChangePercent > 0 ? "+" : ""}${recommendation.heartRateHistory.powerChangePercent} %.`}
+                {recommendation.heartRateHistory.medianPowerW !== null &&
+                  ` Median der vergleichbaren Einheiten: ${recommendation.heartRateHistory.medianPowerW} W.`}
+                {
+                  " Auch diese Beobachtung ist rein deskriptiv und verändert die Trainingsintensität nicht automatisch."
+                }
+              </p>
+            )}
           </div>
         )}
     </div>

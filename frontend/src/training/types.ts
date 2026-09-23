@@ -50,6 +50,15 @@ export type HeartRateHistoryStatus =
 export type HeartRateResponseTrend =
   "insufficient_data" | "lower" | "stable" | "higher";
 
+export type LoadAdjustedHeartRateTrend =
+  | "insufficient_data"
+  | "lower_at_similar_power"
+  | "higher_at_similar_power"
+  | "stable_at_similar_power"
+  | "lower_with_lower_power"
+  | "higher_with_higher_power"
+  | "load_changed";
+
 export interface HeartRateHistory {
   status: HeartRateHistoryStatus;
   workoutCount: number;
@@ -61,6 +70,9 @@ export interface HeartRateHistory {
   responseTrend: HeartRateResponseTrend;
   medianTargetPositionPercent: number | null;
   targetPositionChangePoints: number | null;
+  loadAdjustedTrend: LoadAdjustedHeartRateTrend;
+  medianPowerW: number | null;
+  powerChangePercent: number | null;
 }
 
 export interface TrainingRecommendation {

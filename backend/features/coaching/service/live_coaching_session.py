@@ -7,6 +7,8 @@ from features.coaching.domain.live_coaching import (
 )
 from features.coaching.service.live_coaching_service import LiveCoachingService
 from features.telemetry.domain.health.heart_rate import HeartRateSample
+from features.telemetry.domain.telemetry.bike import BikeTelemetry
+from features.workout.domain.bike_summary import WorkoutBikeSummary
 from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 from features.workout.domain.phase_progress import get_current_phase
 from features.workout.domain.runtime import WorkoutRuntimeState
@@ -44,6 +46,10 @@ class LiveCoachingSession:
         self._main_hr_below_target_count = 0
         self._main_hr_in_target_count = 0
         self._main_hr_above_target_count = 0
+        self._main_power_sample_count = 0
+        self._main_power_sum_w = 0
+        self._main_cadence_sample_count = 0
+        self._main_cadence_sum_rpm = 0.0
 
     @property
     def workout_id(self) -> str:
@@ -124,6 +130,44 @@ class LiveCoachingSession:
             heart_rate_bpm=sample.bpm,
             target_min_bpm=phase.target_heart_rate_min,
             target_max_bpm=phase.target_heart_rate_max,
+        )
+
+    def handle_bike_telemetry(self, telemetry: BikeTelemetry) -> None:
+        if self._runtime_state is not WorkoutRuntimeState.RUNNING:
+            return
+
+        progress = get_current_phase(
+            self._workout,
+            elapsed_seconds=self._elapsed_seconds,
+        )
+        if progress is None or progress.phase.phase_type.value != "main":
+            return
+
+        if telemetry.power_w is not None and telemetry.power_w >= 0:
+            self._main_power_sample_count += 1
+            self._main_power_sum_w += telemetry.power_w
+
+        if telemetry.cadence_rpm is not None and telemetry.cadence_rpm >= 0:
+            self._main_cadence_sample_count += 1
+            self._main_cadence_sum_rpm += telemetry.cadence_rpm
+
+    def bike_summary(self) -> WorkoutBikeSummary | None:
+        if self._main_power_sample_count == 0 and self._main_cadence_sample_count == 0:
+            return None
+
+        return WorkoutBikeSummary(
+            power_sample_count=self._main_power_sample_count,
+            average_power_w=(
+                round(self._main_power_sum_w / self._main_power_sample_count)
+                if self._main_power_sample_count > 0
+                else None
+            ),
+            cadence_sample_count=self._main_cadence_sample_count,
+            average_cadence_rpm=(
+                round(self._main_cadence_sum_rpm / self._main_cadence_sample_count, 1)
+                if self._main_cadence_sample_count > 0
+                else None
+            ),
         )
 
     def heart_rate_summary(self) -> WorkoutHeartRateSummary | None:

@@ -5,6 +5,7 @@ from features.training.domain.heart_rate_history import (
     HeartRateHistoryRules,
     HeartRateHistoryStatus,
     HeartRateResponseTrend,
+    LoadAdjustedHeartRateTrend,
 )
 from features.training.domain.recommendation import WorkoutPhaseType, WorkoutType
 from features.workout.domain.session import WorkoutSession, WorkoutStatus
@@ -56,11 +57,7 @@ class HeartRateHistoryService:
 
         median_position = round(median(positions))
         if len(positions) < self._rules.trend_min_workout_count:
-            return (
-                HeartRateResponseTrend.INSUFFICIENT_DATA,
-                median_position,
-                None,
-            )
+            return HeartRateResponseTrend.INSUFFICIENT_DATA, median_position, None
 
         half = len(positions) // 2
         earlier = positions[:half]
@@ -75,6 +72,62 @@ class HeartRateHistoryService:
             trend = HeartRateResponseTrend.STABLE
 
         return trend, median_position, change
+
+    def _load_adjusted_trend(
+        self,
+        workouts: list[WorkoutSession],
+        *,
+        response_trend: HeartRateResponseTrend,
+    ) -> tuple[LoadAdjustedHeartRateTrend, int | None, int | None]:
+        # Nur Workouts mit ausreichend Power-Samples werden paarweise verglichen.
+        pairs: list[tuple[float, int]] = []
+        for workout in reversed(workouts):
+            position = self._target_position_percent(workout)
+            bike = workout.bike_summary
+            if (
+                position is None
+                or bike is None
+                or bike.average_power_w is None
+                or bike.power_sample_count < self._rules.min_power_samples_per_workout
+            ):
+                continue
+            pairs.append((position, bike.average_power_w))
+
+        if not pairs:
+            return LoadAdjustedHeartRateTrend.INSUFFICIENT_DATA, None, None
+
+        median_power = round(median(power for _, power in pairs))
+        if len(pairs) < self._rules.trend_min_workout_count:
+            return LoadAdjustedHeartRateTrend.INSUFFICIENT_DATA, median_power, None
+
+        half = len(pairs) // 2
+        earlier = pairs[:half]
+        recent = pairs[-half:]
+        earlier_power = median(power for _, power in earlier)
+        recent_power = median(power for _, power in recent)
+        if earlier_power <= 0:
+            return LoadAdjustedHeartRateTrend.INSUFFICIENT_DATA, median_power, None
+
+        power_change = round((recent_power - earlier_power) / earlier_power * 100)
+        similar_power = abs(power_change) <= self._rules.similar_power_change_percent
+
+        if similar_power:
+            if response_trend is HeartRateResponseTrend.LOWER:
+                adjusted = LoadAdjustedHeartRateTrend.LOWER_AT_SIMILAR_POWER
+            elif response_trend is HeartRateResponseTrend.HIGHER:
+                adjusted = LoadAdjustedHeartRateTrend.HIGHER_AT_SIMILAR_POWER
+            elif response_trend is HeartRateResponseTrend.STABLE:
+                adjusted = LoadAdjustedHeartRateTrend.STABLE_AT_SIMILAR_POWER
+            else:
+                adjusted = LoadAdjustedHeartRateTrend.INSUFFICIENT_DATA
+        elif response_trend is HeartRateResponseTrend.LOWER and power_change < 0:
+            adjusted = LoadAdjustedHeartRateTrend.LOWER_WITH_LOWER_POWER
+        elif response_trend is HeartRateResponseTrend.HIGHER and power_change > 0:
+            adjusted = LoadAdjustedHeartRateTrend.HIGHER_WITH_HIGHER_POWER
+        else:
+            adjusted = LoadAdjustedHeartRateTrend.LOAD_CHANGED
+
+        return adjusted, median_power, power_change
 
     def analyze(
         self,
@@ -94,6 +147,10 @@ class HeartRateHistoryService:
         response_trend, median_target_position, target_position_change = self._response_trend(
             eligible
         )
+        load_adjusted_trend, median_power, power_change = self._load_adjusted_trend(
+            eligible,
+            response_trend=response_trend,
+        )
 
         if len(eligible) < self._rules.min_workout_count:
             return HeartRateHistoryContext(
@@ -103,6 +160,9 @@ class HeartRateHistoryService:
                 response_trend=response_trend,
                 median_target_position_percent=median_target_position,
                 target_position_change_points=target_position_change,
+                load_adjusted_trend=load_adjusted_trend,
+                median_power_w=median_power,
+                power_change_percent=power_change,
             )
 
         in_target = round(
@@ -151,4 +211,7 @@ class HeartRateHistoryService:
             response_trend=response_trend,
             median_target_position_percent=median_target_position,
             target_position_change_points=target_position_change,
+            load_adjusted_trend=load_adjusted_trend,
+            median_power_w=median_power,
+            power_change_percent=power_change,
         )

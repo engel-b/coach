@@ -438,6 +438,14 @@ Zusätzlich wird die mittlere Herzfrequenz jedes vergleichbaren Workouts relativ
 
 Die Trainingsempfehlung liefert den erkannten Verlauf als strukturierten Kontext an das Frontend. Dadurch bleibt sichtbar, ob die Historie überwiegend im Zielbereich, oberhalb, unterhalb oder uneindeutig war, wie viele Workouts dafür ausgewertet wurden und ob sich die relative Herzfrequenz-Reaktion über vergleichbare Einheiten verschoben hat.
 
+### Herzfrequenz-Reaktion relativ zur Bike-Leistung
+
+Während der Hauptphase wird zusätzlich eine kompakte `WorkoutBikeSummary` aus FTMS-Telemetrie gebildet. Persistiert werden nur Stichprobenanzahl und Mittelwerte für Leistung und Kadenz; vollständige Bike-Rohdatenreihen sind für diese Auswertung nicht erforderlich. Fehlende Sensorwerte bleiben optional und blockieren weder Workout noch Coaching.
+
+Für die historische Interpretation werden nur Workouts mit ausreichend vielen Leistungs-Samples paarweise mit der Herzfrequenz-Reaktion verglichen. Ältere und neuere vergleichbare Einheiten werden über Medianwerte gegenübergestellt. Ändert sich die mittlere Bike-Leistung um höchstens 10 Prozent, gilt die Belastung für diese deskriptive Auswertung als ähnlich. Dadurch kann beispielsweise eine niedrigere relative Herzfrequenz bei annähernd gleicher Leistung von einer niedrigeren Herzfrequenz infolge deutlich geringerer Leistung unterschieden werden.
+
+Die resultierende Einordnung ist ausdrücklich **keine automatische Fitnessbewertung** und verändert Zielpuls, Safety-Grenzen oder Trainingsintensität nicht. Insbesondere wird eine niedrigere Herzfrequenz nur dann als „niedriger bei ähnlicher Leistung“ beschrieben, wenn die historische Leistungsänderung innerhalb der Vergleichstoleranz liegt. Bei deutlich veränderter Leistung wird der HF-Trend als durch die Laständerung mitbedingt bzw. nicht isoliert interpretierbar gekennzeichnet.
+
 ## 5.4 Live-Coaching-Bausteine
 
 ```text

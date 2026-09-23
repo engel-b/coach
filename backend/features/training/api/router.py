@@ -116,6 +116,9 @@ async def training_recommendation(
                 target_position_change_points=(
                     recommendation.heart_rate_history.target_position_change_points
                 ),
+                load_adjusted_trend=(recommendation.heart_rate_history.load_adjusted_trend.value),
+                median_power_w=recommendation.heart_rate_history.median_power_w,
+                power_change_percent=(recommendation.heart_rate_history.power_change_percent),
             )
         ),
         weight_goal_progress=(

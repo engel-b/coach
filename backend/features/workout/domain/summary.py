@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from features.workout.domain.bike_summary import WorkoutBikeSummary
 from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 from features.workout.domain.session import WorkoutStatus
 
@@ -21,6 +22,7 @@ class WorkoutSummary:
     completion_percent: int
     status: WorkoutStatus
     heart_rate_summary: WorkoutHeartRateSummary | None = None
+    bike_summary: WorkoutBikeSummary | None = None
 
 
 def create_workout_summary(
@@ -30,6 +32,7 @@ def create_workout_summary(
     distance_m: int,
     status: WorkoutStatus,
     heart_rate_summary: WorkoutHeartRateSummary | None = None,
+    bike_summary: WorkoutBikeSummary | None = None,
 ) -> WorkoutSummary:
     """
     Erzeugt die fachliche Auswertung eines Workouts.
@@ -57,4 +60,5 @@ def create_workout_summary(
         completion_percent=completion_percent,
         status=status,
         heart_rate_summary=heart_rate_summary,
+        bike_summary=bike_summary,
     )
