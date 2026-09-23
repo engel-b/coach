@@ -160,6 +160,22 @@ function HeartRateTargetExplanation({
                     ? `In ${recommendation.heartRateHistory.workoutCount} vergleichbaren Workouts lag deine Herzfrequenz häufig unterhalb des Zielbereichs. Daraus wird nicht automatisch mehr Intensität abgeleitet.`
                     : `Die letzten ${recommendation.heartRateHistory.workoutCount} vergleichbaren Workouts zeigen noch kein eindeutiges Herzfrequenzmuster.`}
             </p>
+            {recommendation.heartRateHistory.responseTrend !==
+              "insufficient_data" && (
+              <p className="heart-rate-history-trend">
+                {recommendation.heartRateHistory.responseTrend === "lower"
+                  ? "Bei den neueren vergleichbaren Workouts lag deine durchschnittliche Herzfrequenz relativ zum jeweiligen Zielbereich niedriger als bei den älteren."
+                  : recommendation.heartRateHistory.responseTrend === "higher"
+                    ? "Bei den neueren vergleichbaren Workouts lag deine durchschnittliche Herzfrequenz relativ zum jeweiligen Zielbereich höher als bei den älteren."
+                    : "Die durchschnittliche Herzfrequenz relativ zum jeweiligen Zielbereich ist über die vergleichbaren Workouts weitgehend stabil."}
+                {recommendation.heartRateHistory.targetPositionChangePoints !==
+                  null &&
+                  ` Veränderung: ${recommendation.heartRateHistory.targetPositionChangePoints > 0 ? "+" : ""}${recommendation.heartRateHistory.targetPositionChangePoints} Prozentpunkte.`}
+                {
+                  " Diese Beobachtung ist rein beschreibend und erhöht die Trainingsintensität nicht automatisch."
+                }
+              </p>
+            )}
           </div>
         )}
     </div>

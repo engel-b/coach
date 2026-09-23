@@ -434,7 +434,9 @@ Eine `HeartRateHistoryService` betrachtet nur abgeschlossene Workouts mit ausrei
 
 Die historische Herzfrequenz-Auswertung vergleicht nur Workouts desselben fachlichen Workout-Typs. Der Typ wird bei neuen Workouts persistiert; Altdaten ohne Typ bleiben von dieser Personalisierung ausgeschlossen.
 
-Die Trainingsempfehlung liefert den erkannten Verlauf als strukturierten Kontext an das Frontend. Dadurch bleibt sichtbar, ob die Historie überwiegend im Zielbereich, oberhalb, unterhalb oder uneindeutig war und wie viele Workouts dafür ausgewertet wurden.
+Zusätzlich wird die mittlere Herzfrequenz jedes vergleichbaren Workouts relativ zu dessen damals gültiger Hauptphasen-Zielzone normalisiert: `0 %` entspricht der unteren, `100 %` der oberen Zielgrenze. Dadurch lassen sich Einheiten mit unterschiedlichen absoluten Zielwerten vergleichen. Ab mindestens vier vergleichbaren Workouts werden die ältere und die neuere Hälfte über Medianwerte gegenübergestellt. Eine Verschiebung von mindestens 15 Prozentpunkten wird als höhere bzw. niedrigere relative Herzfrequenz-Reaktion beschrieben; kleinere Änderungen gelten als stabil. Dieser Trend ist rein deskriptiv und darf weder Zielpuls noch Trainingsintensität automatisch erhöhen.
+
+Die Trainingsempfehlung liefert den erkannten Verlauf als strukturierten Kontext an das Frontend. Dadurch bleibt sichtbar, ob die Historie überwiegend im Zielbereich, oberhalb, unterhalb oder uneindeutig war, wie viele Workouts dafür ausgewertet wurden und ob sich die relative Herzfrequenz-Reaktion über vergleichbare Einheiten verschoben hat.
 
 ## 5.4 Live-Coaching-Bausteine
 
@@ -1209,7 +1211,7 @@ Ein optionaler Ruhepuls personalisiert Trainingszonen über die Herzfrequenzrese
 ## ADR-018b – Workout-Herzfrequenzhistorie darf nur konservativ personalisieren
 **Status:** Akzeptiert
 
-Für abgeschlossene Workouts wird eine kompakte Herzfrequenz-Zusammenfassung der Hauptphase persistiert. Mehrere ausreichend belegte Workouts können die heutige Trainingsdauer konservativ begrenzen, wenn die Herzfrequenz wiederholt häufig oberhalb des geplanten Zielbereichs lag. Historisch niedrige Werte dürfen weder die Intensität noch Zielpuls- oder Safety-Grenzen automatisch erhöhen. Vollständige HR-Rohdaten müssen für diese Personalisierung nicht dauerhaft gespeichert werden.
+Für abgeschlossene Workouts wird eine kompakte Herzfrequenz-Zusammenfassung der Hauptphase persistiert. Mehrere ausreichend belegte Workouts können die heutige Trainingsdauer konservativ begrenzen, wenn die Herzfrequenz wiederholt häufig oberhalb des geplanten Zielbereichs lag. Historisch niedrige Werte dürfen weder die Intensität noch Zielpuls- oder Safety-Grenzen automatisch erhöhen. Vollständige HR-Rohdaten müssen für diese Personalisierung nicht dauerhaft gespeichert werden. Die durchschnittliche Herzfrequenz darf zusätzlich relativ zur jeweils damals gültigen Zielzone normalisiert und als deskriptiver Verlauf über vergleichbare Workouts ausgewertet werden; auch daraus folgt keine automatische Belastungssteigerung.
 
 ## ADR-019 – Cross-Feature-Coaching-Orchestrierung liegt im App-Layer
 **Status:** Akzeptiert

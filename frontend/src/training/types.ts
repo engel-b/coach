@@ -47,6 +47,9 @@ export type HeartRateHistoryStatus =
   | "mostly_below_target"
   | "mixed";
 
+export type HeartRateResponseTrend =
+  "insufficient_data" | "lower" | "stable" | "higher";
+
 export interface HeartRateHistory {
   status: HeartRateHistoryStatus;
   workoutCount: number;
@@ -55,6 +58,9 @@ export interface HeartRateHistory {
   medianAboveTargetPercent: number | null;
   medianBelowTargetPercent: number | null;
   maxDurationMinutes: number | null;
+  responseTrend: HeartRateResponseTrend;
+  medianTargetPositionPercent: number | null;
+  targetPositionChangePoints: number | null;
 }
 
 export interface TrainingRecommendation {

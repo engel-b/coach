@@ -8,6 +8,13 @@ if TYPE_CHECKING:
     from features.training.domain.recommendation import WorkoutType
 
 
+class HeartRateResponseTrend(StrEnum):
+    INSUFFICIENT_DATA = "insufficient_data"
+    LOWER = "lower"
+    STABLE = "stable"
+    HIGHER = "higher"
+
+
 class HeartRateHistoryStatus(StrEnum):
     INSUFFICIENT_DATA = "insufficient_data"
     MOSTLY_IN_TARGET = "mostly_in_target"
@@ -24,6 +31,8 @@ class HeartRateHistoryRules:
     mostly_in_target_percent: int = 60
     dominant_outside_target_percent: int = 40
     high_response_duration_cap_minutes: int = 30
+    trend_min_workout_count: int = 4
+    trend_change_threshold_points: int = 15
 
 
 @dataclass(frozen=True)
@@ -35,3 +44,6 @@ class HeartRateHistoryContext:
     median_above_target_percent: int | None = None
     median_below_target_percent: int | None = None
     max_duration_minutes: int | None = None
+    response_trend: HeartRateResponseTrend = HeartRateResponseTrend.INSUFFICIENT_DATA
+    median_target_position_percent: int | None = None
+    target_position_change_points: int | None = None

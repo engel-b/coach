@@ -3,8 +3,13 @@ from datetime import UTC, datetime, timedelta
 from features.training.domain.heart_rate_history import (
     HeartRateHistoryRules,
     HeartRateHistoryStatus,
+    HeartRateResponseTrend,
 )
-from features.training.domain.recommendation import WorkoutType
+from features.training.domain.recommendation import (
+    WorkoutPhase,
+    WorkoutPhaseType,
+    WorkoutType,
+)
 from features.training.service.heart_rate_history_service import HeartRateHistoryService
 from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 from features.workout.domain.session import WorkoutSession, WorkoutStatus
@@ -19,19 +24,27 @@ def workout(
     sample_count: int = 120,
     status: WorkoutStatus = WorkoutStatus.COMPLETED,
     workout_type: WorkoutType = WorkoutType.BASE_ENDURANCE,
+    average_bpm: int = 135,
 ) -> WorkoutSession:
     return WorkoutSession(
         id=f"workout-{index}",
         person_id=1,
         started_at=datetime(2026, 9, 20, 10, 0, tzinfo=UTC) - timedelta(days=index),
         status=status,
-        phases=(),
+        phases=(
+            WorkoutPhase(
+                phase_type=WorkoutPhaseType.MAIN,
+                duration_minutes=20,
+                target_heart_rate_min=120,
+                target_heart_rate_max=140,
+            ),
+        ),
         total_duration_minutes=30,
         workout_type=workout_type,
         elapsed_seconds=1800,
         heart_rate_summary=WorkoutHeartRateSummary(
             sample_count=sample_count,
-            average_bpm=135,
+            average_bpm=average_bpm,
             max_bpm=155,
             below_target_percent=below,
             in_target_percent=in_target,
@@ -142,3 +155,52 @@ def test_other_workout_types_do_not_satisfy_minimum_count() -> None:
     assert result.status is HeartRateHistoryStatus.INSUFFICIENT_DATA
     assert result.workout_type is WorkoutType.RECOVERY
     assert result.workout_count == 1
+
+
+def test_response_trend_detects_lower_relative_heart_rate_in_recent_workouts() -> None:
+    result = service().analyze(
+        workout_type=WorkoutType.BASE_ENDURANCE,
+        workouts=[
+            # newest first; recent workouts have the lower relative response
+            workout(1, in_target=70, above=15, below=15, average_bpm=128),
+            workout(2, in_target=70, above=15, below=15, average_bpm=130),
+            workout(3, in_target=70, above=15, below=15, average_bpm=136),
+            workout(4, in_target=70, above=15, below=15, average_bpm=138),
+        ],
+    )
+
+    assert result.response_trend is HeartRateResponseTrend.LOWER
+    assert result.median_target_position_percent == 65
+    assert result.target_position_change_points == -40
+    assert result.max_duration_minutes is None
+
+
+def test_response_trend_detects_higher_relative_heart_rate_without_raising_limits() -> None:
+    result = service().analyze(
+        workout_type=WorkoutType.BASE_ENDURANCE,
+        workouts=[
+            workout(1, in_target=70, above=15, below=15, average_bpm=138),
+            workout(2, in_target=70, above=15, below=15, average_bpm=136),
+            workout(3, in_target=70, above=15, below=15, average_bpm=130),
+            workout(4, in_target=70, above=15, below=15, average_bpm=128),
+        ],
+    )
+
+    assert result.response_trend is HeartRateResponseTrend.HIGHER
+    assert result.target_position_change_points == 40
+    assert result.max_duration_minutes is None
+
+
+def test_response_trend_requires_four_comparable_workouts() -> None:
+    result = service().analyze(
+        workout_type=WorkoutType.BASE_ENDURANCE,
+        workouts=[
+            workout(1, in_target=70, above=15, below=15, average_bpm=128),
+            workout(2, in_target=70, above=15, below=15, average_bpm=130),
+            workout(3, in_target=70, above=15, below=15, average_bpm=138),
+        ],
+    )
+
+    assert result.response_trend is HeartRateResponseTrend.INSUFFICIENT_DATA
+    assert result.median_target_position_percent == 50
+    assert result.target_position_change_points is None

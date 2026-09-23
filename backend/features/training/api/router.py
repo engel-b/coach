@@ -109,6 +109,13 @@ async def training_recommendation(
                     recommendation.heart_rate_history.median_below_target_percent
                 ),
                 max_duration_minutes=(recommendation.heart_rate_history.max_duration_minutes),
+                response_trend=(recommendation.heart_rate_history.response_trend.value),
+                median_target_position_percent=(
+                    recommendation.heart_rate_history.median_target_position_percent
+                ),
+                target_position_change_points=(
+                    recommendation.heart_rate_history.target_position_change_points
+                ),
             )
         ),
         weight_goal_progress=(

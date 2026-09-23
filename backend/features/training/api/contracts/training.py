@@ -102,6 +102,27 @@ class HeartRateHistoryResponse(BaseModel):
     median_above_target_percent: int | None = Field(default=None, ge=0, le=100)
     median_below_target_percent: int | None = Field(default=None, ge=0, le=100)
     max_duration_minutes: int | None = Field(default=None, ge=1)
+    response_trend: str = Field(
+        default="insufficient_data",
+        description=(
+            "Deskriptiver Trend der mittleren Herzfrequenz relativ zum damals "
+            "gültigen Zielbereich vergleichbarer Workouts."
+        ),
+    )
+    median_target_position_percent: int | None = Field(
+        default=None,
+        description=(
+            "Median der relativen Position der mittleren Herzfrequenz im damaligen "
+            "Zielbereich; 0 entspricht der Untergrenze, 100 der Obergrenze."
+        ),
+    )
+    target_position_change_points: int | None = Field(
+        default=None,
+        description=(
+            "Differenz der relativen Herzfrequenz-Reaktion zwischen älteren und "
+            "neueren vergleichbaren Workouts in Prozentpunkten."
+        ),
+    )
 
 
 class TrainingRecommendationResponse(BaseModel):
