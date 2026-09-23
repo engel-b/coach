@@ -426,6 +426,14 @@ Die Zielbereiche beschreiben die gewünschte Trainingsbelastung und sind keine m
 
 Live-Coaching bewertet kleine Abweichungen mit einer zusätzlichen Toleranz. Außerhalb dieser Toleranz wird zwischen moderaten und deutlichen Abweichungen unterschieden: moderate Abweichungen müssen länger anhalten, deutliche Abweichungen dürfen nach einer kürzeren Persistenzzeit eine Coaching-Aktion auslösen. Die Speech Policy drosselt wiederholte gleichartige Hinweise; eine Eskalation von moderat auf deutlich darf unmittelbar erneut gesprochen werden. HFmax bzw. davon unabhängige Schutzregeln bleiben vom Ruhepuls unberührt.
 
+### Herzfrequenz-Reaktion aus der Workout-Historie
+
+Während eines laufenden Workouts werden Herzfrequenzwerte der Hauptphase zu einer kompakten `WorkoutHeartRateSummary` verdichtet. Persistiert werden keine vollständigen Rohdatenreihen, sondern nur Stichprobenanzahl, durchschnittliche und maximale Herzfrequenz sowie die prozentualen Anteile unterhalb, innerhalb und oberhalb des für die jeweilige Hauptphase geplanten Zielbereichs.
+
+Eine `HeartRateHistoryService` betrachtet nur abgeschlossene Workouts mit ausreichend vielen Messwerten und verdichtet mehrere aktuelle Einheiten über Medianwerte. Die Historie darf ausschließlich konservativ wirken: Liegt die Herzfrequenz in mehreren auswertbaren Workouts häufig oberhalb des Zielbereichs, kann die heutige Trainingsdauer begrenzt werden. Historisch niedrige Herzfrequenz führt dagegen **nicht** automatisch zu höherer Intensität, höheren Zielpulswerten oder gelockerten Safety-Grenzen.
+
+Die Trainingsempfehlung liefert den erkannten Verlauf als strukturierten Kontext an das Frontend. Dadurch bleibt sichtbar, ob die Historie überwiegend im Zielbereich, oberhalb, unterhalb oder uneindeutig war und wie viele Workouts dafür ausgewertet wurden.
+
 ## 5.4 Live-Coaching-Bausteine
 
 ```text
@@ -1195,6 +1203,11 @@ Ein einzelner HR-Wert löst keine Belastungsanweisung aus.
 **Status:** Akzeptiert
 
 Ein optionaler Ruhepuls personalisiert Trainingszonen über die Herzfrequenzreserve. Die Policy begrenzt den für die Berechnung verwendeten Ruhepuls konservativ und fällt bei fehlendem Ruhepuls auf die bisherige HFmax-Prozentlogik zurück. Kleine Abweichungen erhalten im Live-Coaching eine BPM-Toleranz; die zeitliche Abweichungsbewertung bleibt davon getrennt.
+
+## ADR-018b – Workout-Herzfrequenzhistorie darf nur konservativ personalisieren
+**Status:** Akzeptiert
+
+Für abgeschlossene Workouts wird eine kompakte Herzfrequenz-Zusammenfassung der Hauptphase persistiert. Mehrere ausreichend belegte Workouts können die heutige Trainingsdauer konservativ begrenzen, wenn die Herzfrequenz wiederholt häufig oberhalb des geplanten Zielbereichs lag. Historisch niedrige Werte dürfen weder die Intensität noch Zielpuls- oder Safety-Grenzen automatisch erhöhen. Vollständige HR-Rohdaten müssen für diese Personalisierung nicht dauerhaft gespeichert werden.
 
 ## ADR-019 – Cross-Feature-Coaching-Orchestrierung liegt im App-Layer
 **Status:** Akzeptiert

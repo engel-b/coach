@@ -277,3 +277,41 @@ def test_structure_event_is_not_repeated_after_threshold_was_crossed() -> None:
 
     assert first
     assert second == ()
+
+
+def test_main_phase_heart_rate_summary_is_aggregated() -> None:
+    session = create_session()
+    session.update_elapsed_seconds(300)
+    timestamp = datetime.now(UTC)
+
+    for offset, bpm in enumerate((120, 130, 140, 150)):
+        session.handle_heart_rate(
+            HeartRateSample(
+                device_id="heart-rate-1",
+                timestamp=timestamp + timedelta(seconds=offset),
+                bpm=bpm,
+            )
+        )
+
+    summary = session.heart_rate_summary()
+
+    assert summary is not None
+    assert summary.sample_count == 4
+    assert summary.average_bpm == 135
+    assert summary.max_bpm == 150
+    assert summary.below_target_percent == 25
+    assert summary.in_target_percent == 50
+    assert summary.above_target_percent == 25
+
+
+def test_warm_up_samples_are_not_in_main_phase_summary() -> None:
+    session = create_session()
+    session.handle_heart_rate(
+        HeartRateSample(
+            device_id="heart-rate-1",
+            timestamp=datetime.now(UTC),
+            bpm=110,
+        )
+    )
+
+    assert session.heart_rate_summary() is None

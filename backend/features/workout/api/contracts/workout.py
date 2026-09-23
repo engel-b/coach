@@ -188,6 +188,19 @@ class WorkoutResponse(BaseModel):
     )
 
 
+class WorkoutHeartRateSummaryResponse(BaseModel):
+    """Persistierte Herzfrequenz-Auswertung der Hauptphase."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    sample_count: int = Field(ge=1)
+    average_bpm: int = Field(gt=0)
+    max_bpm: int = Field(gt=0)
+    below_target_percent: int = Field(ge=0, le=100)
+    in_target_percent: int = Field(ge=0, le=100)
+    above_target_percent: int = Field(ge=0, le=100)
+
+
 class WorkoutSummaryResponse(BaseModel):
     """Zusammenfassung der geplanten und absolvierten Trainingsleistung."""
 
@@ -215,4 +228,11 @@ class WorkoutSummaryResponse(BaseModel):
     status: str = Field(
         description="Persistierter Status des Workouts.",
         examples=["completed"],
+    )
+    heart_rate_summary: WorkoutHeartRateSummaryResponse | None = Field(
+        default=None,
+        description=(
+            "Herzfrequenz-Auswertung der Hauptphase, sofern ausreichend "
+            "Live-Herzfrequenzdaten vorhanden waren."
+        ),
     )

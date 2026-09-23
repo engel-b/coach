@@ -40,11 +40,28 @@ export interface HeartRateTargetBasis {
   restingHeartRateSampleCount: number;
 }
 
+export type HeartRateHistoryStatus =
+  | "insufficient_data"
+  | "mostly_in_target"
+  | "mostly_above_target"
+  | "mostly_below_target"
+  | "mixed";
+
+export interface HeartRateHistory {
+  status: HeartRateHistoryStatus;
+  workoutCount: number;
+  medianInTargetPercent: number | null;
+  medianAboveTargetPercent: number | null;
+  medianBelowTargetPercent: number | null;
+  maxDurationMinutes: number | null;
+}
+
 export interface TrainingRecommendation {
   workoutType: WorkoutType;
   totalDurationMinutes: number;
   reason: string;
   heartRateTargetBasis: HeartRateTargetBasis;
+  heartRateHistory: HeartRateHistory | null;
   reasonCodes: string[];
   weightGoalProgress: WeightGoalProgress | null;
   phases: WorkoutPhase[];

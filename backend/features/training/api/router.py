@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Path
 
 from apps.api import wiring
 from features.training.api.contracts.training import (
+    HeartRateHistoryResponse,
     HeartRateTargetBasisResponse,
     TrainingRecommendationResponse,
     WeightGoalProgressResponse,
@@ -86,6 +87,24 @@ async def training_recommendation(
             resting_heart_rate_sample_count=(
                 recommendation.heart_rate_target_basis.resting_heart_rate_sample_count
             ),
+        ),
+        heart_rate_history=(
+            None
+            if recommendation.heart_rate_history is None
+            else HeartRateHistoryResponse(
+                status=recommendation.heart_rate_history.status.value,
+                workout_count=recommendation.heart_rate_history.workout_count,
+                median_in_target_percent=(
+                    recommendation.heart_rate_history.median_in_target_percent
+                ),
+                median_above_target_percent=(
+                    recommendation.heart_rate_history.median_above_target_percent
+                ),
+                median_below_target_percent=(
+                    recommendation.heart_rate_history.median_below_target_percent
+                ),
+                max_duration_minutes=(recommendation.heart_rate_history.max_duration_minutes),
+            )
         ),
         weight_goal_progress=(
             None

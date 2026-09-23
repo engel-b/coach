@@ -68,6 +68,13 @@ class WorkoutModel(Base):
         nullable=True,
     )
 
+    heart_rate_sample_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    heart_rate_average_bpm: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    heart_rate_max_bpm: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    heart_rate_below_target_percent: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    heart_rate_in_target_percent: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    heart_rate_above_target_percent: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     phases: Mapped[list["WorkoutPhaseModel"]] = relationship(
         back_populates="workout",
         cascade="all, delete-orphan",

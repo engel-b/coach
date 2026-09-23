@@ -9,6 +9,7 @@ from features.coaching.domain.live_coaching import (
 )
 from features.coaching.service.live_coaching_coordinator import LiveCoachingCoordinator
 from features.telemetry.domain.health.heart_rate import HeartRateSample
+from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 from features.workout.domain.runtime import WorkoutRuntimeState
 from features.workout.domain.session import WorkoutSession
 
@@ -99,6 +100,14 @@ class LiveCoachingLifecycle:
             self._runtime_handler(workout_id, "coaching.pause_started")
         elif previous_state is WorkoutRuntimeState.PAUSED:
             self._runtime_handler(workout_id, "coaching.pause_ended")
+
+    def workout_heart_rate_summary(
+        self,
+        workout_id: str,
+    ) -> WorkoutHeartRateSummary | None:
+        if self._coordinator.active_workout_id != workout_id:
+            return None
+        return self._coordinator.heart_rate_summary(workout_id=workout_id)
 
     def workout_finished(self, workout: WorkoutSession) -> None:
         if self._coordinator.active_workout_id != workout.id:

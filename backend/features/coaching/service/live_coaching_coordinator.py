@@ -9,6 +9,7 @@ from features.coaching.service.live_coaching_engine import LiveCoachingEngine
 from features.coaching.service.live_coaching_service import LiveCoachingService
 from features.coaching.service.live_coaching_session import LiveCoachingSession
 from features.telemetry.domain.health.heart_rate import HeartRateSample
+from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 from features.workout.domain.runtime import WorkoutRuntimeState
 from features.workout.domain.session import WorkoutSession
 
@@ -88,6 +89,13 @@ class LiveCoachingCoordinator:
             return None
 
         return self._session.handle_heart_rate(sample)
+
+    def heart_rate_summary(
+        self,
+        *,
+        workout_id: str,
+    ) -> WorkoutHeartRateSummary | None:
+        return self._require_session(workout_id).heart_rate_summary()
 
     def finish(
         self,

@@ -63,6 +63,10 @@ def create_training_recommendation(
         ],
     )
 
+    heart_rate_history = wiring.heart_rate_history_service.analyze(
+        workouts=recent_workouts,
+    )
+
     return wiring.pre_workout_coaching_planner.recommend(
         PreWorkoutCoachingContext(
             check_in=check_in,
@@ -74,5 +78,6 @@ def create_training_recommendation(
             weight_trend=weight_trend,
             weight_goal_progress=weight_goal_progress,
             readiness=readiness,
+            heart_rate_history=heart_rate_history,
         )
     )

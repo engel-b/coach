@@ -87,6 +87,19 @@ class HeartRateTargetBasisResponse(BaseModel):
     )
 
 
+class HeartRateHistoryResponse(BaseModel):
+    """Verdichtete Herzfrequenz-Reaktion aus früheren Workouts."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    status: str
+    workout_count: int = Field(ge=0)
+    median_in_target_percent: int | None = Field(default=None, ge=0, le=100)
+    median_above_target_percent: int | None = Field(default=None, ge=0, le=100)
+    median_below_target_percent: int | None = Field(default=None, ge=0, le=100)
+    max_duration_minutes: int | None = Field(default=None, ge=1)
+
+
 class TrainingRecommendationResponse(BaseModel):
     """Individuelle Empfehlung für eine Trainingseinheit."""
 
@@ -109,6 +122,14 @@ class TrainingRecommendationResponse(BaseModel):
     )
     heart_rate_target_basis: HeartRateTargetBasisResponse = Field(
         description="Grundlage der Zielpulsberechnung für diese Empfehlung.",
+    )
+    heart_rate_history: HeartRateHistoryResponse | None = Field(
+        default=None,
+        description=(
+            "Verdichtete Reaktion der Herzfrequenz in früheren auswertbaren Workouts. "
+            "Eine hohe historische Reaktion kann die heutige Dauer konservativ begrenzen, "
+            "erhöht aber niemals Zielpuls- oder Safety-Grenzen."
+        ),
     )
     weight_goal_progress: WeightGoalProgressResponse | None = Field(
         default=None,

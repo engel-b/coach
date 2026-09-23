@@ -132,6 +132,24 @@ function HeartRateTargetExplanation({
           {basis.referenceRestingHeartRateBpm} bpm begrenzt.
         </p>
       )}
+
+      {recommendation.heartRateHistory !== null &&
+        recommendation.heartRateHistory.status !== "insufficient_data" && (
+          <div className="heart-rate-history-note">
+            <strong>Deine bisherigen Workouts</strong>
+            <p>
+              {recommendation.heartRateHistory.status === "mostly_in_target"
+                ? `In ${recommendation.heartRateHistory.workoutCount} auswertbaren Workouts lag deine Herzfrequenz überwiegend im Zielbereich.`
+                : recommendation.heartRateHistory.status ===
+                    "mostly_above_target"
+                  ? `In ${recommendation.heartRateHistory.workoutCount} auswertbaren Workouts lag deine Herzfrequenz häufig oberhalb des Zielbereichs. Deshalb wird die heutige Dauer bei Bedarf konservativ begrenzt; Zielpuls- und Safety-Grenzen werden nicht angehoben.`
+                  : recommendation.heartRateHistory.status ===
+                      "mostly_below_target"
+                    ? `In ${recommendation.heartRateHistory.workoutCount} auswertbaren Workouts lag deine Herzfrequenz häufig unterhalb des Zielbereichs. Daraus wird nicht automatisch mehr Intensität abgeleitet.`
+                    : `Die letzten ${recommendation.heartRateHistory.workoutCount} auswertbaren Workouts zeigen noch kein eindeutiges Herzfrequenzmuster.`}
+            </p>
+          </div>
+        )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ from datetime import datetime
 from enum import StrEnum
 
 from features.training.domain.recommendation import WorkoutPhase
+from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 
 DEFAULT_VIDEO_ID = "Lqhq5UQ-U8A"
 
@@ -47,3 +48,4 @@ class WorkoutSession:
     video_position_seconds: float = 0.0
 
     completed_at: datetime | None = None
+    heart_rate_summary: WorkoutHeartRateSummary | None = None

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 from features.workout.domain.session import WorkoutStatus
 
 
@@ -8,9 +9,10 @@ class WorkoutSummary:
     """
     Fachliche Zusammenfassung eines Workouts.
 
-    Später können hier weitere Telemetrie-Auswertungen
-    ergänzt werden, zum Beispiel Herzfrequenz, Leistung
-    oder Kadenz.
+    Neben Zeit und Distanz kann die Zusammenfassung eine kompakte
+    Herzfrequenz-Auswertung der Hauptphase enthalten. Weitere
+    Telemetrie-Auswertungen wie Leistung oder Kadenz können später
+    ergänzt werden.
     """
 
     planned_seconds: int
@@ -18,6 +20,7 @@ class WorkoutSummary:
     distance_m: int
     completion_percent: int
     status: WorkoutStatus
+    heart_rate_summary: WorkoutHeartRateSummary | None = None
 
 
 def create_workout_summary(
@@ -26,6 +29,7 @@ def create_workout_summary(
     elapsed_seconds: int,
     distance_m: int,
     status: WorkoutStatus,
+    heart_rate_summary: WorkoutHeartRateSummary | None = None,
 ) -> WorkoutSummary:
     """
     Erzeugt die fachliche Auswertung eines Workouts.
@@ -52,4 +56,5 @@ def create_workout_summary(
         distance_m=distance_m,
         completion_percent=completion_percent,
         status=status,
+        heart_rate_summary=heart_rate_summary,
     )

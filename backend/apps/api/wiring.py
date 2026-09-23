@@ -29,12 +29,14 @@ from features.speech.service.speech_service import SpeechService
 from features.telemetry.service.broadcaster import TelemetryBroadcaster
 from features.telemetry.service.service import TelemetryService
 from features.training.domain.coach_message_generator import CoachMessageGenerator
+from features.training.domain.heart_rate_history import HeartRateHistoryRules
 from features.training.domain.readiness import ReadinessRules
 from features.training.domain.recommendation_engine import TrainingRecommendationEngine
 from features.training.domain.weight_trend import WeightTrendRules
 from features.training.service.fallback_coach_message_generator import (
     FallbackCoachMessageGenerator,
 )
+from features.training.service.heart_rate_history_service import HeartRateHistoryService
 from features.training.service.pre_workout_coaching_planner import PreWorkoutCoachingPlanner
 from features.training.service.pre_workout_reason_builder import PreWorkoutReasonBuilder
 from features.training.service.readiness_service import ReadinessService
@@ -123,6 +125,17 @@ readiness_rules = ReadinessRules(
 )
 readiness_service = ReadinessService(rules=readiness_rules)
 resting_heart_rate_baseline_service = RestingHeartRateBaselineService()
+
+heart_rate_history_service = HeartRateHistoryService(
+    rules=HeartRateHistoryRules(
+        lookback_workouts=6,
+        min_workout_count=3,
+        min_samples_per_workout=30,
+        mostly_in_target_percent=60,
+        dominant_outside_target_percent=40,
+        high_response_duration_cap_minutes=30,
+    )
+)
 
 template_pre_workout_message_generator = PreWorkoutReasonBuilder()
 
