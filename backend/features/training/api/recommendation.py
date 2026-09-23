@@ -39,6 +39,12 @@ def create_training_recommendation(
         as_of=check_in.timestamp,
     )
 
+    resting_heart_rate_baseline = wiring.resting_heart_rate_baseline_service.calculate(
+        check_ins=history,
+        as_of=check_in.timestamp,
+        profile_resting_heart_rate_bpm=profile.resting_heart_rate_bpm,
+    )
+
     weight_goal_progress = wiring.weight_goal_progress_service.calculate(
         start_weight_kg=profile.start_weight_kg,
         current_weight_kg=check_in.current_weight_kg,
@@ -61,7 +67,9 @@ def create_training_recommendation(
         PreWorkoutCoachingContext(
             check_in=check_in,
             max_heart_rate=max_heart_rate,
-            resting_heart_rate=profile.resting_heart_rate_bpm,
+            resting_heart_rate=resting_heart_rate_baseline.value_bpm,
+            resting_heart_rate_source=resting_heart_rate_baseline.source,
+            resting_heart_rate_sample_count=resting_heart_rate_baseline.sample_count,
             training_goal=profile.training_goal,
             weight_trend=weight_trend,
             weight_goal_progress=weight_goal_progress,

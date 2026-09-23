@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
+from features.training.domain.heart_rate_target import HeartRateTargetSource
 from features.training.domain.pre_workout import RecommendationReasonCode
 from features.training.domain.weight_goal_progress import WeightGoalProgress
 
@@ -22,6 +23,8 @@ class HeartRateTargetBasis:
     max_heart_rate_bpm: int
     resting_heart_rate_bpm: int | None
     reference_resting_heart_rate_bpm: int | None
+    resting_heart_rate_source: HeartRateTargetSource | None = None
+    resting_heart_rate_sample_count: int = 0
 
 
 class WorkoutPhaseType(StrEnum):

@@ -1,4 +1,5 @@
 from features.check_in.domain.check_in import CheckIn
+from features.training.domain.heart_rate_target import HeartRateTargetSource
 from features.training.domain.heart_rate_target_policy import HeartRateTargetPolicy
 from features.training.domain.recommendation import (
     HeartRateTargetBasis,
@@ -31,10 +32,14 @@ class TrainingRecommendationEngine:
         check_in: CheckIn,
         max_heart_rate: int,
         resting_heart_rate: int | None = None,
+        resting_heart_rate_source: HeartRateTargetSource | None = None,
+        resting_heart_rate_sample_count: int = 0,
     ) -> TrainingRecommendation:
         target_basis = self._heart_rate_target_policy.describe_basis(
             max_heart_rate_bpm=max_heart_rate,
             resting_heart_rate_bpm=resting_heart_rate,
+            resting_heart_rate_source=resting_heart_rate_source,
+            resting_heart_rate_sample_count=resting_heart_rate_sample_count,
         )
 
         if self._needs_recovery(check_in):

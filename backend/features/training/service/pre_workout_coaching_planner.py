@@ -60,6 +60,8 @@ class PreWorkoutCoachingPlanner:
             check_in=effective_check_in,
             max_heart_rate=context.max_heart_rate,
             resting_heart_rate=context.resting_heart_rate,
+            resting_heart_rate_source=context.resting_heart_rate_source,
+            resting_heart_rate_sample_count=context.resting_heart_rate_sample_count,
         )
         reason_codes = self._reason_codes(context)
 

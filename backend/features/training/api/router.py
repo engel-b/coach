@@ -78,6 +78,14 @@ async def training_recommendation(
             reference_resting_heart_rate_bpm=(
                 recommendation.heart_rate_target_basis.reference_resting_heart_rate_bpm
             ),
+            resting_heart_rate_source=(
+                recommendation.heart_rate_target_basis.resting_heart_rate_source.value
+                if recommendation.heart_rate_target_basis.resting_heart_rate_source is not None
+                else None
+            ),
+            resting_heart_rate_sample_count=(
+                recommendation.heart_rate_target_basis.resting_heart_rate_sample_count
+            ),
         ),
         weight_goal_progress=(
             None

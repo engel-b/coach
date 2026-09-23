@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
+from features.training.domain.heart_rate_target import HeartRateTargetSource
 from features.training.domain.recommendation import (
     HeartRateTargetBasis,
     HeartRateTargetMethod,
@@ -59,6 +60,8 @@ class HeartRateTargetPolicy:
         *,
         max_heart_rate_bpm: int,
         resting_heart_rate_bpm: int | None,
+        resting_heart_rate_source: HeartRateTargetSource | None = None,
+        resting_heart_rate_sample_count: int = 0,
     ) -> HeartRateTargetBasis:
         if max_heart_rate_bpm <= 0:
             raise ValueError("max_heart_rate_bpm must be positive")
@@ -69,6 +72,8 @@ class HeartRateTargetPolicy:
                 max_heart_rate_bpm=max_heart_rate_bpm,
                 resting_heart_rate_bpm=None,
                 reference_resting_heart_rate_bpm=None,
+                resting_heart_rate_source=None,
+                resting_heart_rate_sample_count=0,
             )
 
         if resting_heart_rate_bpm <= 0:
@@ -86,6 +91,8 @@ class HeartRateTargetPolicy:
             max_heart_rate_bpm=max_heart_rate_bpm,
             resting_heart_rate_bpm=resting_heart_rate_bpm,
             reference_resting_heart_rate_bpm=reference_resting,
+            resting_heart_rate_source=resting_heart_rate_source,
+            resting_heart_rate_sample_count=resting_heart_rate_sample_count,
         )
 
     def calculate(

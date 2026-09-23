@@ -74,6 +74,17 @@ class HeartRateTargetBasisResponse(BaseModel):
         ),
         examples=[72],
     )
+    resting_heart_rate_source: str | None = Field(
+        default=None,
+        description="Quelle des verwendeten Ruhepulswerts.",
+        examples=["check_in_baseline"],
+    )
+    resting_heart_rate_sample_count: int = Field(
+        default=0,
+        ge=0,
+        description="Anzahl der Check-in-Messungen hinter einer ermittelten Baseline.",
+        examples=[5],
+    )
 
 
 class TrainingRecommendationResponse(BaseModel):

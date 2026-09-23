@@ -101,7 +101,14 @@ function HeartRateTargetExplanation({
         {basis.restingHeartRateBpm !== null && (
           <div>
             <dt>Ruhepuls</dt>
-            <dd>{basis.restingHeartRateBpm} bpm</dd>
+            <dd>
+              {basis.restingHeartRateBpm} bpm
+              {basis.restingHeartRateSource === "check_in_baseline"
+                ? ` · Baseline aus ${basis.restingHeartRateSampleCount} Messungen`
+                : basis.restingHeartRateSource === "profile"
+                  ? " · Profilwert"
+                  : ""}
+            </dd>
           </div>
         )}
         {referenceWasLimited && (
@@ -114,8 +121,8 @@ function HeartRateTargetExplanation({
 
       {!usesReserve && (
         <p className="heart-rate-target-note">
-          Kein Ruhepuls hinterlegt: Die Zielbereiche werden als Fallback aus der
-          maximalen Herzfrequenz berechnet.
+          Noch keine belastbare Ruhepuls-Baseline verfügbar: Die Zielbereiche
+          werden als Fallback aus der maximalen Herzfrequenz berechnet.
         </p>
       )}
 

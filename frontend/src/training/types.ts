@@ -29,11 +29,15 @@ export interface WeightGoalProgress {
 export type HeartRateTargetMethod =
   "heart_rate_reserve" | "max_heart_rate_percentage";
 
+export type HeartRateTargetSource = "profile" | "check_in_baseline";
+
 export interface HeartRateTargetBasis {
   method: HeartRateTargetMethod;
   maxHeartRateBpm: number;
   restingHeartRateBpm: number | null;
   referenceRestingHeartRateBpm: number | null;
+  restingHeartRateSource: HeartRateTargetSource | null;
+  restingHeartRateSampleCount: number;
 }
 
 export interface TrainingRecommendation {

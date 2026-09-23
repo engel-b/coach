@@ -38,6 +38,9 @@ from features.training.service.fallback_coach_message_generator import (
 from features.training.service.pre_workout_coaching_planner import PreWorkoutCoachingPlanner
 from features.training.service.pre_workout_reason_builder import PreWorkoutReasonBuilder
 from features.training.service.readiness_service import ReadinessService
+from features.training.service.resting_heart_rate_baseline_service import (
+    RestingHeartRateBaselineService,
+)
 from features.training.service.weight_goal_progress_service import WeightGoalProgressService
 from features.training.service.weight_trend_service import WeightTrendService
 from features.workout.persistence.sqlalchemy_workout_repository import (
@@ -119,6 +122,7 @@ readiness_rules = ReadinessRules(
     caution_duration_cap_minutes=30,
 )
 readiness_service = ReadinessService(rules=readiness_rules)
+resting_heart_rate_baseline_service = RestingHeartRateBaselineService()
 
 template_pre_workout_message_generator = PreWorkoutReasonBuilder()
 

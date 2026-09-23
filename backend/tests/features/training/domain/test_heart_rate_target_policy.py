@@ -1,5 +1,6 @@
 import pytest
 
+from features.training.domain.heart_rate_target import HeartRateTargetSource
 from features.training.domain.heart_rate_target_policy import HeartRateTargetPolicy
 from features.training.domain.recommendation import WorkoutPhaseType, WorkoutType
 
@@ -79,3 +80,15 @@ def test_describes_max_heart_rate_fallback_without_resting_rate() -> None:
 
     assert basis.method.value == "max_heart_rate_percentage"
     assert basis.reference_resting_heart_rate_bpm is None
+
+
+def test_basis_keeps_resting_heart_rate_source_metadata() -> None:
+    basis = HeartRateTargetPolicy().describe_basis(
+        max_heart_rate_bpm=180,
+        resting_heart_rate_bpm=80,
+        resting_heart_rate_source=HeartRateTargetSource.CHECK_IN_BASELINE,
+        resting_heart_rate_sample_count=5,
+    )
+
+    assert basis.resting_heart_rate_source is HeartRateTargetSource.CHECK_IN_BASELINE
+    assert basis.resting_heart_rate_sample_count == 5

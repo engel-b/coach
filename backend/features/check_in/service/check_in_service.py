@@ -36,6 +36,7 @@ class CheckInService:
         current_weight_kg: float | None = None,
         sleep_hours: float | None = None,
         steps: int | None = None,
+        resting_heart_rate_bpm: int | None = None,
     ) -> CheckIn:
         self._validate_scale("energy", energy)
         self._validate_scale("recovery", recovery)
@@ -68,6 +69,9 @@ class CheckInService:
         if steps is not None and steps < 0:
             raise InvalidCheckInError("steps must not be negative")
 
+        if resting_heart_rate_bpm is not None and not 35 <= resting_heart_rate_bpm <= 120:
+            raise InvalidCheckInError("resting_heart_rate_bpm must be between 35 and 120")
+
         check_in = CheckIn(
             person_id=person_id,
             timestamp=datetime.now(UTC),
@@ -79,6 +83,7 @@ class CheckInService:
             current_weight_kg=current_weight_kg,
             sleep_hours=sleep_hours,
             steps=steps,
+            resting_heart_rate_bpm=resting_heart_rate_bpm,
         )
 
         self._repository.save(check_in)

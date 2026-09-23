@@ -3,6 +3,7 @@ from enum import StrEnum
 
 from features.check_in.domain.check_in import CheckIn
 from features.person.domain.profile import TrainingGoal
+from features.training.domain.heart_rate_target import HeartRateTargetSource
 from features.training.domain.readiness import ReadinessContext
 from features.training.domain.weight_goal_progress import WeightGoalProgress
 from features.training.domain.weight_trend import WeightTrend
@@ -39,3 +40,5 @@ class PreWorkoutCoachingContext:
     weight_goal_progress: WeightGoalProgress
     readiness: ReadinessContext
     resting_heart_rate: int | None = None
+    resting_heart_rate_source: HeartRateTargetSource | None = None
+    resting_heart_rate_sample_count: int = 0

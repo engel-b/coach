@@ -7,6 +7,7 @@ export interface CheckInRequest {
   currentWeightKg: number | null;
   sleepHours: number | null;
   steps: number | null;
+  restingHeartRateBpm: number | null;
 }
 
 export interface CheckIn extends CheckInRequest {

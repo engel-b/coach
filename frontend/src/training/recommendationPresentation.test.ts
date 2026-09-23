@@ -18,6 +18,8 @@ function recommendation(reasonCodes: string[]): TrainingRecommendation {
       maxHeartRateBpm: 180,
       restingHeartRateBpm: null,
       referenceRestingHeartRateBpm: null,
+      restingHeartRateSource: null,
+      restingHeartRateSampleCount: 0,
     },
     reasonCodes,
     weightGoalProgress: null,
