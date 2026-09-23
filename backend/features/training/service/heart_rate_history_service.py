@@ -5,6 +5,7 @@ from features.training.domain.heart_rate_history import (
     HeartRateHistoryRules,
     HeartRateHistoryStatus,
 )
+from features.training.domain.recommendation import WorkoutType
 from features.workout.domain.session import WorkoutSession, WorkoutStatus
 
 
@@ -20,11 +21,17 @@ class HeartRateHistoryService:
     def __init__(self, *, rules: HeartRateHistoryRules | None = None) -> None:
         self._rules = rules or HeartRateHistoryRules()
 
-    def analyze(self, *, workouts: list[WorkoutSession]) -> HeartRateHistoryContext:
+    def analyze(
+        self,
+        *,
+        workouts: list[WorkoutSession],
+        workout_type: WorkoutType,
+    ) -> HeartRateHistoryContext:
         eligible = [
             workout
             for workout in workouts
             if workout.status is WorkoutStatus.COMPLETED
+            and workout.workout_type is workout_type
             and workout.heart_rate_summary is not None
             and workout.heart_rate_summary.sample_count >= self._rules.min_samples_per_workout
         ][: self._rules.lookback_workouts]
@@ -33,6 +40,7 @@ class HeartRateHistoryService:
             return HeartRateHistoryContext(
                 status=HeartRateHistoryStatus.INSUFFICIENT_DATA,
                 workout_count=len(eligible),
+                workout_type=workout_type,
             )
 
         in_target = round(
@@ -73,6 +81,7 @@ class HeartRateHistoryService:
         return HeartRateHistoryContext(
             status=status,
             workout_count=len(eligible),
+            workout_type=workout_type,
             median_in_target_percent=in_target,
             median_above_target_percent=above,
             median_below_target_percent=below,

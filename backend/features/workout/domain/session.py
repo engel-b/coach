@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 
-from features.training.domain.recommendation import WorkoutPhase
+from features.training.domain.recommendation import WorkoutPhase, WorkoutType
 from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 
 DEFAULT_VIDEO_ID = "Lqhq5UQ-U8A"
@@ -40,6 +40,7 @@ class WorkoutSession:
     status: WorkoutStatus
     phases: tuple[WorkoutPhase, ...]
     total_duration_minutes: int
+    workout_type: WorkoutType | None = None
 
     elapsed_seconds: int = 0
     distance_m: int = 0

@@ -94,6 +94,11 @@ async def training_recommendation(
             else HeartRateHistoryResponse(
                 status=recommendation.heart_rate_history.status.value,
                 workout_count=recommendation.heart_rate_history.workout_count,
+                workout_type=(
+                    recommendation.heart_rate_history.workout_type.value
+                    if recommendation.heart_rate_history.workout_type is not None
+                    else None
+                ),
                 median_in_target_percent=(
                     recommendation.heart_rate_history.median_in_target_percent
                 ),

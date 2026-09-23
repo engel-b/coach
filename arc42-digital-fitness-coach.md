@@ -432,6 +432,8 @@ Während eines laufenden Workouts werden Herzfrequenzwerte der Hauptphase zu ein
 
 Eine `HeartRateHistoryService` betrachtet nur abgeschlossene Workouts mit ausreichend vielen Messwerten und verdichtet mehrere aktuelle Einheiten über Medianwerte. Die Historie darf ausschließlich konservativ wirken: Liegt die Herzfrequenz in mehreren auswertbaren Workouts häufig oberhalb des Zielbereichs, kann die heutige Trainingsdauer begrenzt werden. Historisch niedrige Herzfrequenz führt dagegen **nicht** automatisch zu höherer Intensität, höheren Zielpulswerten oder gelockerten Safety-Grenzen.
 
+Die historische Herzfrequenz-Auswertung vergleicht nur Workouts desselben fachlichen Workout-Typs. Der Typ wird bei neuen Workouts persistiert; Altdaten ohne Typ bleiben von dieser Personalisierung ausgeschlossen.
+
 Die Trainingsempfehlung liefert den erkannten Verlauf als strukturierten Kontext an das Frontend. Dadurch bleibt sichtbar, ob die Historie überwiegend im Zielbereich, oberhalb, unterhalb oder uneindeutig war und wie viele Workouts dafür ausgewertet wurden.
 
 ## 5.4 Live-Coaching-Bausteine

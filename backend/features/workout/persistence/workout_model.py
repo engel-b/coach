@@ -36,6 +36,11 @@ class WorkoutModel(Base):
         nullable=False,
     )
 
+    workout_type: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+    )
+
     elapsed_seconds: Mapped[int] = mapped_column(
         Integer,
         nullable=False,

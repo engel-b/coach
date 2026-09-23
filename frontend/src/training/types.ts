@@ -50,6 +50,7 @@ export type HeartRateHistoryStatus =
 export interface HeartRateHistory {
   status: HeartRateHistoryStatus;
   workoutCount: number;
+  workoutType: WorkoutType | null;
   medianInTargetPercent: number | null;
   medianAboveTargetPercent: number | null;
   medianBelowTargetPercent: number | null;

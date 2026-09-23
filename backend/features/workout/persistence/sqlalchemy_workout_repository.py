@@ -5,6 +5,7 @@ from adapters.persistence.database import create_session
 from features.training.domain.recommendation import (
     WorkoutPhase,
     WorkoutPhaseType,
+    WorkoutType,
 )
 from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 from features.workout.domain.session import (
@@ -39,6 +40,9 @@ class SqlAlchemyWorkoutRepository:
                     started_at=workout.started_at,
                     status=workout.status.value,
                     total_duration_minutes=(workout.total_duration_minutes),
+                    workout_type=(
+                        workout.workout_type.value if workout.workout_type is not None else None
+                    ),
                     elapsed_seconds=workout.elapsed_seconds,
                     distance_m=workout.distance_m,
                     video_id=workout.video_id,
@@ -91,6 +95,9 @@ class SqlAlchemyWorkoutRepository:
 
             else:
                 existing.status = workout.status.value
+                existing.workout_type = (
+                    workout.workout_type.value if workout.workout_type is not None else None
+                )
                 existing.elapsed_seconds = workout.elapsed_seconds
                 existing.distance_m = workout.distance_m
                 existing.video_id = workout.video_id
@@ -159,6 +166,9 @@ class SqlAlchemyWorkoutRepository:
             started_at=model.started_at,
             status=WorkoutStatus(model.status),
             total_duration_minutes=model.total_duration_minutes,
+            workout_type=(
+                WorkoutType(model.workout_type) if model.workout_type is not None else None
+            ),
             elapsed_seconds=model.elapsed_seconds,
             distance_m=model.distance_m,
             video_id=model.video_id,

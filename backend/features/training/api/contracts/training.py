@@ -94,6 +94,10 @@ class HeartRateHistoryResponse(BaseModel):
 
     status: str
     workout_count: int = Field(ge=0)
+    workout_type: str | None = Field(
+        default=None,
+        description="Workout-Typ, auf den diese historische Auswertung begrenzt wurde.",
+    )
     median_in_target_percent: int | None = Field(default=None, ge=0, le=100)
     median_above_target_percent: int | None = Field(default=None, ge=0, le=100)
     median_below_target_percent: int | None = Field(default=None, ge=0, le=100)

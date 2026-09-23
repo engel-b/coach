@@ -1,5 +1,11 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from features.training.domain.recommendation import WorkoutType
 
 
 class HeartRateHistoryStatus(StrEnum):
@@ -24,6 +30,7 @@ class HeartRateHistoryRules:
 class HeartRateHistoryContext:
     status: HeartRateHistoryStatus
     workout_count: int
+    workout_type: WorkoutType | None = None
     median_in_target_percent: int | None = None
     median_above_target_percent: int | None = None
     median_below_target_percent: int | None = None

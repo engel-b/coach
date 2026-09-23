@@ -81,6 +81,7 @@ class WorkoutService:
             status=WorkoutStatus.RUNNING,
             phases=recommendation.phases,
             total_duration_minutes=recommendation.total_duration_minutes,
+            workout_type=recommendation.workout_type,
             video_id=selected_video_id,
             video_position_seconds=video_position_seconds,
         )

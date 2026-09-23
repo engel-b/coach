@@ -56,6 +56,7 @@ def test_workout_can_be_started() -> None:
 
     assert workout.person_id == 1
     assert workout.status == WorkoutStatus.RUNNING
+    assert workout.workout_type is WorkoutType.BASE_ENDURANCE
     assert len(workout.phases) == 3
 
 

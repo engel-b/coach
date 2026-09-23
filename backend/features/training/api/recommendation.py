@@ -63,8 +63,17 @@ def create_training_recommendation(
         ],
     )
 
+    provisional_recommendation = wiring.training_recommendation_engine.recommend(
+        check_in=check_in,
+        max_heart_rate=max_heart_rate,
+        resting_heart_rate=resting_heart_rate_baseline.value_bpm,
+        resting_heart_rate_source=resting_heart_rate_baseline.source,
+        resting_heart_rate_sample_count=resting_heart_rate_baseline.sample_count,
+    )
+
     heart_rate_history = wiring.heart_rate_history_service.analyze(
         workouts=recent_workouts,
+        workout_type=provisional_recommendation.workout_type,
     )
 
     return wiring.pre_workout_coaching_planner.recommend(
