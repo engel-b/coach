@@ -39,6 +39,9 @@ class PersonProfile:
     # verwenden wir diese statt einer altersbasierten Schätzung.
     max_heart_rate_bpm: int | None = None
 
+    # Optionaler persoenlicher Ruhepuls fuer individualisierte Zielbereiche.
+    resting_heart_rate_bpm: int | None = None
+
     # Zielbezogene Stammdaten. Bei Abnehmen werden beide benötigt.
     start_weight_kg: float | None = None
     target_weight_kg: float | None = None

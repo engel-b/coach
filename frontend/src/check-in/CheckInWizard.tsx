@@ -18,6 +18,7 @@ type HealthData = {
   sleepHours: string;
   sleepMinutes: string;
   steps: string;
+  restingHeartRate: string;
 };
 
 const EMPTY_HEALTH_DATA: HealthData = {
@@ -25,6 +26,7 @@ const EMPTY_HEALTH_DATA: HealthData = {
   sleepHours: "",
   sleepMinutes: "",
   steps: "",
+  restingHeartRate: "",
 };
 
 function formatWeight(value: number): string {
@@ -78,6 +80,9 @@ function healthDataFromCheckIn(checkIn: CheckIn | null): HealthData {
       checkIn.steps === null || checkIn.steps === undefined
         ? ""
         : String(checkIn.steps),
+    // Ruhepuls wird absichtlich nicht aus dem letzten Check-in vorbelegt.
+    // Jede Baseline-Messung soll eine heute tatsaechlich erfasste Messung sein.
+    restingHeartRate: "",
   };
 }
 
@@ -264,6 +269,7 @@ export function CheckInWizard({
     currentWeightKg: number | null;
     sleepHours: number | null;
     steps: number | null;
+    restingHeartRateBpm: number | null;
   } | null {
     const weight = parseOptionalNumber(healthData.weight);
     const weightEntered = healthData.weight.trim() !== "";
@@ -308,10 +314,23 @@ export function CheckInWizard({
       return null;
     }
 
+    const restingHeartRate = parseOptionalInteger(healthData.restingHeartRate);
+
+    if (
+      healthData.restingHeartRate.trim() !== "" &&
+      (restingHeartRate === null ||
+        restingHeartRate < 35 ||
+        restingHeartRate > 120)
+    ) {
+      setError("Bitte gib einen Ruhepuls zwischen 35 und 120 bpm ein.");
+      return null;
+    }
+
     return {
       currentWeightKg: weight === null ? null : Math.round(weight * 10) / 10,
       sleepHours,
       steps,
+      restingHeartRateBpm: restingHeartRate,
     };
   }
 
@@ -527,6 +546,25 @@ export function CheckInWizard({
                 disabled={saving || loadingPrevious}
               />
             </div>
+
+            <NumberControl
+              id="check-in-resting-heart-rate"
+              label="Ruhepuls (heute gemessen)"
+              value={healthData.restingHeartRate}
+              onChange={(value) => updateHealthData("restingHeartRate", value)}
+              step={1}
+              min={35}
+              max={120}
+              unit="bpm"
+              placeholder="72"
+              disabled={saving || loadingPrevious}
+            />
+
+            <p className="check-in-description">
+              Nur eintragen, wenn du den Wert heute tatsächlich in Ruhe gemessen
+              hast. Mehrere Messungen können später eine stabilere persönliche
+              Baseline bilden.
+            </p>
 
             <NumberControl
               id="check-in-steps"

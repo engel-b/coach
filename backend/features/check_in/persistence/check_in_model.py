@@ -76,3 +76,8 @@ class CheckInModel(Base):
         Integer,
         nullable=True,
     )
+
+    resting_heart_rate_bpm: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )

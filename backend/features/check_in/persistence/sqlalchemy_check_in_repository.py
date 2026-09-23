@@ -37,6 +37,7 @@ class SqlAlchemyCheckInRepository:
                 current_weight_kg=check_in.current_weight_kg,
                 sleep_hours=check_in.sleep_hours,
                 steps=check_in.steps,
+                resting_heart_rate_bpm=check_in.resting_heart_rate_bpm,
             )
 
             session.add(model)
@@ -92,4 +93,5 @@ class SqlAlchemyCheckInRepository:
             current_weight_kg=model.current_weight_kg,
             sleep_hours=model.sleep_hours,
             steps=model.steps,
+            resting_heart_rate_bpm=model.resting_heart_rate_bpm,
         )

@@ -3,6 +3,7 @@ from dataclasses import replace
 from features.person.domain.profile import TrainingGoal
 from features.training.domain.coach_message import CoachMessageContext
 from features.training.domain.coach_message_generator import CoachMessageGenerator
+from features.training.domain.heart_rate_history import HeartRateHistoryStatus
 from features.training.domain.pre_workout import (
     PreWorkoutCoachingContext,
     RecommendationReasonCode,
@@ -45,7 +46,15 @@ class PreWorkoutCoachingPlanner:
         context: PreWorkoutCoachingContext,
     ) -> TrainingRecommendation:
         effective_check_in = context.check_in
-        duration_cap = context.readiness.max_duration_minutes
+        duration_caps = [
+            cap
+            for cap in (
+                context.readiness.max_duration_minutes,
+                context.heart_rate_history.max_duration_minutes,
+            )
+            if cap is not None
+        ]
+        duration_cap = min(duration_caps) if duration_caps else None
 
         if (
             duration_cap is not None
@@ -59,6 +68,9 @@ class PreWorkoutCoachingPlanner:
         recommendation = self._engine.recommend(
             check_in=effective_check_in,
             max_heart_rate=context.max_heart_rate,
+            resting_heart_rate=context.resting_heart_rate,
+            resting_heart_rate_source=context.resting_heart_rate_source,
+            resting_heart_rate_sample_count=context.resting_heart_rate_sample_count,
         )
         reason_codes = self._reason_codes(context)
 
@@ -86,6 +98,7 @@ class PreWorkoutCoachingPlanner:
                 if context.training_goal is TrainingGoal.WEIGHT_LOSS
                 else None
             ),
+            heart_rate_history=context.heart_rate_history,
         )
 
     @staticmethod
@@ -115,6 +128,13 @@ class PreWorkoutCoachingPlanner:
             and check_in.available_training_minutes > readiness.max_duration_minutes
         ):
             reasons.append(RecommendationReasonCode.DURATION_REDUCED_FOR_READINESS)
+
+        if (
+            context.heart_rate_history.max_duration_minutes is not None
+            and check_in.available_training_minutes
+            > context.heart_rate_history.max_duration_minutes
+        ):
+            reasons.append(RecommendationReasonCode.DURATION_REDUCED_FOR_HEART_RATE_HISTORY)
 
         readiness_warnings = {
             RecommendationReasonCode.LOW_ENERGY,
@@ -147,5 +167,20 @@ class PreWorkoutCoachingPlanner:
                     WeightGoalStatus.BELOW_TARGET: RecommendationReasonCode.WEIGHT_GOAL_BELOW_TARGET,
                 }[context.weight_goal_progress.status]
             )
+
+        history_reason = {
+            HeartRateHistoryStatus.MOSTLY_IN_TARGET: (
+                RecommendationReasonCode.HEART_RATE_HISTORY_IN_TARGET
+            ),
+            HeartRateHistoryStatus.MOSTLY_ABOVE_TARGET: (
+                RecommendationReasonCode.HEART_RATE_HISTORY_ABOVE_TARGET
+            ),
+            HeartRateHistoryStatus.MOSTLY_BELOW_TARGET: (
+                RecommendationReasonCode.HEART_RATE_HISTORY_BELOW_TARGET
+            ),
+            HeartRateHistoryStatus.MIXED: RecommendationReasonCode.HEART_RATE_HISTORY_MIXED,
+        }.get(context.heart_rate_history.status)
+        if history_reason is not None:
+            reasons.append(history_reason)
 
         return tuple(reasons)

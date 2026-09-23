@@ -308,7 +308,7 @@ feature/
 
 ### `person`
 
-Verantwortet Person und Profil: Anzeigename, Geburtsdatum, Größe, Trainingsziel, optionale maximale Herzfrequenz, Startgewicht und Zielgewicht. Person und Profil sind getrennte 1:1-Aggregate in der Persistenz.
+Verantwortet Person und Profil: Anzeigename, Geburtsdatum, Größe, Trainingsziel, optionale maximale Herzfrequenz, optionaler Ruhepuls, Startgewicht und Zielgewicht. Person und Profil sind getrennte 1:1-Aggregate in der Persistenz.
 
 ### `check_in`
 
@@ -415,6 +415,36 @@ Für einen belastbaren Trend wird eine Mindestanzahl an Messungen und ein Mindes
 ### Gewichtsfortschritt
 
 `WeightGoalProgress` beschreibt Start, aktuelles Ziel, verlorenes Gewicht und prozentualen Fortschritt. Prozentwerte werden für die Darstellung begrenzt; unplausible oder fehlende Zielkonfiguration erzeugt keinen erfundenen Fortschritt.
+
+### Personalisierte Herzfrequenz-Zielbereiche
+
+Die Trainingsphasen verwenden eine zentrale `HeartRateTargetPolicy`. Ist ein persönlicher Ruhepuls im Profil hinterlegt, werden Zielbereiche aus der Herzfrequenzreserve (`HFmax - Ruhepuls`) abgeleitet. Ein hoher oder niedriger Ruhepuls wird für diese Berechnung auf einen konservativen Referenzbereich begrenzt, damit er die Trainingsziele nicht unbegrenzt verschiebt. Fehlt der Ruhepuls, bleibt die bisherige Prozent-von-HFmax-Berechnung als kompatibler Fallback aktiv.
+
+Der Ruhepuls kann zusätzlich pro Check-in als tatsächlich an diesem Tag gemessener Wert erfasst werden. Eine `RestingHeartRateBaselineService` verwendet bei mindestens drei aktuellen Messungen den Median der letzten Messwerte als robuste persönliche Baseline; einzelne Ausreißer wirken dadurch weniger stark. Solange nicht genügend Messungen vorhanden sind, bleibt der manuelle Profilwert der Fallback. Der Check-in-Wert wird im UI bewusst nicht aus dem Vortag vorbelegt, damit nicht versehentlich derselbe alte Wert mehrfach als neue Messung in die Baseline eingeht.
+
+Die Zielbereiche beschreiben die gewünschte Trainingsbelastung und sind keine medizinisch garantierten Sicherheitsgrenzen. Die Trainingsempfehlung liefert die verwendete Berechnungsgrundlage explizit an das Frontend: Methode, HFmax, den hinterlegten Ruhepuls und gegebenenfalls den konservativ begrenzten Ruhepuls-Rechenwert. Dadurch kann die UI nachvollziehbar erklären, wie die angezeigten Zielbereiche zustande kommen.
+
+Live-Coaching bewertet kleine Abweichungen mit einer zusätzlichen Toleranz. Außerhalb dieser Toleranz wird zwischen moderaten und deutlichen Abweichungen unterschieden: moderate Abweichungen müssen länger anhalten, deutliche Abweichungen dürfen nach einer kürzeren Persistenzzeit eine Coaching-Aktion auslösen. Die Speech Policy drosselt wiederholte gleichartige Hinweise; eine Eskalation von moderat auf deutlich darf unmittelbar erneut gesprochen werden. HFmax bzw. davon unabhängige Schutzregeln bleiben vom Ruhepuls unberührt.
+
+### Herzfrequenz-Reaktion aus der Workout-Historie
+
+Während eines laufenden Workouts werden Herzfrequenzwerte der Hauptphase zu einer kompakten `WorkoutHeartRateSummary` verdichtet. Persistiert werden keine vollständigen Rohdatenreihen, sondern nur Stichprobenanzahl, durchschnittliche und maximale Herzfrequenz sowie die prozentualen Anteile unterhalb, innerhalb und oberhalb des für die jeweilige Hauptphase geplanten Zielbereichs.
+
+Eine `HeartRateHistoryService` betrachtet nur abgeschlossene Workouts mit ausreichend vielen Messwerten und verdichtet mehrere aktuelle Einheiten über Medianwerte. Die Historie darf ausschließlich konservativ wirken: Liegt die Herzfrequenz in mehreren auswertbaren Workouts häufig oberhalb des Zielbereichs, kann die heutige Trainingsdauer begrenzt werden. Historisch niedrige Herzfrequenz führt dagegen **nicht** automatisch zu höherer Intensität, höheren Zielpulswerten oder gelockerten Safety-Grenzen.
+
+Die historische Herzfrequenz-Auswertung vergleicht nur Workouts desselben fachlichen Workout-Typs. Der Typ wird bei neuen Workouts persistiert; Altdaten ohne Typ bleiben von dieser Personalisierung ausgeschlossen.
+
+Zusätzlich wird die mittlere Herzfrequenz jedes vergleichbaren Workouts relativ zu dessen damals gültiger Hauptphasen-Zielzone normalisiert: `0 %` entspricht der unteren, `100 %` der oberen Zielgrenze. Dadurch lassen sich Einheiten mit unterschiedlichen absoluten Zielwerten vergleichen. Ab mindestens vier vergleichbaren Workouts werden die ältere und die neuere Hälfte über Medianwerte gegenübergestellt. Eine Verschiebung von mindestens 15 Prozentpunkten wird als höhere bzw. niedrigere relative Herzfrequenz-Reaktion beschrieben; kleinere Änderungen gelten als stabil. Dieser Trend ist rein deskriptiv und darf weder Zielpuls noch Trainingsintensität automatisch erhöhen.
+
+Die Trainingsempfehlung liefert den erkannten Verlauf als strukturierten Kontext an das Frontend. Dadurch bleibt sichtbar, ob die Historie überwiegend im Zielbereich, oberhalb, unterhalb oder uneindeutig war, wie viele Workouts dafür ausgewertet wurden und ob sich die relative Herzfrequenz-Reaktion über vergleichbare Einheiten verschoben hat.
+
+### Herzfrequenz-Reaktion relativ zur Bike-Leistung
+
+Während der Hauptphase wird zusätzlich eine kompakte `WorkoutBikeSummary` aus FTMS-Telemetrie gebildet. Persistiert werden nur Stichprobenanzahl und Mittelwerte für Leistung und Kadenz; vollständige Bike-Rohdatenreihen sind für diese Auswertung nicht erforderlich. Fehlende Sensorwerte bleiben optional und blockieren weder Workout noch Coaching.
+
+Für die historische Interpretation werden nur Workouts mit ausreichend vielen Leistungs-Samples paarweise mit der Herzfrequenz-Reaktion verglichen. Ältere und neuere vergleichbare Einheiten werden über Medianwerte gegenübergestellt. Ändert sich die mittlere Bike-Leistung um höchstens 10 Prozent, gilt die Belastung für diese deskriptive Auswertung als ähnlich. Dadurch kann beispielsweise eine niedrigere relative Herzfrequenz bei annähernd gleicher Leistung von einer niedrigeren Herzfrequenz infolge deutlich geringerer Leistung unterschieden werden.
+
+Die resultierende Einordnung ist ausdrücklich **keine automatische Fitnessbewertung** und verändert Zielpuls, Safety-Grenzen oder Trainingsintensität nicht. Insbesondere wird eine niedrigere Herzfrequenz nur dann als „niedriger bei ähnlicher Leistung“ beschrieben, wenn die historische Leistungsänderung innerhalb der Vergleichstoleranz liegt. Bei deutlich veränderter Leistung wird der HF-Trend als durch die Laständerung mitbedingt bzw. nicht isoliert interpretierbar gekennzeichnet.
 
 ## 5.4 Live-Coaching-Bausteine
 
@@ -1180,6 +1210,16 @@ Runtime beantwortet „Was passiert zeitlich?“, Coaching beantwortet „Wie is
 **Status:** Akzeptiert
 
 Ein einzelner HR-Wert löst keine Belastungsanweisung aus.
+
+## ADR-018a – Zielpulsbereiche werden über eine zentrale Policy personalisiert
+**Status:** Akzeptiert
+
+Ein optionaler Ruhepuls personalisiert Trainingszonen über die Herzfrequenzreserve. Die Policy begrenzt den für die Berechnung verwendeten Ruhepuls konservativ und fällt bei fehlendem Ruhepuls auf die bisherige HFmax-Prozentlogik zurück. Kleine Abweichungen erhalten im Live-Coaching eine BPM-Toleranz; die zeitliche Abweichungsbewertung bleibt davon getrennt.
+
+## ADR-018b – Workout-Herzfrequenzhistorie darf nur konservativ personalisieren
+**Status:** Akzeptiert
+
+Für abgeschlossene Workouts wird eine kompakte Herzfrequenz-Zusammenfassung der Hauptphase persistiert. Mehrere ausreichend belegte Workouts können die heutige Trainingsdauer konservativ begrenzen, wenn die Herzfrequenz wiederholt häufig oberhalb des geplanten Zielbereichs lag. Historisch niedrige Werte dürfen weder die Intensität noch Zielpuls- oder Safety-Grenzen automatisch erhöhen. Vollständige HR-Rohdaten müssen für diese Personalisierung nicht dauerhaft gespeichert werden. Die durchschnittliche Herzfrequenz darf zusätzlich relativ zur jeweils damals gültigen Zielzone normalisiert und als deskriptiver Verlauf über vergleichbare Workouts ausgewertet werden; auch daraus folgt keine automatische Belastungssteigerung.
 
 ## ADR-019 – Cross-Feature-Coaching-Orchestrierung liegt im App-Layer
 **Status:** Akzeptiert

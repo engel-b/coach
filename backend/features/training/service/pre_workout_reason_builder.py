@@ -38,6 +38,10 @@ class PreWorkoutReasonBuilder:
         if readiness_text is not None:
             parts.append(readiness_text)
 
+        heart_rate_history_text = self._heart_rate_history_text(context)
+        if heart_rate_history_text is not None:
+            parts.append(heart_rate_history_text)
+
         if context.training_goal is TrainingGoal.WEIGHT_LOSS:
             weight_text = self._weight_text(context)
             if weight_text is not None:
@@ -89,6 +93,25 @@ class PreWorkoutReasonBuilder:
             return "Du warst heute bereits viel auf den Beinen; das berücksichtigen wir bei der Belastung."
         if RecommendationReasonCode.HIGH_RECENT_TRAINING_LOAD in reason_codes:
             return "In den letzten Tagen kam bereits einiges an Trainingszeit zusammen; heute bleiben wir zurückhaltender."
+        return None
+
+    @staticmethod
+    def _heart_rate_history_text(
+        context: CoachMessageContext,
+    ) -> str | None:
+        reason_codes = context.reason_codes
+        if RecommendationReasonCode.DURATION_REDUCED_FOR_HEART_RATE_HISTORY in reason_codes:
+            return (
+                "Deine Herzfrequenz lag in mehreren letzten Workouts häufig über "
+                "dem jeweiligen Zielbereich. Deshalb halten wir die heutige "
+                f"Einheit bei {context.total_duration_minutes} Minuten; die "
+                "Zielpuls- und Safety-Grenzen werden dadurch nicht angehoben."
+            )
+        if RecommendationReasonCode.HEART_RATE_HISTORY_IN_TARGET in reason_codes:
+            return (
+                "Bei deinen letzten auswertbaren Workouts lag die Herzfrequenz "
+                "überwiegend im geplanten Zielbereich."
+            )
         return None
 
     @staticmethod

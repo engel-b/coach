@@ -52,6 +52,16 @@ class CheckInRequest(BaseModel):
         description="Optional erfasste Schrittzahl.",
         examples=[8450],
     )
+    resting_heart_rate_bpm: int | None = Field(
+        default=None,
+        ge=35,
+        le=120,
+        description=(
+            "Optional heute in Ruhe gemessene Herzfrequenz. Der Wert kann "
+            "ueber mehrere Check-ins zur persoenlichen Ruhepuls-Baseline beitragen."
+        ),
+        examples=[72],
+    )
 
 
 class CheckInResponse(BaseModel):
@@ -110,4 +120,11 @@ class CheckInResponse(BaseModel):
         ge=0,
         description="Optional erfasste Schrittzahl.",
         examples=[8450],
+    )
+    resting_heart_rate_bpm: int | None = Field(
+        default=None,
+        ge=35,
+        le=120,
+        description="Optional im Check-in erfasster Ruhepuls.",
+        examples=[72],
     )

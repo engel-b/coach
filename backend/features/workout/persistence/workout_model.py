@@ -36,6 +36,11 @@ class WorkoutModel(Base):
         nullable=False,
     )
 
+    workout_type: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+    )
+
     elapsed_seconds: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
@@ -67,6 +72,18 @@ class WorkoutModel(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+
+    heart_rate_sample_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    heart_rate_average_bpm: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    heart_rate_max_bpm: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    heart_rate_below_target_percent: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    heart_rate_in_target_percent: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    heart_rate_above_target_percent: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    bike_power_sample_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    bike_average_power_w: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    bike_cadence_sample_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    bike_average_cadence_rpm: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     phases: Mapped[list["WorkoutPhaseModel"]] = relationship(
         back_populates="workout",

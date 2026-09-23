@@ -4,9 +4,11 @@ from dataclasses import replace
 from features.telemetry.api.contracts.telemetry import TelemetryMessage
 from features.telemetry.domain.health.device import DeviceStatus, DeviceType
 from features.telemetry.domain.health.heart_rate import HeartRateSample
+from features.telemetry.domain.telemetry.bike import BikeTelemetry
 from features.telemetry.service.models import DeviceState
 
 HeartRateHandler = Callable[[HeartRateSample], None]
+BikeTelemetryHandler = Callable[[BikeTelemetry], None]
 
 
 class TelemetryService:
@@ -36,6 +38,7 @@ class TelemetryService:
         # Mehrgerätebetrieb völlig ausreichend.
         self._devices: dict[str, DeviceState] = {}
         self._heart_rate_handlers: list[HeartRateHandler] = []
+        self._bike_telemetry_handlers: list[BikeTelemetryHandler] = []
 
     def add_heart_rate_handler(
         self,
@@ -49,6 +52,14 @@ class TelemetryService:
         """
 
         self._heart_rate_handlers.append(handler)
+
+    def add_bike_telemetry_handler(
+        self,
+        handler: BikeTelemetryHandler,
+    ) -> None:
+        """Registriert einen Interessenten für normalisierte Bike-Telemetrie."""
+
+        self._bike_telemetry_handlers.append(handler)
 
     def handle(self, message: TelemetryMessage) -> None:
         if message.type == "device.status_changed":
@@ -238,6 +249,18 @@ class TelemetryService:
             )
 
         self._devices[message.device_id] = state
+
+        telemetry = BikeTelemetry(
+            device_id=message.device_id,
+            timestamp=message.timestamp,
+            power_w=power_value if isinstance(power_value, int) else None,
+            cadence_rpm=(float(cadence_value) if isinstance(cadence_value, int | float) else None),
+            speed_kmh=(float(speed_value) if isinstance(speed_value, int | float) else None),
+            distance_m=distance_value if isinstance(distance_value, int) else None,
+            resistance=(resistance_value if isinstance(resistance_value, int) else None),
+        )
+        for handler in self._bike_telemetry_handlers:
+            handler(telemetry)
 
     def get_devices(self) -> list[DeviceState]:
         """

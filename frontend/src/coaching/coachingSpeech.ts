@@ -2,6 +2,7 @@ import type { LiveCoachingEvent } from "./types";
 
 export interface CoachingSpeechState {
   lastDecisionAction: "increase_intensity" | "reduce_intensity" | null;
+  lastDecisionSeverity: "moderate" | "large" | null;
   lastSpokenAtMs: number | null;
 }
 
@@ -11,6 +12,7 @@ export interface CoachingSpeechDecision {
 }
 
 const REPEAT_COOLDOWN_MS = 60_000;
+const LARGE_REPEAT_COOLDOWN_MS = 30_000;
 
 export function coachingSpeechMessage(event: LiveCoachingEvent): string {
   switch (event.type) {
@@ -44,10 +46,14 @@ export function coachingSpeechMessage(event: LiveCoachingEvent): string {
     case "coaching.decision":
       switch (event.action) {
         case "increase_intensity":
-          return "Dein Puls ist unter dem Zielbereich. Erhöhe die Intensität etwas.";
+          return event.deviationSeverity === "large"
+            ? "Dein Puls ist deutlich unter dem Zielbereich. Erhöhe die Intensität kontrolliert."
+            : "Dein Puls ist unter dem Zielbereich. Erhöhe die Intensität etwas.";
 
         case "reduce_intensity":
-          return "Dein Puls ist über dem Zielbereich. Nimm etwas Tempo heraus.";
+          return event.deviationSeverity === "large"
+            ? "Dein Puls ist deutlich über dem Zielbereich. Nimm jetzt Tempo heraus."
+            : "Dein Puls ist über dem Zielbereich. Nimm etwas Tempo heraus.";
       }
   }
 }
@@ -62,17 +68,25 @@ export function evaluateCoachingSpeech(
       speak: true,
       nextState: {
         lastDecisionAction: null,
+        lastDecisionSeverity: null,
         lastSpokenAtMs: nowMs,
       },
     };
   }
 
   const isDifferentAction = state.lastDecisionAction !== event.action;
+  const severityEscalated =
+    state.lastDecisionSeverity === "moderate" &&
+    event.deviationSeverity === "large";
+  const repeatCooldownMs =
+    event.deviationSeverity === "large"
+      ? LARGE_REPEAT_COOLDOWN_MS
+      : REPEAT_COOLDOWN_MS;
   const cooldownElapsed =
     state.lastSpokenAtMs === null ||
-    nowMs - state.lastSpokenAtMs >= REPEAT_COOLDOWN_MS;
+    nowMs - state.lastSpokenAtMs >= repeatCooldownMs;
 
-  if (!isDifferentAction && !cooldownElapsed) {
+  if (!isDifferentAction && !severityEscalated && !cooldownElapsed) {
     return {
       speak: false,
       nextState: state,
@@ -83,6 +97,7 @@ export function evaluateCoachingSpeech(
     speak: true,
     nextState: {
       lastDecisionAction: event.action,
+      lastDecisionSeverity: event.deviationSeverity,
       lastSpokenAtMs: nowMs,
     },
   };

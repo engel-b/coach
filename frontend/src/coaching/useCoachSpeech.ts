@@ -10,6 +10,7 @@ import type { LiveCoachingEvent } from "./types";
 
 const INITIAL_STATE: CoachingSpeechState = {
   lastDecisionAction: null,
+  lastDecisionSeverity: null,
   lastSpokenAtMs: null,
 };
 

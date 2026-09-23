@@ -53,6 +53,163 @@ function PhaseRow({ phase }: { phase: WorkoutPhase }) {
   );
 }
 
+function HeartRateTargetExplanation({
+  recommendation,
+}: {
+  recommendation: TrainingRecommendation;
+}) {
+  const basis = recommendation.heartRateTargetBasis;
+  const mainPhase =
+    recommendation.phases.find((phase) => phase.phaseType === "main") ??
+    recommendation.phases[0];
+
+  if (mainPhase === undefined) {
+    return null;
+  }
+
+  const usesReserve = basis.method === "heart_rate_reserve";
+  const referenceWasLimited =
+    usesReserve &&
+    basis.restingHeartRateBpm !== null &&
+    basis.referenceRestingHeartRateBpm !== null &&
+    basis.restingHeartRateBpm !== basis.referenceRestingHeartRateBpm;
+
+  return (
+    <div className="heart-rate-target-explanation">
+      <div className="reason-title">So entsteht dein Zielpuls</div>
+
+      <div className="heart-rate-target-summary">
+        <strong>
+          {phaseTitle(mainPhase.phaseType)}: {mainPhase.targetHeartRateMin}–
+          {mainPhase.targetHeartRateMax} bpm
+        </strong>
+      </div>
+
+      <dl className="heart-rate-target-details">
+        <div>
+          <dt>HFmax</dt>
+          <dd>{basis.maxHeartRateBpm} bpm</dd>
+        </div>
+        <div>
+          <dt>Methode</dt>
+          <dd>
+            {usesReserve
+              ? "Herzfrequenzreserve"
+              : "Prozent der maximalen Herzfrequenz"}
+          </dd>
+        </div>
+        {basis.restingHeartRateBpm !== null && (
+          <div>
+            <dt>Ruhepuls</dt>
+            <dd>
+              {basis.restingHeartRateBpm} bpm
+              {basis.restingHeartRateSource === "check_in_baseline"
+                ? ` · Baseline aus ${basis.restingHeartRateSampleCount} Messungen`
+                : basis.restingHeartRateSource === "profile"
+                  ? " · Profilwert"
+                  : ""}
+            </dd>
+          </div>
+        )}
+        {referenceWasLimited && (
+          <div>
+            <dt>Rechenwert Ruhepuls</dt>
+            <dd>{basis.referenceRestingHeartRateBpm} bpm</dd>
+          </div>
+        )}
+      </dl>
+
+      {!usesReserve && (
+        <p className="heart-rate-target-note">
+          Noch keine belastbare Ruhepuls-Baseline verfügbar: Die Zielbereiche
+          werden als Fallback aus der maximalen Herzfrequenz berechnet.
+        </p>
+      )}
+
+      {referenceWasLimited && (
+        <p className="heart-rate-target-note">
+          Der hinterlegte Ruhepuls wird für die Zielberechnung konservativ auf{" "}
+          {basis.referenceRestingHeartRateBpm} bpm begrenzt.
+        </p>
+      )}
+
+      {recommendation.heartRateHistory !== null &&
+        recommendation.heartRateHistory.status !== "insufficient_data" && (
+          <div className="heart-rate-history-note">
+            <strong>Deine bisherigen vergleichbaren Workouts</strong>
+            {recommendation.heartRateHistory.workoutType !== null && (
+              <p className="heart-rate-history-scope">
+                Auswertung nur für{" "}
+                {recommendation.heartRateHistory.workoutType ===
+                "base_endurance"
+                  ? "Grundlagen-Einheiten"
+                  : recommendation.heartRateHistory.workoutType === "recovery"
+                    ? "Recovery-Einheiten"
+                    : "moderate Einheiten"}
+                .
+              </p>
+            )}
+            <p>
+              {recommendation.heartRateHistory.status === "mostly_in_target"
+                ? `In ${recommendation.heartRateHistory.workoutCount} vergleichbaren Workouts lag deine Herzfrequenz überwiegend im Zielbereich.`
+                : recommendation.heartRateHistory.status ===
+                    "mostly_above_target"
+                  ? `In ${recommendation.heartRateHistory.workoutCount} vergleichbaren Workouts lag deine Herzfrequenz häufig oberhalb des Zielbereichs. Deshalb wird die heutige Dauer bei Bedarf konservativ begrenzt; Zielpuls- und Safety-Grenzen werden nicht angehoben.`
+                  : recommendation.heartRateHistory.status ===
+                      "mostly_below_target"
+                    ? `In ${recommendation.heartRateHistory.workoutCount} vergleichbaren Workouts lag deine Herzfrequenz häufig unterhalb des Zielbereichs. Daraus wird nicht automatisch mehr Intensität abgeleitet.`
+                    : `Die letzten ${recommendation.heartRateHistory.workoutCount} vergleichbaren Workouts zeigen noch kein eindeutiges Herzfrequenzmuster.`}
+            </p>
+            {recommendation.heartRateHistory.responseTrend !==
+              "insufficient_data" && (
+              <p className="heart-rate-history-trend">
+                {recommendation.heartRateHistory.responseTrend === "lower"
+                  ? "Bei den neueren vergleichbaren Workouts lag deine durchschnittliche Herzfrequenz relativ zum jeweiligen Zielbereich niedriger als bei den älteren."
+                  : recommendation.heartRateHistory.responseTrend === "higher"
+                    ? "Bei den neueren vergleichbaren Workouts lag deine durchschnittliche Herzfrequenz relativ zum jeweiligen Zielbereich höher als bei den älteren."
+                    : "Die durchschnittliche Herzfrequenz relativ zum jeweiligen Zielbereich ist über die vergleichbaren Workouts weitgehend stabil."}
+                {recommendation.heartRateHistory.targetPositionChangePoints !==
+                  null &&
+                  ` Veränderung: ${recommendation.heartRateHistory.targetPositionChangePoints > 0 ? "+" : ""}${recommendation.heartRateHistory.targetPositionChangePoints} Prozentpunkte.`}
+                {
+                  " Diese Beobachtung ist rein beschreibend und erhöht die Trainingsintensität nicht automatisch."
+                }
+              </p>
+            )}
+            {recommendation.heartRateHistory.loadAdjustedTrend !==
+              "insufficient_data" && (
+              <p className="heart-rate-history-trend">
+                {recommendation.heartRateHistory.loadAdjustedTrend ===
+                "lower_at_similar_power"
+                  ? "Die Herzfrequenz-Reaktion war bei den neueren Einheiten niedriger, obwohl die durchschnittliche Bike-Leistung ähnlich blieb."
+                  : recommendation.heartRateHistory.loadAdjustedTrend ===
+                      "higher_at_similar_power"
+                    ? "Die Herzfrequenz-Reaktion war bei den neueren Einheiten höher, obwohl die durchschnittliche Bike-Leistung ähnlich blieb."
+                    : recommendation.heartRateHistory.loadAdjustedTrend ===
+                        "stable_at_similar_power"
+                      ? "Herzfrequenz-Reaktion und durchschnittliche Bike-Leistung blieben über die vergleichbaren Einheiten weitgehend stabil."
+                      : recommendation.heartRateHistory.loadAdjustedTrend ===
+                          "lower_with_lower_power"
+                        ? "Die niedrigere Herzfrequenz ging mit einer niedrigeren durchschnittlichen Bike-Leistung einher; deshalb wird sie nicht als günstigere Reaktion interpretiert."
+                        : recommendation.heartRateHistory.loadAdjustedTrend ===
+                            "higher_with_higher_power"
+                          ? "Die höhere Herzfrequenz ging mit einer höheren durchschnittlichen Bike-Leistung einher; die Belastung war also nicht vergleichbar."
+                          : "Die Bike-Leistung hat sich zwischen älteren und neueren Einheiten deutlich verändert; der Herzfrequenz-Trend wird deshalb nicht isoliert interpretiert."}
+                {recommendation.heartRateHistory.powerChangePercent !== null &&
+                  ` Leistungsänderung: ${recommendation.heartRateHistory.powerChangePercent > 0 ? "+" : ""}${recommendation.heartRateHistory.powerChangePercent} %.`}
+                {recommendation.heartRateHistory.medianPowerW !== null &&
+                  ` Median der vergleichbaren Einheiten: ${recommendation.heartRateHistory.medianPowerW} W.`}
+                {
+                  " Auch diese Beobachtung ist rein deskriptiv und verändert die Trainingsintensität nicht automatisch."
+                }
+              </p>
+            )}
+          </div>
+        )}
+    </div>
+  );
+}
+
 export function TrainingRecommendationView({
   person,
   recommendation,
@@ -174,6 +331,8 @@ export function TrainingRecommendationView({
             <PhaseRow key={`${phase.phaseType}-${index}`} phase={phase} />
           ))}
         </div>
+
+        <HeartRateTargetExplanation recommendation={recommendation} />
 
         <div className="recommendation-reason">
           <div className="reason-title">Warum dieses Training?</div>

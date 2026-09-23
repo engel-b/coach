@@ -26,10 +26,61 @@ export interface WeightGoalProgress {
   progressPercent: number | null;
 }
 
+export type HeartRateTargetMethod =
+  "heart_rate_reserve" | "max_heart_rate_percentage";
+
+export type HeartRateTargetSource = "profile" | "check_in_baseline";
+
+export interface HeartRateTargetBasis {
+  method: HeartRateTargetMethod;
+  maxHeartRateBpm: number;
+  restingHeartRateBpm: number | null;
+  referenceRestingHeartRateBpm: number | null;
+  restingHeartRateSource: HeartRateTargetSource | null;
+  restingHeartRateSampleCount: number;
+}
+
+export type HeartRateHistoryStatus =
+  | "insufficient_data"
+  | "mostly_in_target"
+  | "mostly_above_target"
+  | "mostly_below_target"
+  | "mixed";
+
+export type HeartRateResponseTrend =
+  "insufficient_data" | "lower" | "stable" | "higher";
+
+export type LoadAdjustedHeartRateTrend =
+  | "insufficient_data"
+  | "lower_at_similar_power"
+  | "higher_at_similar_power"
+  | "stable_at_similar_power"
+  | "lower_with_lower_power"
+  | "higher_with_higher_power"
+  | "load_changed";
+
+export interface HeartRateHistory {
+  status: HeartRateHistoryStatus;
+  workoutCount: number;
+  workoutType: WorkoutType | null;
+  medianInTargetPercent: number | null;
+  medianAboveTargetPercent: number | null;
+  medianBelowTargetPercent: number | null;
+  maxDurationMinutes: number | null;
+  responseTrend: HeartRateResponseTrend;
+  medianTargetPositionPercent: number | null;
+  targetPositionChangePoints: number | null;
+  loadAdjustedTrend: LoadAdjustedHeartRateTrend;
+  medianPowerW: number | null;
+  powerChangePercent: number | null;
+}
+
 export interface TrainingRecommendation {
   workoutType: WorkoutType;
   totalDurationMinutes: number;
   reason: string;
+  heartRateTargetBasis: HeartRateTargetBasis;
+  heartRateHistory: HeartRateHistory | null;
   reasonCodes: string[];
   weightGoalProgress: WeightGoalProgress | null;
   phases: WorkoutPhase[];

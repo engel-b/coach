@@ -144,3 +144,45 @@ def test_negative_outside_target_duration_is_rejected() -> None:
                 outside_target_seconds=-1.0,
             )
         )
+
+
+def test_target_tolerance_avoids_coaching_for_small_deviation() -> None:
+    engine = LiveCoachingEngine(
+        rules=LiveCoachingRules(
+            deviation_seconds_before_action=20.0,
+            target_tolerance_bpm=5,
+        )
+    )
+
+    decision = engine.evaluate(
+        LiveCoachingContext(
+            heart_rate_bpm=144,
+            target_min_bpm=126,
+            target_max_bpm=140,
+            outside_target_seconds=60.0,
+        )
+    )
+
+    assert decision.zone_status is HeartRateZoneStatus.IN_TARGET
+    assert decision.action is CoachingAction.NONE
+
+
+def test_large_deviation_triggers_earlier_than_moderate_deviation() -> None:
+    engine = LiveCoachingEngine(
+        rules=LiveCoachingRules(
+            deviation_seconds_before_action=20.0,
+            target_tolerance_bpm=5,
+            large_deviation_bpm=15,
+            large_deviation_seconds_before_action=8.0,
+        )
+    )
+
+    moderate = engine.evaluate(create_context(heart_rate_bpm=154, outside_target_seconds=8.0))
+    large = engine.evaluate(create_context(heart_rate_bpm=160, outside_target_seconds=8.0))
+
+    assert moderate.action is CoachingAction.NONE
+    assert moderate.deviation_severity.value == "moderate"
+    assert large.action is CoachingAction.REDUCE_INTENSITY
+    assert large.deviation_bpm == 15
+    assert large.deviation_severity.value == "large"
+    assert large.reason == "heart_rate_far_above_target"

@@ -2,6 +2,8 @@ export type CoachingAction = "increase_intensity" | "reduce_intensity";
 
 export type HeartRateZoneStatus = "below_target" | "in_target" | "above_target";
 
+export type HeartRateDeviationSeverity = "moderate" | "large";
+
 export interface HeartRateCoachingEvent {
   type: "coaching.decision";
   timestamp: string;
@@ -13,6 +15,8 @@ export interface HeartRateCoachingEvent {
   targetMinBpm: number;
   targetMaxBpm: number;
   outsideTargetSeconds: number;
+  deviationBpm: number;
+  deviationSeverity: HeartRateDeviationSeverity;
   reason: string;
 }
 

@@ -6,6 +6,7 @@ from pydantic.alias_generators import to_camel
 
 from features.coaching.domain.live_coaching import (
     CoachingAction,
+    HeartRateDeviationSeverity,
     HeartRateZoneStatus,
     LiveCoachingDecision,
     LiveCoachingPhaseEnding,
@@ -33,6 +34,8 @@ class LiveCoachingEvent(BaseModel):
     target_min_bpm: int
     target_max_bpm: int
     outside_target_seconds: float = Field(ge=0)
+    deviation_bpm: int = Field(ge=0)
+    deviation_severity: HeartRateDeviationSeverity
     reason: str
 
     @classmethod
@@ -53,6 +56,8 @@ class LiveCoachingEvent(BaseModel):
             target_min_bpm=decision.target_min_bpm,
             target_max_bpm=decision.target_max_bpm,
             outside_target_seconds=decision.outside_target_seconds,
+            deviation_bpm=decision.deviation_bpm,
+            deviation_severity=decision.deviation_severity,
             reason=decision.reason,
         )
 

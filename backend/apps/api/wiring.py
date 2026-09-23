@@ -29,15 +29,20 @@ from features.speech.service.speech_service import SpeechService
 from features.telemetry.service.broadcaster import TelemetryBroadcaster
 from features.telemetry.service.service import TelemetryService
 from features.training.domain.coach_message_generator import CoachMessageGenerator
+from features.training.domain.heart_rate_history import HeartRateHistoryRules
 from features.training.domain.readiness import ReadinessRules
 from features.training.domain.recommendation_engine import TrainingRecommendationEngine
 from features.training.domain.weight_trend import WeightTrendRules
 from features.training.service.fallback_coach_message_generator import (
     FallbackCoachMessageGenerator,
 )
+from features.training.service.heart_rate_history_service import HeartRateHistoryService
 from features.training.service.pre_workout_coaching_planner import PreWorkoutCoachingPlanner
 from features.training.service.pre_workout_reason_builder import PreWorkoutReasonBuilder
 from features.training.service.readiness_service import ReadinessService
+from features.training.service.resting_heart_rate_baseline_service import (
+    RestingHeartRateBaselineService,
+)
 from features.training.service.weight_goal_progress_service import WeightGoalProgressService
 from features.training.service.weight_trend_service import WeightTrendService
 from features.workout.persistence.sqlalchemy_workout_repository import (
@@ -58,6 +63,9 @@ from features.workout.service.workout_service import WorkoutService
 live_coaching_engine = LiveCoachingEngine(
     rules=LiveCoachingRules(
         deviation_seconds_before_action=20.0,
+        target_tolerance_bpm=5,
+        large_deviation_bpm=15,
+        large_deviation_seconds_before_action=8.0,
     )
 )
 live_coaching_coordinator = LiveCoachingCoordinator(
@@ -77,6 +85,9 @@ live_coaching_lifecycle = LiveCoachingLifecycle(
 telemetry_service = TelemetryService()
 telemetry_service.add_heart_rate_handler(
     live_coaching_lifecycle.handle_heart_rate,
+)
+telemetry_service.add_bike_telemetry_handler(
+    live_coaching_lifecycle.handle_bike_telemetry,
 )
 
 person_repository = SqlAlchemyPersonRepository()
@@ -116,6 +127,22 @@ readiness_rules = ReadinessRules(
     caution_duration_cap_minutes=30,
 )
 readiness_service = ReadinessService(rules=readiness_rules)
+resting_heart_rate_baseline_service = RestingHeartRateBaselineService()
+
+heart_rate_history_service = HeartRateHistoryService(
+    rules=HeartRateHistoryRules(
+        lookback_workouts=6,
+        min_workout_count=3,
+        min_samples_per_workout=30,
+        mostly_in_target_percent=60,
+        dominant_outside_target_percent=40,
+        high_response_duration_cap_minutes=30,
+        trend_min_workout_count=4,
+        trend_change_threshold_points=15,
+        min_power_samples_per_workout=30,
+        similar_power_change_percent=10,
+    )
+)
 
 template_pre_workout_message_generator = PreWorkoutReasonBuilder()
 

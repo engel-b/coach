@@ -5,7 +5,10 @@ from adapters.persistence.database import create_session
 from features.training.domain.recommendation import (
     WorkoutPhase,
     WorkoutPhaseType,
+    WorkoutType,
 )
+from features.workout.domain.bike_summary import WorkoutBikeSummary
+from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 from features.workout.domain.session import (
     WorkoutSession,
     WorkoutStatus,
@@ -38,11 +41,64 @@ class SqlAlchemyWorkoutRepository:
                     started_at=workout.started_at,
                     status=workout.status.value,
                     total_duration_minutes=(workout.total_duration_minutes),
+                    workout_type=(
+                        workout.workout_type.value if workout.workout_type is not None else None
+                    ),
                     elapsed_seconds=workout.elapsed_seconds,
                     distance_m=workout.distance_m,
                     video_id=workout.video_id,
                     video_position_seconds=workout.video_position_seconds,
                     completed_at=workout.completed_at,
+                    heart_rate_sample_count=(
+                        workout.heart_rate_summary.sample_count
+                        if workout.heart_rate_summary is not None
+                        else None
+                    ),
+                    heart_rate_average_bpm=(
+                        workout.heart_rate_summary.average_bpm
+                        if workout.heart_rate_summary is not None
+                        else None
+                    ),
+                    heart_rate_max_bpm=(
+                        workout.heart_rate_summary.max_bpm
+                        if workout.heart_rate_summary is not None
+                        else None
+                    ),
+                    heart_rate_below_target_percent=(
+                        workout.heart_rate_summary.below_target_percent
+                        if workout.heart_rate_summary is not None
+                        else None
+                    ),
+                    heart_rate_in_target_percent=(
+                        workout.heart_rate_summary.in_target_percent
+                        if workout.heart_rate_summary is not None
+                        else None
+                    ),
+                    heart_rate_above_target_percent=(
+                        workout.heart_rate_summary.above_target_percent
+                        if workout.heart_rate_summary is not None
+                        else None
+                    ),
+                    bike_power_sample_count=(
+                        workout.bike_summary.power_sample_count
+                        if workout.bike_summary is not None
+                        else None
+                    ),
+                    bike_average_power_w=(
+                        workout.bike_summary.average_power_w
+                        if workout.bike_summary is not None
+                        else None
+                    ),
+                    bike_cadence_sample_count=(
+                        workout.bike_summary.cadence_sample_count
+                        if workout.bike_summary is not None
+                        else None
+                    ),
+                    bike_average_cadence_rpm=(
+                        workout.bike_summary.average_cadence_rpm
+                        if workout.bike_summary is not None
+                        else None
+                    ),
                 )
 
                 model.phases = [
@@ -60,11 +116,32 @@ class SqlAlchemyWorkoutRepository:
 
             else:
                 existing.status = workout.status.value
+                existing.workout_type = (
+                    workout.workout_type.value if workout.workout_type is not None else None
+                )
                 existing.elapsed_seconds = workout.elapsed_seconds
                 existing.distance_m = workout.distance_m
                 existing.video_id = workout.video_id
                 existing.video_position_seconds = workout.video_position_seconds
                 existing.completed_at = workout.completed_at
+                if workout.heart_rate_summary is not None:
+                    existing.heart_rate_sample_count = workout.heart_rate_summary.sample_count
+                    existing.heart_rate_average_bpm = workout.heart_rate_summary.average_bpm
+                    existing.heart_rate_max_bpm = workout.heart_rate_summary.max_bpm
+                    existing.heart_rate_below_target_percent = (
+                        workout.heart_rate_summary.below_target_percent
+                    )
+                    existing.heart_rate_in_target_percent = (
+                        workout.heart_rate_summary.in_target_percent
+                    )
+                    existing.heart_rate_above_target_percent = (
+                        workout.heart_rate_summary.above_target_percent
+                    )
+                if workout.bike_summary is not None:
+                    existing.bike_power_sample_count = workout.bike_summary.power_sample_count
+                    existing.bike_average_power_w = workout.bike_summary.average_power_w
+                    existing.bike_cadence_sample_count = workout.bike_summary.cadence_sample_count
+                    existing.bike_average_cadence_rpm = workout.bike_summary.average_cadence_rpm
 
             session.commit()
 
@@ -115,11 +192,42 @@ class SqlAlchemyWorkoutRepository:
             started_at=model.started_at,
             status=WorkoutStatus(model.status),
             total_duration_minutes=model.total_duration_minutes,
+            workout_type=(
+                WorkoutType(model.workout_type) if model.workout_type is not None else None
+            ),
             elapsed_seconds=model.elapsed_seconds,
             distance_m=model.distance_m,
             video_id=model.video_id,
             video_position_seconds=model.video_position_seconds,
             completed_at=model.completed_at,
+            heart_rate_summary=(
+                WorkoutHeartRateSummary(
+                    sample_count=model.heart_rate_sample_count,
+                    average_bpm=model.heart_rate_average_bpm,
+                    max_bpm=model.heart_rate_max_bpm,
+                    below_target_percent=model.heart_rate_below_target_percent,
+                    in_target_percent=model.heart_rate_in_target_percent,
+                    above_target_percent=model.heart_rate_above_target_percent,
+                )
+                if model.heart_rate_sample_count is not None
+                and model.heart_rate_average_bpm is not None
+                and model.heart_rate_max_bpm is not None
+                and model.heart_rate_below_target_percent is not None
+                and model.heart_rate_in_target_percent is not None
+                and model.heart_rate_above_target_percent is not None
+                else None
+            ),
+            bike_summary=(
+                WorkoutBikeSummary(
+                    power_sample_count=model.bike_power_sample_count or 0,
+                    average_power_w=model.bike_average_power_w,
+                    cadence_sample_count=model.bike_cadence_sample_count or 0,
+                    average_cadence_rpm=model.bike_average_cadence_rpm,
+                )
+                if model.bike_power_sample_count is not None
+                or model.bike_cadence_sample_count is not None
+                else None
+            ),
             phases=tuple(
                 WorkoutPhase(
                     phase_type=(WorkoutPhaseType(phase.phase_type)),

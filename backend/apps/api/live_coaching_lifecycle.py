@@ -3,11 +3,15 @@ from typing import Literal
 
 from features.coaching.domain.live_coaching import (
     CoachingAction,
+    HeartRateDeviationSeverity,
     LiveCoachingDecision,
     LiveCoachingStructureEvent,
 )
 from features.coaching.service.live_coaching_coordinator import LiveCoachingCoordinator
 from features.telemetry.domain.health.heart_rate import HeartRateSample
+from features.telemetry.domain.telemetry.bike import BikeTelemetry
+from features.workout.domain.bike_summary import WorkoutBikeSummary
+from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 from features.workout.domain.runtime import WorkoutRuntimeState
 from features.workout.domain.session import WorkoutSession
 
@@ -37,6 +41,7 @@ class LiveCoachingLifecycle:
         self._structure_handler = structure_handler
         self._last_decision: LiveCoachingDecision | None = None
         self._last_emitted_action: CoachingAction | None = None
+        self._last_emitted_severity: HeartRateDeviationSeverity | None = None
 
     @property
     def active_workout_id(self) -> str | None:
@@ -88,6 +93,7 @@ class LiveCoachingLifecycle:
 
         self._last_decision = None
         self._last_emitted_action = None
+        self._last_emitted_severity = None
 
         if self._runtime_handler is None:
             return
@@ -97,6 +103,25 @@ class LiveCoachingLifecycle:
         elif previous_state is WorkoutRuntimeState.PAUSED:
             self._runtime_handler(workout_id, "coaching.pause_ended")
 
+    def handle_bike_telemetry(self, telemetry: BikeTelemetry) -> None:
+        self._coordinator.handle_bike_telemetry(telemetry)
+
+    def workout_bike_summary(
+        self,
+        workout_id: str,
+    ) -> WorkoutBikeSummary | None:
+        if self._coordinator.active_workout_id != workout_id:
+            return None
+        return self._coordinator.bike_summary(workout_id=workout_id)
+
+    def workout_heart_rate_summary(
+        self,
+        workout_id: str,
+    ) -> WorkoutHeartRateSummary | None:
+        if self._coordinator.active_workout_id != workout_id:
+            return None
+        return self._coordinator.heart_rate_summary(workout_id=workout_id)
+
     def workout_finished(self, workout: WorkoutSession) -> None:
         if self._coordinator.active_workout_id != workout.id:
             return
@@ -104,6 +129,7 @@ class LiveCoachingLifecycle:
         self._coordinator.finish(workout_id=workout.id)
         self._last_decision = None
         self._last_emitted_action = None
+        self._last_emitted_severity = None
 
     def handle_heart_rate(self, sample: HeartRateSample) -> None:
         decision = self._coordinator.handle_heart_rate(sample)
@@ -111,9 +137,16 @@ class LiveCoachingLifecycle:
 
         if decision is None or decision.action is CoachingAction.NONE:
             self._last_emitted_action = None
+            self._last_emitted_severity = None
             return
 
-        if decision.action is self._last_emitted_action:
+        same_action = decision.action is self._last_emitted_action
+        severity_escalated = (
+            same_action
+            and self._last_emitted_severity is HeartRateDeviationSeverity.MODERATE
+            and decision.deviation_severity is HeartRateDeviationSeverity.LARGE
+        )
+        if same_action and not severity_escalated:
             return
 
         workout_id = self._coordinator.active_workout_id
@@ -124,6 +157,7 @@ class LiveCoachingLifecycle:
             self._decision_handler(workout_id, sample, decision)
 
         self._last_emitted_action = decision.action
+        self._last_emitted_severity = decision.deviation_severity
 
     def _activate(self, workout: WorkoutSession) -> None:
         active_workout_id = self._coordinator.active_workout_id
@@ -137,3 +171,4 @@ class LiveCoachingLifecycle:
         self._coordinator.start(workout)
         self._last_decision = None
         self._last_emitted_action = None
+        self._last_emitted_severity = None

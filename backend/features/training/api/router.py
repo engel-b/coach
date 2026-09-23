@@ -4,6 +4,8 @@ from fastapi import APIRouter, HTTPException, Path
 
 from apps.api import wiring
 from features.training.api.contracts.training import (
+    HeartRateHistoryResponse,
+    HeartRateTargetBasisResponse,
     TrainingRecommendationResponse,
     WeightGoalProgressResponse,
     WorkoutPhaseResponse,
@@ -63,10 +65,62 @@ async def training_recommendation(
 
     recommendation = create_training_recommendation(person_id)
 
+    if recommendation.heart_rate_target_basis is None:
+        raise RuntimeError("training recommendation is missing heart-rate target basis")
+
     return TrainingRecommendationResponse(
         workout_type=recommendation.workout_type.value,
         total_duration_minutes=(recommendation.total_duration_minutes),
         reason=recommendation.reason,
+        heart_rate_target_basis=HeartRateTargetBasisResponse(
+            method=recommendation.heart_rate_target_basis.method.value,
+            max_heart_rate_bpm=recommendation.heart_rate_target_basis.max_heart_rate_bpm,
+            resting_heart_rate_bpm=(recommendation.heart_rate_target_basis.resting_heart_rate_bpm),
+            reference_resting_heart_rate_bpm=(
+                recommendation.heart_rate_target_basis.reference_resting_heart_rate_bpm
+            ),
+            resting_heart_rate_source=(
+                recommendation.heart_rate_target_basis.resting_heart_rate_source.value
+                if recommendation.heart_rate_target_basis.resting_heart_rate_source is not None
+                else None
+            ),
+            resting_heart_rate_sample_count=(
+                recommendation.heart_rate_target_basis.resting_heart_rate_sample_count
+            ),
+        ),
+        heart_rate_history=(
+            None
+            if recommendation.heart_rate_history is None
+            else HeartRateHistoryResponse(
+                status=recommendation.heart_rate_history.status.value,
+                workout_count=recommendation.heart_rate_history.workout_count,
+                workout_type=(
+                    recommendation.heart_rate_history.workout_type.value
+                    if recommendation.heart_rate_history.workout_type is not None
+                    else None
+                ),
+                median_in_target_percent=(
+                    recommendation.heart_rate_history.median_in_target_percent
+                ),
+                median_above_target_percent=(
+                    recommendation.heart_rate_history.median_above_target_percent
+                ),
+                median_below_target_percent=(
+                    recommendation.heart_rate_history.median_below_target_percent
+                ),
+                max_duration_minutes=(recommendation.heart_rate_history.max_duration_minutes),
+                response_trend=(recommendation.heart_rate_history.response_trend.value),
+                median_target_position_percent=(
+                    recommendation.heart_rate_history.median_target_position_percent
+                ),
+                target_position_change_points=(
+                    recommendation.heart_rate_history.target_position_change_points
+                ),
+                load_adjusted_trend=(recommendation.heart_rate_history.load_adjusted_trend.value),
+                median_power_w=recommendation.heart_rate_history.median_power_w,
+                power_change_percent=(recommendation.heart_rate_history.power_change_percent),
+            )
+        ),
         weight_goal_progress=(
             None
             if recommendation.weight_goal_progress is None

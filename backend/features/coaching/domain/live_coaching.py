@@ -10,6 +10,14 @@ class HeartRateZoneStatus(StrEnum):
     ABOVE_TARGET = "above_target"
 
 
+class HeartRateDeviationSeverity(StrEnum):
+    """Ausmaß einer Abweichung außerhalb des tolerierten Zielbereichs."""
+
+    NONE = "none"
+    MODERATE = "moderate"
+    LARGE = "large"
+
+
 class CoachingAction(StrEnum):
     """Fachliche Aktion des Live Coaches, noch ohne Sprachformulierung."""
 
@@ -44,6 +52,8 @@ class LiveCoachingDecision:
     target_min_bpm: int
     target_max_bpm: int
     outside_target_seconds: float
+    deviation_bpm: int
+    deviation_severity: HeartRateDeviationSeverity
     reason: str
 
 
@@ -85,3 +95,6 @@ class LiveCoachingRules:
     """Konfigurierbare Regeln für die erste Live-Coaching-Version."""
 
     deviation_seconds_before_action: float = 20.0
+    target_tolerance_bpm: int = 0
+    large_deviation_bpm: int = 15
+    large_deviation_seconds_before_action: float = 8.0

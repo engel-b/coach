@@ -13,6 +13,8 @@ const validEvent = {
   targetMinBpm: 125,
   targetMaxBpm: 145,
   outsideTargetSeconds: 21,
+  deviationBpm: 4,
+  deviationSeverity: "moderate",
   reason: "heart_rate_above_target_long_enough",
 };
 

@@ -3,6 +3,8 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from features.training.domain.recommendation import TrainingRecommendation
+from features.workout.domain.bike_summary import WorkoutBikeSummary
+from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 from features.workout.domain.repository import WorkoutRepository
 from features.workout.domain.session import DEFAULT_VIDEO_ID, WorkoutSession, WorkoutStatus
 from features.workout.domain.summary import WorkoutSummary, create_workout_summary
@@ -80,6 +82,7 @@ class WorkoutService:
             status=WorkoutStatus.RUNNING,
             phases=recommendation.phases,
             total_duration_minutes=recommendation.total_duration_minutes,
+            workout_type=recommendation.workout_type,
             video_id=selected_video_id,
             video_position_seconds=video_position_seconds,
         )
@@ -121,6 +124,8 @@ class WorkoutService:
         *,
         elapsed_seconds: int,
         distance_m: int,
+        heart_rate_summary: WorkoutHeartRateSummary | None = None,
+        bike_summary: WorkoutBikeSummary | None = None,
     ) -> WorkoutSession:
         workout = self._get_running_workout(workout_id)
 
@@ -139,6 +144,8 @@ class WorkoutService:
             elapsed_seconds=elapsed_seconds,
             distance_m=distance_m,
             completed_at=datetime.now(UTC),
+            heart_rate_summary=heart_rate_summary,
+            bike_summary=bike_summary,
         )
 
         self._repository.save(finished)
@@ -165,6 +172,8 @@ class WorkoutService:
             elapsed_seconds=(workout.elapsed_seconds),
             distance_m=(workout.distance_m),
             status=workout.status,
+            heart_rate_summary=workout.heart_rate_summary,
+            bike_summary=workout.bike_summary,
         )
 
     def _get_running_workout(

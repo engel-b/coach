@@ -237,11 +237,17 @@ async def finish_workout(
     workout_id: str,
     request: FinishWorkoutRequest,
 ) -> WorkoutResponse:
+    heart_rate_summary = wiring.live_coaching_lifecycle.workout_heart_rate_summary(workout_id)
+
+    bike_summary = wiring.live_coaching_lifecycle.workout_bike_summary(workout_id)
+
     try:
         workout = wiring.workout_service.finish(
             workout_id,
             elapsed_seconds=request.elapsed_seconds,
             distance_m=request.distance_m,
+            heart_rate_summary=heart_rate_summary,
+            bike_summary=bike_summary,
         )
     except WorkoutNotFoundError as exc:
         raise HTTPException(

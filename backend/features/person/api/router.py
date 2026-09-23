@@ -85,6 +85,7 @@ async def create_person(
             height_cm=request.height_cm,
             training_goal=request.training_goal,
             max_heart_rate_bpm=request.max_heart_rate_bpm,
+            resting_heart_rate_bpm=request.resting_heart_rate_bpm,
             start_weight_kg=request.start_weight_kg,
             target_weight_kg=request.target_weight_kg,
         )
@@ -101,6 +102,7 @@ async def create_person(
         height_cm=profile.height_cm,
         training_goal=profile.training_goal,
         max_heart_rate_bpm=profile.max_heart_rate_bpm,
+        resting_heart_rate_bpm=profile.resting_heart_rate_bpm,
         start_weight_kg=profile.start_weight_kg,
         target_weight_kg=profile.target_weight_kg,
     )
@@ -148,6 +150,7 @@ async def get_person_profile(
         height_cm=profile.height_cm,
         training_goal=profile.training_goal,
         max_heart_rate_bpm=profile.max_heart_rate_bpm,
+        resting_heart_rate_bpm=profile.resting_heart_rate_bpm,
         start_weight_kg=profile.start_weight_kg,
         target_weight_kg=profile.target_weight_kg,
     )
@@ -196,6 +199,7 @@ async def update_person_profile(
         height_cm=request.height_cm,
         training_goal=request.training_goal,
         max_heart_rate_bpm=request.max_heart_rate_bpm,
+        resting_heart_rate_bpm=request.resting_heart_rate_bpm,
         start_weight_kg=request.start_weight_kg,
         target_weight_kg=request.target_weight_kg,
     )
@@ -224,6 +228,7 @@ async def update_person_profile(
         height_cm=saved_profile.height_cm,
         training_goal=saved_profile.training_goal,
         max_heart_rate_bpm=saved_profile.max_heart_rate_bpm,
+        resting_heart_rate_bpm=saved_profile.resting_heart_rate_bpm,
         start_weight_kg=saved_profile.start_weight_kg,
         target_weight_kg=saved_profile.target_weight_kg,
     )

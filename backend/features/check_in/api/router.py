@@ -64,6 +64,7 @@ async def create_check_in(
             current_weight_kg=request.current_weight_kg,
             sleep_hours=request.sleep_hours,
             steps=request.steps,
+            resting_heart_rate_bpm=request.resting_heart_rate_bpm,
         )
     except InvalidCheckInError as exc:
         raise HTTPException(
@@ -151,4 +152,5 @@ def _to_response(check_in: CheckIn) -> CheckInResponse:
         current_weight_kg=check_in.current_weight_kg,
         sleep_hours=check_in.sleep_hours,
         steps=check_in.steps,
+        resting_heart_rate_bpm=check_in.resting_heart_rate_bpm,
     )

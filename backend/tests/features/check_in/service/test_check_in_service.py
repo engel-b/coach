@@ -75,3 +75,34 @@ def test_invalid_training_time_is_rejected() -> None:
             stress=2,
             available_training_minutes=42,
         )
+
+
+def test_resting_heart_rate_can_be_recorded() -> None:
+    service = CheckInService(InMemoryCheckInRepository())
+
+    check_in = service.create(
+        person_id=1,
+        energy=4,
+        recovery=4,
+        muscle_soreness=1,
+        stress=2,
+        available_training_minutes=30,
+        resting_heart_rate_bpm=78,
+    )
+
+    assert check_in.resting_heart_rate_bpm == 78
+
+
+def test_invalid_resting_heart_rate_is_rejected() -> None:
+    service = CheckInService(InMemoryCheckInRepository())
+
+    with pytest.raises(InvalidCheckInError):
+        service.create(
+            person_id=1,
+            energy=4,
+            recovery=4,
+            muscle_soreness=1,
+            stress=2,
+            available_training_minutes=30,
+            resting_heart_rate_bpm=130,
+        )

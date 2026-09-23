@@ -34,6 +34,7 @@ def context(
     daily_activity_status: DailyActivityStatus = DailyActivityStatus.NORMAL,
     recent_training_load_status: RecentTrainingLoadStatus = RecentTrainingLoadStatus.LOW,
     max_duration_minutes: int | None = None,
+    resting_heart_rate: int | None = None,
     trend_direction: WeightTrendDirection = WeightTrendDirection.DOWN,
     start_weight_kg: float | None = 100.0,
     current_weight_kg: float | None = 92.4,
@@ -114,6 +115,7 @@ def context(
             recent_workout_count=0,
             max_duration_minutes=max_duration_minutes,
         ),
+        resting_heart_rate=resting_heart_rate,
     )
 
 
@@ -230,3 +232,43 @@ def test_weight_goal_progress_since_start_is_explained() -> None:
 
     assert "8.0 kg verloren" in recommendation.reason
     assert "40 %" in recommendation.reason
+
+
+def test_resting_heart_rate_personalizes_phase_targets() -> None:
+    recommendation = planner().recommend(context(resting_heart_rate=90))
+
+    main_phase = next(phase for phase in recommendation.phases if phase.phase_type.value == "main")
+    assert main_phase.target_heart_rate_min == 126
+    assert main_phase.target_heart_rate_max == 140
+
+
+def test_high_heart_rate_history_can_only_reduce_duration() -> None:
+    from features.training.domain.heart_rate_history import (
+        HeartRateHistoryContext,
+        HeartRateHistoryStatus,
+    )
+
+    coaching_context = context(available_training_minutes=60)
+    coaching_context = PreWorkoutCoachingContext(
+        **{
+            **coaching_context.__dict__,
+            "heart_rate_history": HeartRateHistoryContext(
+                status=HeartRateHistoryStatus.MOSTLY_ABOVE_TARGET,
+                workout_count=4,
+                median_in_target_percent=45,
+                median_above_target_percent=45,
+                median_below_target_percent=10,
+                max_duration_minutes=30,
+            ),
+        }
+    )
+
+    recommendation = planner().recommend(coaching_context)
+
+    assert recommendation.total_duration_minutes == 30
+    assert (
+        RecommendationReasonCode.DURATION_REDUCED_FOR_HEART_RATE_HISTORY
+        in recommendation.reason_codes
+    )
+    assert RecommendationReasonCode.HEART_RATE_HISTORY_ABOVE_TARGET in recommendation.reason_codes
+    assert "Zielpuls- und Safety-Grenzen werden dadurch nicht angehoben" in recommendation.reason

@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from apps.api.live_coaching_event_publisher import LiveCoachingEventPublisher
 from features.coaching.domain.live_coaching import (
     CoachingAction,
+    HeartRateDeviationSeverity,
     HeartRateZoneStatus,
     LiveCoachingDecision,
 )
@@ -37,6 +38,8 @@ async def test_publisher_schedules_websocket_event() -> None:
         target_min_bpm=125,
         target_max_bpm=145,
         outside_target_seconds=21.0,
+        deviation_bpm=4,
+        deviation_severity=HeartRateDeviationSeverity.MODERATE,
         reason="heart_rate_above_target_long_enough",
     )
 
@@ -60,6 +63,8 @@ async def test_publisher_schedules_websocket_event() -> None:
         "targetMinBpm": 125,
         "targetMaxBpm": 145,
         "outsideTargetSeconds": 21.0,
+        "deviationBpm": 4,
+        "deviationSeverity": "moderate",
         "reason": "heart_rate_above_target_long_enough",
     }
 

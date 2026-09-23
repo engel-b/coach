@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 from features.telemetry.api.contracts.telemetry import TelemetryMessage
 from features.telemetry.domain.health.device import DeviceStatus, DeviceType
 from features.telemetry.domain.health.heart_rate import HeartRateSample
+from features.telemetry.domain.telemetry.bike import BikeTelemetry
 from features.telemetry.service.service import TelemetryService
 
 DEVICE_ID = "AA:BB:CC:DD:EE:FF"
@@ -425,3 +426,65 @@ def test_invalid_heart_rate_is_not_published() -> None:
     )
 
     assert received_samples == []
+
+
+def test_bike_telemetry_is_published_to_registered_handler() -> None:
+    service = TelemetryService()
+    received: list[BikeTelemetry] = []
+    service.add_bike_telemetry_handler(received.append)
+    timestamp = datetime(2026, 9, 23, 9, 0, tzinfo=UTC)
+
+    service.handle(
+        TelemetryMessage(
+            type="bike.telemetry",
+            timestamp=timestamp,
+            device_id="bike-01",
+            payload={
+                "powerW": 135,
+                "cadenceRpm": 78.5,
+                "speedKmh": 24.2,
+                "distanceM": 1200,
+                "resistance": 4,
+            },
+        )
+    )
+
+    assert received == [
+        BikeTelemetry(
+            device_id="bike-01",
+            timestamp=timestamp,
+            power_w=135,
+            cadence_rpm=78.5,
+            speed_kmh=24.2,
+            distance_m=1200,
+            resistance=4,
+        )
+    ]
+
+
+def test_bike_handler_does_not_repeat_stale_power_when_payload_omits_power() -> None:
+    service = TelemetryService()
+    received: list[BikeTelemetry] = []
+    service.add_bike_telemetry_handler(received.append)
+    timestamp = datetime(2026, 9, 23, 9, 0, tzinfo=UTC)
+
+    service.handle(
+        TelemetryMessage(
+            type="bike.telemetry",
+            timestamp=timestamp,
+            device_id="bike-01",
+            payload={"powerW": 135, "cadenceRpm": 78.0},
+        )
+    )
+    service.handle(
+        TelemetryMessage(
+            type="bike.telemetry",
+            timestamp=timestamp + timedelta(seconds=1),
+            device_id="bike-01",
+            payload={"cadenceRpm": 79.0},
+        )
+    )
+
+    assert received[1].power_w is None
+    assert received[1].cadence_rpm == 79.0
+    assert service.get_device("bike-01").power_w == 135  # type: ignore[union-attr]

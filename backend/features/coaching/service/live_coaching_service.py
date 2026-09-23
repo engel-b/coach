@@ -46,6 +46,7 @@ class LiveCoachingService:
             heart_rate_bpm=heart_rate_bpm,
             target_min_bpm=target_min_bpm,
             target_max_bpm=target_max_bpm,
+            target_tolerance_bpm=self._coaching_engine.target_tolerance_bpm,
         )
 
         return self._coaching_engine.evaluate(

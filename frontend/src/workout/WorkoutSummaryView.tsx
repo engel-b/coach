@@ -187,6 +187,59 @@ export function WorkoutSummaryView({
             <strong>{formatDistance(workout.distanceM)} km</strong>
             <small>Gespeicherter Trainingswert</small>
           </div>
+          {summary?.heartRateSummary !== null &&
+            summary?.heartRateSummary !== undefined && (
+              <>
+                <div>
+                  <span>Ø Puls Hauptphase</span>
+                  <strong>{summary.heartRateSummary.averageBpm} bpm</strong>
+                  <small>
+                    {summary.heartRateSummary.sampleCount} Messwerte
+                  </small>
+                </div>
+                <div>
+                  <span>Im Zielbereich</span>
+                  <strong>{summary.heartRateSummary.inTargetPercent} %</strong>
+                  <small>Während der Hauptphase</small>
+                </div>
+                <div>
+                  <span>Über Zielbereich</span>
+                  <strong>
+                    {summary.heartRateSummary.aboveTargetPercent} %
+                  </strong>
+                  <small>Nur deskriptiv ausgewertet</small>
+                </div>
+              </>
+            )}
+          {summary?.bikeSummary !== null &&
+            summary?.bikeSummary !== undefined && (
+              <>
+                {summary.bikeSummary.averagePowerW !== null && (
+                  <div>
+                    <span>Ø Leistung Hauptphase</span>
+                    <strong>{summary.bikeSummary.averagePowerW} W</strong>
+                    <small>
+                      {summary.bikeSummary.powerSampleCount} Messwerte
+                    </small>
+                  </div>
+                )}
+                {summary.bikeSummary.averageCadenceRpm !== null && (
+                  <div>
+                    <span>Ø Kadenz Hauptphase</span>
+                    <strong>
+                      {summary.bikeSummary.averageCadenceRpm.toLocaleString(
+                        "de-DE",
+                        { maximumFractionDigits: 1 },
+                      )}{" "}
+                      rpm
+                    </strong>
+                    <small>
+                      {summary.bikeSummary.cadenceSampleCount} Messwerte
+                    </small>
+                  </div>
+                )}
+              </>
+            )}
         </div>
       </section>
 

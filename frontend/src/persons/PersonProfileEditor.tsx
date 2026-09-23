@@ -168,6 +168,24 @@ function ProfileForm({
         </label>
 
         <label>
+          <span>Ruhepuls</span>
+          <input
+            name="restingHeartRateBpm"
+            type="number"
+            min={35}
+            max={120}
+            defaultValue={profile?.restingHeartRateBpm ?? ""}
+            placeholder="optional"
+          />
+          <span className="field-hint">
+            Optional. Verwende einen typischen Ruhewert, der mehrfach in ruhiger
+            Situation gemessen wurde. Er personalisiert die
+            Trainings-Zielbereiche; ein hoher Wert hebt die Grenzen nicht
+            unbegrenzt an.
+          </span>
+        </label>
+
+        <label>
           <span>Startgewicht in kg</span>
           <input
             name="startWeightKg"
@@ -337,6 +355,9 @@ export function PersonProfileEditor({
       trainingGoal: String(formData.get("trainingGoal")) as TrainingGoal,
       maxHeartRateBpm: optionalNumber(
         String(formData.get("maxHeartRateBpm") ?? ""),
+      ),
+      restingHeartRateBpm: optionalNumber(
+        String(formData.get("restingHeartRateBpm") ?? ""),
       ),
       startWeightKg: optionalNumber(
         String(formData.get("startWeightKg") ?? ""),

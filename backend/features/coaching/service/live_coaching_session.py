@@ -7,6 +7,9 @@ from features.coaching.domain.live_coaching import (
 )
 from features.coaching.service.live_coaching_service import LiveCoachingService
 from features.telemetry.domain.health.heart_rate import HeartRateSample
+from features.telemetry.domain.telemetry.bike import BikeTelemetry
+from features.workout.domain.bike_summary import WorkoutBikeSummary
+from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 from features.workout.domain.phase_progress import get_current_phase
 from features.workout.domain.runtime import WorkoutRuntimeState
 from features.workout.domain.session import WorkoutSession, WorkoutStatus
@@ -37,6 +40,16 @@ class LiveCoachingSession:
         self._runtime_state = WorkoutRuntimeState.RUNNING
         progress = get_current_phase(workout, elapsed_seconds=workout.elapsed_seconds)
         self._phase_index = progress.phase_index if progress is not None else None
+        self._main_hr_sample_count = 0
+        self._main_hr_sum_bpm = 0
+        self._main_hr_max_bpm: int | None = None
+        self._main_hr_below_target_count = 0
+        self._main_hr_in_target_count = 0
+        self._main_hr_above_target_count = 0
+        self._main_power_sample_count = 0
+        self._main_power_sum_w = 0
+        self._main_cadence_sample_count = 0
+        self._main_cadence_sum_rpm = 0.0
 
     @property
     def workout_id(self) -> str:
@@ -105,12 +118,95 @@ class LiveCoachingSession:
 
         phase = progress.phase
 
+        if phase.phase_type.value == "main":
+            self._record_main_heart_rate(
+                heart_rate_bpm=sample.bpm,
+                target_min_bpm=phase.target_heart_rate_min,
+                target_max_bpm=phase.target_heart_rate_max,
+            )
+
         return self._coaching_service.evaluate_heart_rate(
             timestamp_seconds=sample.timestamp.timestamp(),
             heart_rate_bpm=sample.bpm,
             target_min_bpm=phase.target_heart_rate_min,
             target_max_bpm=phase.target_heart_rate_max,
         )
+
+    def handle_bike_telemetry(self, telemetry: BikeTelemetry) -> None:
+        if self._runtime_state is not WorkoutRuntimeState.RUNNING:
+            return
+
+        progress = get_current_phase(
+            self._workout,
+            elapsed_seconds=self._elapsed_seconds,
+        )
+        if progress is None or progress.phase.phase_type.value != "main":
+            return
+
+        if telemetry.power_w is not None and telemetry.power_w >= 0:
+            self._main_power_sample_count += 1
+            self._main_power_sum_w += telemetry.power_w
+
+        if telemetry.cadence_rpm is not None and telemetry.cadence_rpm >= 0:
+            self._main_cadence_sample_count += 1
+            self._main_cadence_sum_rpm += telemetry.cadence_rpm
+
+    def bike_summary(self) -> WorkoutBikeSummary | None:
+        if self._main_power_sample_count == 0 and self._main_cadence_sample_count == 0:
+            return None
+
+        return WorkoutBikeSummary(
+            power_sample_count=self._main_power_sample_count,
+            average_power_w=(
+                round(self._main_power_sum_w / self._main_power_sample_count)
+                if self._main_power_sample_count > 0
+                else None
+            ),
+            cadence_sample_count=self._main_cadence_sample_count,
+            average_cadence_rpm=(
+                round(self._main_cadence_sum_rpm / self._main_cadence_sample_count, 1)
+                if self._main_cadence_sample_count > 0
+                else None
+            ),
+        )
+
+    def heart_rate_summary(self) -> WorkoutHeartRateSummary | None:
+        if self._main_hr_sample_count == 0 or self._main_hr_max_bpm is None:
+            return None
+
+        def percent(count: int) -> int:
+            return round(count / self._main_hr_sample_count * 100)
+
+        return WorkoutHeartRateSummary(
+            sample_count=self._main_hr_sample_count,
+            average_bpm=round(self._main_hr_sum_bpm / self._main_hr_sample_count),
+            max_bpm=self._main_hr_max_bpm,
+            below_target_percent=percent(self._main_hr_below_target_count),
+            in_target_percent=percent(self._main_hr_in_target_count),
+            above_target_percent=percent(self._main_hr_above_target_count),
+        )
+
+    def _record_main_heart_rate(
+        self,
+        *,
+        heart_rate_bpm: int,
+        target_min_bpm: int,
+        target_max_bpm: int,
+    ) -> None:
+        self._main_hr_sample_count += 1
+        self._main_hr_sum_bpm += heart_rate_bpm
+        self._main_hr_max_bpm = (
+            heart_rate_bpm
+            if self._main_hr_max_bpm is None
+            else max(self._main_hr_max_bpm, heart_rate_bpm)
+        )
+
+        if heart_rate_bpm < target_min_bpm:
+            self._main_hr_below_target_count += 1
+        elif heart_rate_bpm > target_max_bpm:
+            self._main_hr_above_target_count += 1
+        else:
+            self._main_hr_in_target_count += 1
 
     def _structure_events_crossed(
         self,

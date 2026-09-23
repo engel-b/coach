@@ -1,4 +1,6 @@
 from features.workout.api.contracts.workout import (
+    WorkoutBikeSummaryResponse,
+    WorkoutHeartRateSummaryResponse,
     WorkoutPhaseResponse,
     WorkoutResponse,
     WorkoutSummaryResponse,
@@ -51,4 +53,26 @@ def to_workout_summary_response(
         distance_m=summary.distance_m,
         completion_percent=summary.completion_percent,
         status=summary.status.value,
+        heart_rate_summary=(
+            WorkoutHeartRateSummaryResponse(
+                sample_count=summary.heart_rate_summary.sample_count,
+                average_bpm=summary.heart_rate_summary.average_bpm,
+                max_bpm=summary.heart_rate_summary.max_bpm,
+                below_target_percent=summary.heart_rate_summary.below_target_percent,
+                in_target_percent=summary.heart_rate_summary.in_target_percent,
+                above_target_percent=summary.heart_rate_summary.above_target_percent,
+            )
+            if summary.heart_rate_summary is not None
+            else None
+        ),
+        bike_summary=(
+            WorkoutBikeSummaryResponse(
+                power_sample_count=summary.bike_summary.power_sample_count,
+                average_power_w=summary.bike_summary.average_power_w,
+                cadence_sample_count=summary.bike_summary.cadence_sample_count,
+                average_cadence_rpm=summary.bike_summary.average_cadence_rpm,
+            )
+            if summary.bike_summary is not None
+            else None
+        ),
     )

@@ -25,10 +25,14 @@ export function coachingMessage(event: LiveCoachingEvent): string {
 
       switch (event.action) {
         case "increase_intensity":
-          return `Dein Puls liegt seit ${seconds} s unter dem Zielbereich. Erhöhe die Intensität etwas.`;
+          return event.deviationSeverity === "large"
+            ? `Dein Puls liegt deutlich unter dem Zielbereich (${event.deviationBpm} bpm). Erhöhe die Intensität kontrolliert.`
+            : `Dein Puls liegt seit ${seconds} s unter dem Zielbereich. Erhöhe die Intensität etwas.`;
 
         case "reduce_intensity":
-          return `Dein Puls liegt seit ${seconds} s über dem Zielbereich. Nimm etwas Tempo heraus.`;
+          return event.deviationSeverity === "large"
+            ? `Dein Puls liegt deutlich über dem Zielbereich (${event.deviationBpm} bpm). Nimm jetzt Tempo heraus.`
+            : `Dein Puls liegt seit ${seconds} s über dem Zielbereich. Nimm etwas Tempo heraus.`;
       }
     }
   }
