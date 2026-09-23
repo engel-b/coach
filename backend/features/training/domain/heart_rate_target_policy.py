@@ -1,7 +1,12 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from features.training.domain.recommendation import WorkoutPhaseType, WorkoutType
+from features.training.domain.recommendation import (
+    HeartRateTargetBasis,
+    HeartRateTargetMethod,
+    WorkoutPhaseType,
+    WorkoutType,
+)
 
 
 @dataclass(frozen=True)
@@ -49,24 +54,21 @@ class HeartRateTargetPolicy:
         (WorkoutType.MODERATE, WorkoutPhaseType.COOL_DOWN): (0.50, 0.60),
     }
 
-    def calculate(
+    def describe_basis(
         self,
         *,
-        workout_type: WorkoutType,
-        phase_type: WorkoutPhaseType,
         max_heart_rate_bpm: int,
         resting_heart_rate_bpm: int | None,
-    ) -> HeartRateTargetRange:
+    ) -> HeartRateTargetBasis:
         if max_heart_rate_bpm <= 0:
             raise ValueError("max_heart_rate_bpm must be positive")
 
-        key = (workout_type, phase_type)
-
         if resting_heart_rate_bpm is None:
-            minimum_factor, maximum_factor = self._MAX_HR_FALLBACK_INTENSITIES[key]
-            return HeartRateTargetRange(
-                minimum_bpm=round(max_heart_rate_bpm * minimum_factor),
-                maximum_bpm=round(max_heart_rate_bpm * maximum_factor),
+            return HeartRateTargetBasis(
+                method=HeartRateTargetMethod.MAX_HEART_RATE_PERCENTAGE,
+                max_heart_rate_bpm=max_heart_rate_bpm,
+                resting_heart_rate_bpm=None,
+                reference_resting_heart_rate_bpm=None,
             )
 
         if resting_heart_rate_bpm <= 0:
@@ -76,10 +78,42 @@ class HeartRateTargetPolicy:
             self.MAX_REFERENCE_RESTING_HEART_RATE_BPM,
             max(self.MIN_REFERENCE_RESTING_HEART_RATE_BPM, resting_heart_rate_bpm),
         )
-        reserve = max_heart_rate_bpm - reference_resting
-        if reserve <= 0:
+        if max_heart_rate_bpm <= reference_resting:
             raise ValueError("max_heart_rate_bpm must exceed resting heart rate reference")
 
+        return HeartRateTargetBasis(
+            method=HeartRateTargetMethod.HEART_RATE_RESERVE,
+            max_heart_rate_bpm=max_heart_rate_bpm,
+            resting_heart_rate_bpm=resting_heart_rate_bpm,
+            reference_resting_heart_rate_bpm=reference_resting,
+        )
+
+    def calculate(
+        self,
+        *,
+        workout_type: WorkoutType,
+        phase_type: WorkoutPhaseType,
+        max_heart_rate_bpm: int,
+        resting_heart_rate_bpm: int | None,
+    ) -> HeartRateTargetRange:
+        key = (workout_type, phase_type)
+        basis = self.describe_basis(
+            max_heart_rate_bpm=max_heart_rate_bpm,
+            resting_heart_rate_bpm=resting_heart_rate_bpm,
+        )
+
+        if basis.method is HeartRateTargetMethod.MAX_HEART_RATE_PERCENTAGE:
+            minimum_factor, maximum_factor = self._MAX_HR_FALLBACK_INTENSITIES[key]
+            return HeartRateTargetRange(
+                minimum_bpm=round(max_heart_rate_bpm * minimum_factor),
+                maximum_bpm=round(max_heart_rate_bpm * maximum_factor),
+            )
+
+        reference_resting = basis.reference_resting_heart_rate_bpm
+        if reference_resting is None:
+            raise RuntimeError("heart-rate-reserve basis requires a resting-heart-rate reference")
+
+        reserve = max_heart_rate_bpm - reference_resting
         minimum_factor, maximum_factor = self._HRR_INTENSITIES[key]
         return HeartRateTargetRange(
             minimum_bpm=round(reference_resting + reserve * minimum_factor),

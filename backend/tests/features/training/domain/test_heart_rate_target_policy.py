@@ -57,3 +57,25 @@ def test_rejects_invalid_resting_heart_rate_reference() -> None:
             max_heart_rate_bpm=80,
             resting_heart_rate_bpm=100,
         )
+
+
+def test_describes_heart_rate_reserve_basis_and_capped_reference() -> None:
+    basis = HeartRateTargetPolicy().describe_basis(
+        max_heart_rate_bpm=180,
+        resting_heart_rate_bpm=98,
+    )
+
+    assert basis.method.value == "heart_rate_reserve"
+    assert basis.max_heart_rate_bpm == 180
+    assert basis.resting_heart_rate_bpm == 98
+    assert basis.reference_resting_heart_rate_bpm == 90
+
+
+def test_describes_max_heart_rate_fallback_without_resting_rate() -> None:
+    basis = HeartRateTargetPolicy().describe_basis(
+        max_heart_rate_bpm=180,
+        resting_heart_rate_bpm=None,
+    )
+
+    assert basis.method.value == "max_heart_rate_percentage"
+    assert basis.reference_resting_heart_rate_bpm is None

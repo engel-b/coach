@@ -22,6 +22,8 @@ function event(
     targetMinBpm: 125,
     targetMaxBpm: 145,
     outsideTargetSeconds,
+    deviationBpm: 4,
+    deviationSeverity: "moderate",
     reason: "test",
   };
 }

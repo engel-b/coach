@@ -23,12 +23,15 @@ function decisionEvent(action: CoachingAction): HeartRateCoachingEvent {
     targetMinBpm: 125,
     targetMaxBpm: 145,
     outsideTargetSeconds: 21,
+    deviationBpm: 4,
+    deviationSeverity: "moderate",
     reason: "test",
   };
 }
 
 const emptyState: CoachingSpeechState = {
   lastDecisionAction: null,
+  lastDecisionSeverity: null,
   lastSpokenAtMs: null,
 };
 
@@ -88,6 +91,7 @@ describe("evaluateCoachingSpeech", () => {
     expect(result.speak).toBe(true);
     expect(result.nextState).toEqual({
       lastDecisionAction: "reduce_intensity",
+      lastDecisionSeverity: "moderate",
       lastSpokenAtMs: 1_000,
     });
   });
@@ -95,6 +99,7 @@ describe("evaluateCoachingSpeech", () => {
   it("suppresses the same heart-rate action during the repeat cooldown", () => {
     const state: CoachingSpeechState = {
       lastDecisionAction: "reduce_intensity",
+      lastDecisionSeverity: "moderate",
       lastSpokenAtMs: 1_000,
     };
 
@@ -108,9 +113,28 @@ describe("evaluateCoachingSpeech", () => {
     expect(result.nextState).toBe(state);
   });
 
+  it("speaks immediately when a repeated action escalates to a large deviation", () => {
+    const state: CoachingSpeechState = {
+      lastDecisionAction: "reduce_intensity",
+      lastDecisionSeverity: "moderate",
+      lastSpokenAtMs: 1_000,
+    };
+    const event = {
+      ...decisionEvent("reduce_intensity"),
+      deviationBpm: 18,
+      deviationSeverity: "large" as const,
+    };
+
+    const result = evaluateCoachingSpeech(event, state, 5_000);
+
+    expect(result.speak).toBe(true);
+    expect(result.nextState.lastDecisionSeverity).toBe("large");
+  });
+
   it("always speaks phase changes immediately", () => {
     const state: CoachingSpeechState = {
       lastDecisionAction: "reduce_intensity",
+      lastDecisionSeverity: "moderate",
       lastSpokenAtMs: 1_000,
     };
     const phaseStarted: LiveCoachingEvent = {
@@ -134,6 +158,7 @@ describe("evaluateCoachingSpeech", () => {
   it("always speaks pause and resume runtime events", () => {
     const state: CoachingSpeechState = {
       lastDecisionAction: "reduce_intensity",
+      lastDecisionSeverity: "moderate",
       lastSpokenAtMs: 1_000,
     };
     const pause: LiveCoachingEvent = {

@@ -45,6 +45,37 @@ class WeightGoalProgressResponse(BaseModel):
     progress_percent: float | None = None
 
 
+class HeartRateTargetBasisResponse(BaseModel):
+    """Nachvollziehbare Grundlage der berechneten Zielpulsbereiche."""
+
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
+
+    method: str = Field(
+        description="Berechnungsmethode für die Zielpulsbereiche.",
+        examples=["heart_rate_reserve"],
+    )
+    max_heart_rate_bpm: int = Field(
+        description="Für die Berechnung verwendete maximale Herzfrequenz.",
+        examples=[180],
+    )
+    resting_heart_rate_bpm: int | None = Field(
+        default=None,
+        description="Im Profil hinterlegter Ruhepuls, sofern vorhanden.",
+        examples=[72],
+    )
+    reference_resting_heart_rate_bpm: int | None = Field(
+        default=None,
+        description=(
+            "Konservativ begrenzter Ruhepuls-Referenzwert, der bei der "
+            "Herzfrequenzreserve tatsächlich verwendet wurde."
+        ),
+        examples=[72],
+    )
+
+
 class TrainingRecommendationResponse(BaseModel):
     """Individuelle Empfehlung für eine Trainingseinheit."""
 
@@ -64,6 +95,9 @@ class TrainingRecommendationResponse(BaseModel):
     reason: str = Field(
         description="Fachliche Begründung für die Empfehlung.",
         examples=["Die aktuelle Tagesform eignet sich für eine moderate Trainingseinheit."],
+    )
+    heart_rate_target_basis: HeartRateTargetBasisResponse = Field(
+        description="Grundlage der Zielpulsberechnung für diese Empfehlung.",
     )
     weight_goal_progress: WeightGoalProgressResponse | None = Field(
         default=None,

@@ -420,7 +420,9 @@ Für einen belastbaren Trend wird eine Mindestanzahl an Messungen und ein Mindes
 
 Die Trainingsphasen verwenden eine zentrale `HeartRateTargetPolicy`. Ist ein persönlicher Ruhepuls im Profil hinterlegt, werden Zielbereiche aus der Herzfrequenzreserve (`HFmax - Ruhepuls`) abgeleitet. Ein hoher oder niedriger Ruhepuls wird für diese Berechnung auf einen konservativen Referenzbereich begrenzt, damit er die Trainingsziele nicht unbegrenzt verschiebt. Fehlt der Ruhepuls, bleibt die bisherige Prozent-von-HFmax-Berechnung als kompatibler Fallback aktiv.
 
-Die Zielbereiche beschreiben die gewünschte Trainingsbelastung und sind keine medizinisch garantierten Sicherheitsgrenzen. Live-Coaching bewertet kleine Abweichungen mit einer zusätzlichen Toleranz und reagiert weiterhin erst auf zeitlich anhaltende Abweichungen. HFmax bzw. daraus abgeleitete technische Grenzwerte bleiben unabhängig vom Ruhepuls.
+Die Zielbereiche beschreiben die gewünschte Trainingsbelastung und sind keine medizinisch garantierten Sicherheitsgrenzen. Die Trainingsempfehlung liefert die verwendete Berechnungsgrundlage explizit an das Frontend: Methode, HFmax, den hinterlegten Ruhepuls und gegebenenfalls den konservativ begrenzten Ruhepuls-Rechenwert. Dadurch kann die UI nachvollziehbar erklären, wie die angezeigten Zielbereiche zustande kommen.
+
+Live-Coaching bewertet kleine Abweichungen mit einer zusätzlichen Toleranz. Außerhalb dieser Toleranz wird zwischen moderaten und deutlichen Abweichungen unterschieden: moderate Abweichungen müssen länger anhalten, deutliche Abweichungen dürfen nach einer kürzeren Persistenzzeit eine Coaching-Aktion auslösen. Die Speech Policy drosselt wiederholte gleichartige Hinweise; eine Eskalation von moderat auf deutlich darf unmittelbar erneut gesprochen werden. HFmax bzw. davon unabhängige Schutzregeln bleiben vom Ruhepuls unberührt.
 
 ## 5.4 Live-Coaching-Bausteine
 

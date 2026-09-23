@@ -17,6 +17,8 @@ const WORKOUT_PHASE_TYPES: readonly WorkoutPhaseType[] = [
   "cool_down",
 ];
 
+const HEART_RATE_DEVIATION_SEVERITIES = ["moderate", "large"] as const;
+
 const HEART_RATE_ZONE_STATUSES: readonly HeartRateZoneStatus[] = [
   "below_target",
   "in_target",
@@ -125,6 +127,9 @@ function parseHeartRateDecision(
     !isFiniteNumber(value.targetMaxBpm) ||
     !isFiniteNumber(value.outsideTargetSeconds) ||
     value.outsideTargetSeconds < 0 ||
+    !isFiniteNumber(value.deviationBpm) ||
+    value.deviationBpm < 0 ||
+    !isHeartRateDeviationSeverity(value.deviationSeverity) ||
     typeof value.reason !== "string"
   ) {
     return null;
@@ -141,6 +146,8 @@ function parseHeartRateDecision(
     targetMinBpm: value.targetMinBpm,
     targetMaxBpm: value.targetMaxBpm,
     outsideTargetSeconds: value.outsideTargetSeconds,
+    deviationBpm: value.deviationBpm,
+    deviationSeverity: value.deviationSeverity,
     reason: value.reason,
   };
 }
@@ -156,6 +163,17 @@ function isCoachingAction(value: unknown): value is CoachingAction {
   return (
     typeof value === "string" &&
     COACHING_ACTIONS.includes(value as CoachingAction)
+  );
+}
+
+function isHeartRateDeviationSeverity(
+  value: unknown,
+): value is HeartRateCoachingEvent["deviationSeverity"] {
+  return (
+    typeof value === "string" &&
+    HEART_RATE_DEVIATION_SEVERITIES.includes(
+      value as HeartRateCoachingEvent["deviationSeverity"],
+    )
   );
 }
 

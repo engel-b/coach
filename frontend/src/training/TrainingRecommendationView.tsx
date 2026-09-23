@@ -53,6 +53,82 @@ function PhaseRow({ phase }: { phase: WorkoutPhase }) {
   );
 }
 
+function HeartRateTargetExplanation({
+  recommendation,
+}: {
+  recommendation: TrainingRecommendation;
+}) {
+  const basis = recommendation.heartRateTargetBasis;
+  const mainPhase =
+    recommendation.phases.find((phase) => phase.phaseType === "main") ??
+    recommendation.phases[0];
+
+  if (mainPhase === undefined) {
+    return null;
+  }
+
+  const usesReserve = basis.method === "heart_rate_reserve";
+  const referenceWasLimited =
+    usesReserve &&
+    basis.restingHeartRateBpm !== null &&
+    basis.referenceRestingHeartRateBpm !== null &&
+    basis.restingHeartRateBpm !== basis.referenceRestingHeartRateBpm;
+
+  return (
+    <div className="heart-rate-target-explanation">
+      <div className="reason-title">So entsteht dein Zielpuls</div>
+
+      <div className="heart-rate-target-summary">
+        <strong>
+          {phaseTitle(mainPhase.phaseType)}: {mainPhase.targetHeartRateMin}–
+          {mainPhase.targetHeartRateMax} bpm
+        </strong>
+      </div>
+
+      <dl className="heart-rate-target-details">
+        <div>
+          <dt>HFmax</dt>
+          <dd>{basis.maxHeartRateBpm} bpm</dd>
+        </div>
+        <div>
+          <dt>Methode</dt>
+          <dd>
+            {usesReserve
+              ? "Herzfrequenzreserve"
+              : "Prozent der maximalen Herzfrequenz"}
+          </dd>
+        </div>
+        {basis.restingHeartRateBpm !== null && (
+          <div>
+            <dt>Ruhepuls</dt>
+            <dd>{basis.restingHeartRateBpm} bpm</dd>
+          </div>
+        )}
+        {referenceWasLimited && (
+          <div>
+            <dt>Rechenwert Ruhepuls</dt>
+            <dd>{basis.referenceRestingHeartRateBpm} bpm</dd>
+          </div>
+        )}
+      </dl>
+
+      {!usesReserve && (
+        <p className="heart-rate-target-note">
+          Kein Ruhepuls hinterlegt: Die Zielbereiche werden als Fallback aus der
+          maximalen Herzfrequenz berechnet.
+        </p>
+      )}
+
+      {referenceWasLimited && (
+        <p className="heart-rate-target-note">
+          Der hinterlegte Ruhepuls wird für die Zielberechnung konservativ auf{" "}
+          {basis.referenceRestingHeartRateBpm} bpm begrenzt.
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function TrainingRecommendationView({
   person,
   recommendation,
@@ -174,6 +250,8 @@ export function TrainingRecommendationView({
             <PhaseRow key={`${phase.phaseType}-${index}`} phase={phase} />
           ))}
         </div>
+
+        <HeartRateTargetExplanation recommendation={recommendation} />
 
         <div className="recommendation-reason">
           <div className="reason-title">Warum dieses Training?</div>

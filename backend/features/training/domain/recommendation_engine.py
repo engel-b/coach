@@ -1,6 +1,7 @@
 from features.check_in.domain.check_in import CheckIn
 from features.training.domain.heart_rate_target_policy import HeartRateTargetPolicy
 from features.training.domain.recommendation import (
+    HeartRateTargetBasis,
     TrainingRecommendation,
     WorkoutPhase,
     WorkoutPhaseType,
@@ -31,17 +32,24 @@ class TrainingRecommendationEngine:
         max_heart_rate: int,
         resting_heart_rate: int | None = None,
     ) -> TrainingRecommendation:
+        target_basis = self._heart_rate_target_policy.describe_basis(
+            max_heart_rate_bpm=max_heart_rate,
+            resting_heart_rate_bpm=resting_heart_rate,
+        )
+
         if self._needs_recovery(check_in):
             return self._create_recovery(
                 check_in,
                 max_heart_rate,
                 resting_heart_rate,
+                target_basis,
             )
 
         return self._create_base_endurance(
             check_in,
             max_heart_rate,
             resting_heart_rate,
+            target_basis,
         )
 
     @staticmethod
@@ -60,6 +68,7 @@ class TrainingRecommendationEngine:
         check_in: CheckIn,
         max_heart_rate: int,
         resting_heart_rate: int | None,
+        target_basis: HeartRateTargetBasis,
     ) -> TrainingRecommendation:
         duration = min(
             check_in.available_training_minutes,
@@ -77,6 +86,7 @@ class TrainingRecommendationEngine:
             workout_type=WorkoutType.RECOVERY,
             total_duration_minutes=duration,
             reason=("Dein heutiger Check-in spricht für eine eher regenerative Einheit."),
+            heart_rate_target_basis=target_basis,
             phases=(
                 WorkoutPhase(
                     phase_type=WorkoutPhaseType.MAIN,
@@ -92,6 +102,7 @@ class TrainingRecommendationEngine:
         check_in: CheckIn,
         max_heart_rate: int,
         resting_heart_rate: int | None,
+        target_basis: HeartRateTargetBasis,
     ) -> TrainingRecommendation:
         total = check_in.available_training_minutes
 
@@ -153,5 +164,6 @@ class TrainingRecommendationEngine:
             workout_type=WorkoutType.BASE_ENDURANCE,
             total_duration_minutes=total,
             reason=("Dein Check-in spricht für eine lockere Grundlagen-Ausdauereinheit."),
+            heart_rate_target_basis=target_basis,
             phases=tuple(phases),
         )

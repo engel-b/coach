@@ -3,6 +3,7 @@ from typing import Literal
 
 from features.coaching.domain.live_coaching import (
     CoachingAction,
+    HeartRateDeviationSeverity,
     LiveCoachingDecision,
     LiveCoachingStructureEvent,
 )
@@ -37,6 +38,7 @@ class LiveCoachingLifecycle:
         self._structure_handler = structure_handler
         self._last_decision: LiveCoachingDecision | None = None
         self._last_emitted_action: CoachingAction | None = None
+        self._last_emitted_severity: HeartRateDeviationSeverity | None = None
 
     @property
     def active_workout_id(self) -> str | None:
@@ -88,6 +90,7 @@ class LiveCoachingLifecycle:
 
         self._last_decision = None
         self._last_emitted_action = None
+        self._last_emitted_severity = None
 
         if self._runtime_handler is None:
             return
@@ -104,6 +107,7 @@ class LiveCoachingLifecycle:
         self._coordinator.finish(workout_id=workout.id)
         self._last_decision = None
         self._last_emitted_action = None
+        self._last_emitted_severity = None
 
     def handle_heart_rate(self, sample: HeartRateSample) -> None:
         decision = self._coordinator.handle_heart_rate(sample)
@@ -111,9 +115,16 @@ class LiveCoachingLifecycle:
 
         if decision is None or decision.action is CoachingAction.NONE:
             self._last_emitted_action = None
+            self._last_emitted_severity = None
             return
 
-        if decision.action is self._last_emitted_action:
+        same_action = decision.action is self._last_emitted_action
+        severity_escalated = (
+            same_action
+            and self._last_emitted_severity is HeartRateDeviationSeverity.MODERATE
+            and decision.deviation_severity is HeartRateDeviationSeverity.LARGE
+        )
+        if same_action and not severity_escalated:
             return
 
         workout_id = self._coordinator.active_workout_id
@@ -124,6 +135,7 @@ class LiveCoachingLifecycle:
             self._decision_handler(workout_id, sample, decision)
 
         self._last_emitted_action = decision.action
+        self._last_emitted_severity = decision.deviation_severity
 
     def _activate(self, workout: WorkoutSession) -> None:
         active_workout_id = self._coordinator.active_workout_id
@@ -137,3 +149,4 @@ class LiveCoachingLifecycle:
         self._coordinator.start(workout)
         self._last_decision = None
         self._last_emitted_action = None
+        self._last_emitted_severity = None

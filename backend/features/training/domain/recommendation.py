@@ -11,6 +11,19 @@ class WorkoutType(StrEnum):
     MODERATE = "moderate"
 
 
+class HeartRateTargetMethod(StrEnum):
+    HEART_RATE_RESERVE = "heart_rate_reserve"
+    MAX_HEART_RATE_PERCENTAGE = "max_heart_rate_percentage"
+
+
+@dataclass(frozen=True)
+class HeartRateTargetBasis:
+    method: HeartRateTargetMethod
+    max_heart_rate_bpm: int
+    resting_heart_rate_bpm: int | None
+    reference_resting_heart_rate_bpm: int | None
+
+
 class WorkoutPhaseType(StrEnum):
     WARM_UP = "warm_up"
     MAIN = "main"
@@ -33,3 +46,4 @@ class TrainingRecommendation:
     phases: tuple[WorkoutPhase, ...]
     reason_codes: tuple[RecommendationReasonCode, ...] = ()
     weight_goal_progress: WeightGoalProgress | None = None
+    heart_rate_target_basis: HeartRateTargetBasis | None = None

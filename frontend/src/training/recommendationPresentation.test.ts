@@ -13,6 +13,12 @@ function recommendation(reasonCodes: string[]): TrainingRecommendation {
     workoutType: "base_endurance",
     totalDurationMinutes: 30,
     reason: "Test",
+    heartRateTargetBasis: {
+      method: "max_heart_rate_percentage",
+      maxHeartRateBpm: 180,
+      restingHeartRateBpm: null,
+      referenceRestingHeartRateBpm: null,
+    },
     reasonCodes,
     weightGoalProgress: null,
     phases: [],

@@ -59,6 +59,8 @@ live_coaching_engine = LiveCoachingEngine(
     rules=LiveCoachingRules(
         deviation_seconds_before_action=20.0,
         target_tolerance_bpm=5,
+        large_deviation_bpm=15,
+        large_deviation_seconds_before_action=8.0,
     )
 )
 live_coaching_coordinator = LiveCoachingCoordinator(

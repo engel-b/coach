@@ -40,6 +40,8 @@ function event(action: CoachingAction): HeartRateCoachingEvent {
     targetMinBpm: 125,
     targetMaxBpm: 145,
     outsideTargetSeconds: 21,
+    deviationBpm: 4,
+    deviationSeverity: "moderate",
     reason: "test",
   };
 }

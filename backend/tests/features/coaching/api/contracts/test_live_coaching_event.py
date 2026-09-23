@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from features.coaching.api.contracts.live_coaching import LiveCoachingEvent
 from features.coaching.domain.live_coaching import (
     CoachingAction,
+    HeartRateDeviationSeverity,
     HeartRateZoneStatus,
     LiveCoachingDecision,
 )
@@ -22,6 +23,8 @@ def test_live_coaching_event_uses_camel_case_json_contract() -> None:
         target_min_bpm=125,
         target_max_bpm=145,
         outside_target_seconds=21.0,
+        deviation_bpm=4,
+        deviation_severity=HeartRateDeviationSeverity.MODERATE,
         reason="heart_rate_above_target_long_enough",
     )
 
@@ -42,6 +45,8 @@ def test_live_coaching_event_uses_camel_case_json_contract() -> None:
         "targetMinBpm": 125,
         "targetMaxBpm": 145,
         "outsideTargetSeconds": 21.0,
+        "deviationBpm": 4,
+        "deviationSeverity": "moderate",
         "reason": "heart_rate_above_target_long_enough",
     }
 

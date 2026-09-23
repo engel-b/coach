@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Path
 
 from apps.api import wiring
 from features.training.api.contracts.training import (
+    HeartRateTargetBasisResponse,
     TrainingRecommendationResponse,
     WeightGoalProgressResponse,
     WorkoutPhaseResponse,
@@ -63,10 +64,21 @@ async def training_recommendation(
 
     recommendation = create_training_recommendation(person_id)
 
+    if recommendation.heart_rate_target_basis is None:
+        raise RuntimeError("training recommendation is missing heart-rate target basis")
+
     return TrainingRecommendationResponse(
         workout_type=recommendation.workout_type.value,
         total_duration_minutes=(recommendation.total_duration_minutes),
         reason=recommendation.reason,
+        heart_rate_target_basis=HeartRateTargetBasisResponse(
+            method=recommendation.heart_rate_target_basis.method.value,
+            max_heart_rate_bpm=recommendation.heart_rate_target_basis.max_heart_rate_bpm,
+            resting_heart_rate_bpm=(recommendation.heart_rate_target_basis.resting_heart_rate_bpm),
+            reference_resting_heart_rate_bpm=(
+                recommendation.heart_rate_target_basis.reference_resting_heart_rate_bpm
+            ),
+        ),
         weight_goal_progress=(
             None
             if recommendation.weight_goal_progress is None
