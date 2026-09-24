@@ -37,6 +37,7 @@ from features.training.service.fallback_coach_message_generator import (
     FallbackCoachMessageGenerator,
 )
 from features.training.service.heart_rate_history_service import HeartRateHistoryService
+from features.training.service.load_response_service import LoadResponseService
 from features.training.service.pre_workout_coaching_planner import PreWorkoutCoachingPlanner
 from features.training.service.pre_workout_reason_builder import PreWorkoutReasonBuilder
 from features.training.service.readiness_service import ReadinessService
@@ -128,6 +129,7 @@ readiness_rules = ReadinessRules(
 )
 readiness_service = ReadinessService(rules=readiness_rules)
 resting_heart_rate_baseline_service = RestingHeartRateBaselineService()
+load_response_service = LoadResponseService()
 
 heart_rate_history_service = HeartRateHistoryService(
     rules=HeartRateHistoryRules(
@@ -140,6 +142,7 @@ heart_rate_history_service = HeartRateHistoryService(
         trend_min_workout_count=4,
         trend_change_threshold_points=15,
         min_power_samples_per_workout=30,
+        min_cadence_samples_per_workout=30,
         similar_power_change_percent=10,
     )
 )

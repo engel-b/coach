@@ -8,6 +8,8 @@ import {
   workoutTitle,
 } from "./recommendationPresentation";
 import { WeightGoalProgress } from "./WeightGoalProgress";
+import { heartRateHistoryPresentation } from "./heartRateHistoryPresentation";
+import { loadResponsePresentation } from "./loadResponsePresentation";
 import type {
   TrainingRecommendation,
   WorkoutPhase,
@@ -62,6 +64,10 @@ function HeartRateTargetExplanation({
   const mainPhase =
     recommendation.phases.find((phase) => phase.phaseType === "main") ??
     recommendation.phases[0];
+  const historyPresentation = heartRateHistoryPresentation(
+    recommendation.heartRateHistory,
+  );
+  const loadResponseText = loadResponsePresentation(recommendation.loadResponse);
 
   if (mainPhase === undefined) {
     return null;
@@ -133,79 +139,36 @@ function HeartRateTargetExplanation({
         </p>
       )}
 
-      {recommendation.heartRateHistory !== null &&
-        recommendation.heartRateHistory.status !== "insufficient_data" && (
-          <div className="heart-rate-history-note">
-            <strong>Deine bisherigen vergleichbaren Workouts</strong>
-            {recommendation.heartRateHistory.workoutType !== null && (
-              <p className="heart-rate-history-scope">
-                Auswertung nur für{" "}
-                {recommendation.heartRateHistory.workoutType ===
-                "base_endurance"
-                  ? "Grundlagen-Einheiten"
-                  : recommendation.heartRateHistory.workoutType === "recovery"
-                    ? "Recovery-Einheiten"
-                    : "moderate Einheiten"}
-                .
-              </p>
-            )}
-            <p>
-              {recommendation.heartRateHistory.status === "mostly_in_target"
-                ? `In ${recommendation.heartRateHistory.workoutCount} vergleichbaren Workouts lag deine Herzfrequenz überwiegend im Zielbereich.`
-                : recommendation.heartRateHistory.status ===
-                    "mostly_above_target"
-                  ? `In ${recommendation.heartRateHistory.workoutCount} vergleichbaren Workouts lag deine Herzfrequenz häufig oberhalb des Zielbereichs. Deshalb wird die heutige Dauer bei Bedarf konservativ begrenzt; Zielpuls- und Safety-Grenzen werden nicht angehoben.`
-                  : recommendation.heartRateHistory.status ===
-                      "mostly_below_target"
-                    ? `In ${recommendation.heartRateHistory.workoutCount} vergleichbaren Workouts lag deine Herzfrequenz häufig unterhalb des Zielbereichs. Daraus wird nicht automatisch mehr Intensität abgeleitet.`
-                    : `Die letzten ${recommendation.heartRateHistory.workoutCount} vergleichbaren Workouts zeigen noch kein eindeutiges Herzfrequenzmuster.`}
+      {historyPresentation !== null && (
+        <div className="heart-rate-history-note">
+          <strong>Deine bisherigen vergleichbaren Workouts</strong>
+          {historyPresentation.scope !== null && (
+            <p className="heart-rate-history-scope">
+              {historyPresentation.scope}
             </p>
-            {recommendation.heartRateHistory.responseTrend !==
-              "insufficient_data" && (
-              <p className="heart-rate-history-trend">
-                {recommendation.heartRateHistory.responseTrend === "lower"
-                  ? "Bei den neueren vergleichbaren Workouts lag deine durchschnittliche Herzfrequenz relativ zum jeweiligen Zielbereich niedriger als bei den älteren."
-                  : recommendation.heartRateHistory.responseTrend === "higher"
-                    ? "Bei den neueren vergleichbaren Workouts lag deine durchschnittliche Herzfrequenz relativ zum jeweiligen Zielbereich höher als bei den älteren."
-                    : "Die durchschnittliche Herzfrequenz relativ zum jeweiligen Zielbereich ist über die vergleichbaren Workouts weitgehend stabil."}
-                {recommendation.heartRateHistory.targetPositionChangePoints !==
-                  null &&
-                  ` Veränderung: ${recommendation.heartRateHistory.targetPositionChangePoints > 0 ? "+" : ""}${recommendation.heartRateHistory.targetPositionChangePoints} Prozentpunkte.`}
-                {
-                  " Diese Beobachtung ist rein beschreibend und erhöht die Trainingsintensität nicht automatisch."
-                }
-              </p>
-            )}
-            {recommendation.heartRateHistory.loadAdjustedTrend !==
-              "insufficient_data" && (
-              <p className="heart-rate-history-trend">
-                {recommendation.heartRateHistory.loadAdjustedTrend ===
-                "lower_at_similar_power"
-                  ? "Die Herzfrequenz-Reaktion war bei den neueren Einheiten niedriger, obwohl die durchschnittliche Bike-Leistung ähnlich blieb."
-                  : recommendation.heartRateHistory.loadAdjustedTrend ===
-                      "higher_at_similar_power"
-                    ? "Die Herzfrequenz-Reaktion war bei den neueren Einheiten höher, obwohl die durchschnittliche Bike-Leistung ähnlich blieb."
-                    : recommendation.heartRateHistory.loadAdjustedTrend ===
-                        "stable_at_similar_power"
-                      ? "Herzfrequenz-Reaktion und durchschnittliche Bike-Leistung blieben über die vergleichbaren Einheiten weitgehend stabil."
-                      : recommendation.heartRateHistory.loadAdjustedTrend ===
-                          "lower_with_lower_power"
-                        ? "Die niedrigere Herzfrequenz ging mit einer niedrigeren durchschnittlichen Bike-Leistung einher; deshalb wird sie nicht als günstigere Reaktion interpretiert."
-                        : recommendation.heartRateHistory.loadAdjustedTrend ===
-                            "higher_with_higher_power"
-                          ? "Die höhere Herzfrequenz ging mit einer höheren durchschnittlichen Bike-Leistung einher; die Belastung war also nicht vergleichbar."
-                          : "Die Bike-Leistung hat sich zwischen älteren und neueren Einheiten deutlich verändert; der Herzfrequenz-Trend wird deshalb nicht isoliert interpretiert."}
-                {recommendation.heartRateHistory.powerChangePercent !== null &&
-                  ` Leistungsänderung: ${recommendation.heartRateHistory.powerChangePercent > 0 ? "+" : ""}${recommendation.heartRateHistory.powerChangePercent} %.`}
-                {recommendation.heartRateHistory.medianPowerW !== null &&
-                  ` Median der vergleichbaren Einheiten: ${recommendation.heartRateHistory.medianPowerW} W.`}
-                {
-                  " Auch diese Beobachtung ist rein deskriptiv und verändert die Trainingsintensität nicht automatisch."
-                }
-              </p>
-            )}
-          </div>
-        )}
+          )}
+          <p>{historyPresentation.statusText}</p>
+          {historyPresentation.responseTrendText !== null && (
+            <p className="heart-rate-history-trend">
+              <strong>HF-Verlauf: </strong>
+              {historyPresentation.responseTrendText}
+            </p>
+          )}
+          {historyPresentation.loadAdjustedTrendText !== null && (
+            <p className="heart-rate-history-trend">
+              <strong>HF + Bike-Leistung: </strong>
+              {historyPresentation.loadAdjustedTrendText}
+            </p>
+          )}
+        </div>
+      )}
+
+      {loadResponseText !== null && (
+        <div className="heart-rate-history-note">
+          <strong>Belastungsreaktion</strong>
+          <p>{loadResponseText}</p>
+        </div>
+      )}
     </div>
   );
 }

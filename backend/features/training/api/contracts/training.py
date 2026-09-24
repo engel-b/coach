@@ -131,6 +131,7 @@ class HeartRateHistoryResponse(BaseModel):
         ),
     )
     median_power_w: int | None = Field(default=None, ge=0)
+    median_cadence_rpm: float | None = Field(default=None, ge=0)
     power_change_percent: int | None = Field(
         default=None,
         description=(
@@ -138,6 +139,21 @@ class HeartRateHistoryResponse(BaseModel):
             "neueren vergleichbaren Workouts."
         ),
     )
+
+
+class LoadResponseResponse(BaseModel):
+    """Deskriptiver Kontext aus HF, Bike-Belastung und heutiger Readiness."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    status: str
+    workout_type: str
+    comparable_workout_count: int = Field(ge=0)
+    heart_rate_trend: str
+    load_adjusted_heart_rate_trend: str
+    median_power_w: int | None = Field(default=None, ge=0)
+    median_cadence_rpm: float | None = Field(default=None, ge=0)
+    readiness_caution: bool
 
 
 class TrainingRecommendationResponse(BaseModel):
@@ -162,6 +178,13 @@ class TrainingRecommendationResponse(BaseModel):
     )
     heart_rate_target_basis: HeartRateTargetBasisResponse = Field(
         description="Grundlage der Zielpulsberechnung für diese Empfehlung.",
+    )
+    load_response: LoadResponseResponse | None = Field(
+        default=None,
+        description=(
+            "Rein deskriptiver Belastungsreaktions-Kontext. Er verändert keine "
+            "Trainingsparameter automatisch."
+        ),
     )
     heart_rate_history: HeartRateHistoryResponse | None = Field(
         default=None,

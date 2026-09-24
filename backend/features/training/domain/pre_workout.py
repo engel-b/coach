@@ -8,6 +8,7 @@ from features.training.domain.heart_rate_history import (
     HeartRateHistoryStatus,
 )
 from features.training.domain.heart_rate_target import HeartRateTargetSource
+from features.training.domain.load_response import LoadResponseContext
 from features.training.domain.readiness import ReadinessContext
 from features.training.domain.weight_goal_progress import WeightGoalProgress
 from features.training.domain.weight_trend import WeightTrend
@@ -54,6 +55,7 @@ class PreWorkoutCoachingContext:
             workout_count=0,
         )
     )
+    load_response: LoadResponseContext | None = None
     resting_heart_rate: int | None = None
     resting_heart_rate_source: HeartRateTargetSource | None = None
     resting_heart_rate_sample_count: int = 0

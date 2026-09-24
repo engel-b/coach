@@ -151,6 +151,17 @@ class HeartRateHistoryService:
             eligible,
             response_trend=response_trend,
         )
+        cadence_values = [
+            workout.bike_summary.average_cadence_rpm
+            for workout in eligible
+            if workout.bike_summary is not None
+            and workout.bike_summary.average_cadence_rpm is not None
+            and workout.bike_summary.cadence_sample_count
+            >= self._rules.min_cadence_samples_per_workout
+        ]
+        median_cadence = (
+            round(median(cadence_values), 1) if cadence_values else None
+        )
 
         if len(eligible) < self._rules.min_workout_count:
             return HeartRateHistoryContext(
@@ -163,6 +174,7 @@ class HeartRateHistoryService:
                 load_adjusted_trend=load_adjusted_trend,
                 median_power_w=median_power,
                 power_change_percent=power_change,
+                median_cadence_rpm=median_cadence,
             )
 
         in_target = round(
@@ -214,4 +226,5 @@ class HeartRateHistoryService:
             load_adjusted_trend=load_adjusted_trend,
             median_power_w=median_power,
             power_change_percent=power_change,
+            median_cadence_rpm=median_cadence,
         )

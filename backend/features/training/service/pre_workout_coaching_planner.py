@@ -99,6 +99,7 @@ class PreWorkoutCoachingPlanner:
                 else None
             ),
             heart_rate_history=context.heart_rate_history,
+            load_response=context.load_response,
         )
 
     @staticmethod

@@ -72,7 +72,28 @@ export interface HeartRateHistory {
   targetPositionChangePoints: number | null;
   loadAdjustedTrend: LoadAdjustedHeartRateTrend;
   medianPowerW: number | null;
+  medianCadenceRpm: number | null;
   powerChangePercent: number | null;
+}
+
+export type LoadResponseStatus =
+  | "insufficient_data"
+  | "stable"
+  | "lower_hr_at_similar_load"
+  | "higher_hr_at_similar_load"
+  | "lower_load"
+  | "higher_load"
+  | "mixed";
+
+export interface LoadResponse {
+  status: LoadResponseStatus;
+  workoutType: WorkoutType;
+  comparableWorkoutCount: number;
+  heartRateTrend: HeartRateResponseTrend;
+  loadAdjustedHeartRateTrend: LoadAdjustedHeartRateTrend;
+  medianPowerW: number | null;
+  medianCadenceRpm: number | null;
+  readinessCaution: boolean;
 }
 
 export interface TrainingRecommendation {
@@ -81,6 +102,7 @@ export interface TrainingRecommendation {
   reason: string;
   heartRateTargetBasis: HeartRateTargetBasis;
   heartRateHistory: HeartRateHistory | null;
+  loadResponse: LoadResponse | null;
   reasonCodes: string[];
   weightGoalProgress: WeightGoalProgress | null;
   phases: WorkoutPhase[];

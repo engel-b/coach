@@ -75,6 +75,11 @@ def create_training_recommendation(
         workouts=recent_workouts,
         workout_type=provisional_recommendation.workout_type,
     )
+    load_response = wiring.load_response_service.assess(
+        history=heart_rate_history,
+        readiness=readiness,
+        workout_type=provisional_recommendation.workout_type,
+    )
 
     return wiring.pre_workout_coaching_planner.recommend(
         PreWorkoutCoachingContext(
@@ -88,5 +93,6 @@ def create_training_recommendation(
             weight_goal_progress=weight_goal_progress,
             readiness=readiness,
             heart_rate_history=heart_rate_history,
+            load_response=load_response,
         )
     )

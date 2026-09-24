@@ -22,6 +22,7 @@ function recommendation(reasonCodes: string[]): TrainingRecommendation {
       restingHeartRateSampleCount: 0,
     },
     heartRateHistory: null,
+    loadResponse: null,
     reasonCodes,
     weightGoalProgress: null,
     phases: [],

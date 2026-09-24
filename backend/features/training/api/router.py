@@ -6,6 +6,7 @@ from apps.api import wiring
 from features.training.api.contracts.training import (
     HeartRateHistoryResponse,
     HeartRateTargetBasisResponse,
+    LoadResponseResponse,
     TrainingRecommendationResponse,
     WeightGoalProgressResponse,
     WorkoutPhaseResponse,
@@ -118,7 +119,26 @@ async def training_recommendation(
                 ),
                 load_adjusted_trend=(recommendation.heart_rate_history.load_adjusted_trend.value),
                 median_power_w=recommendation.heart_rate_history.median_power_w,
+                median_cadence_rpm=recommendation.heart_rate_history.median_cadence_rpm,
                 power_change_percent=(recommendation.heart_rate_history.power_change_percent),
+            )
+        ),
+        load_response=(
+            None
+            if recommendation.load_response is None
+            else LoadResponseResponse(
+                status=recommendation.load_response.status.value,
+                workout_type=recommendation.load_response.workout_type.value,
+                comparable_workout_count=(
+                    recommendation.load_response.comparable_workout_count
+                ),
+                heart_rate_trend=recommendation.load_response.heart_rate_trend.value,
+                load_adjusted_heart_rate_trend=(
+                    recommendation.load_response.load_adjusted_heart_rate_trend.value
+                ),
+                median_power_w=recommendation.load_response.median_power_w,
+                median_cadence_rpm=recommendation.load_response.median_cadence_rpm,
+                readiness_caution=recommendation.load_response.readiness_caution,
             )
         ),
         weight_goal_progress=(
