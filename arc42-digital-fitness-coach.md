@@ -446,6 +446,8 @@ Für die historische Interpretation werden nur Workouts mit ausreichend vielen L
 
 Die resultierende Einordnung ist ausdrücklich **keine automatische Fitnessbewertung** und verändert Zielpuls, Safety-Grenzen oder Trainingsintensität nicht. Insbesondere wird eine niedrigere Herzfrequenz nur dann als „niedriger bei ähnlicher Leistung“ beschrieben, wenn die historische Leistungsänderung innerhalb der Vergleichstoleranz liegt. Bei deutlich veränderter Leistung wird der HF-Trend als durch die Laständerung mitbedingt bzw. nicht isoliert interpretierbar gekennzeichnet.
 
+Die Workout-Zusammenfassung zeigt die dafür verwendeten aggregierten Hauptphasenwerte (durchschnittliche Herzfrequenz, Zielbereichsanteile, durchschnittliche Leistung und durchschnittliche Kadenz) zusammen mit der jeweiligen Stichprobenanzahl. Die Trainingsempfehlung formuliert die historische HR-/Power-Einordnung aus strukturierten API-Daten; das Frontend berechnet weder Zielbereiche noch Fitnessbewertungen selbst. Fehlende oder nicht ausreichend belastbare Historie wird nicht durch spekulative Aussagen ersetzt.
+
 ## 5.4 Live-Coaching-Bausteine
 
 ```text
@@ -1221,6 +1223,11 @@ Ein optionaler Ruhepuls personalisiert Trainingszonen über die Herzfrequenzrese
 
 Für abgeschlossene Workouts wird eine kompakte Herzfrequenz-Zusammenfassung der Hauptphase persistiert. Mehrere ausreichend belegte Workouts können die heutige Trainingsdauer konservativ begrenzen, wenn die Herzfrequenz wiederholt häufig oberhalb des geplanten Zielbereichs lag. Historisch niedrige Werte dürfen weder die Intensität noch Zielpuls- oder Safety-Grenzen automatisch erhöhen. Vollständige HR-Rohdaten müssen für diese Personalisierung nicht dauerhaft gespeichert werden. Die durchschnittliche Herzfrequenz darf zusätzlich relativ zur jeweils damals gültigen Zielzone normalisiert und als deskriptiver Verlauf über vergleichbare Workouts ausgewertet werden; auch daraus folgt keine automatische Belastungssteigerung.
 
+## ADR-018c – HR-/Power-Korrelation bleibt deskriptiv
+**Status:** Akzeptiert
+
+Für historische Belastungsreaktionen dürfen Herzfrequenz und aggregierte FTMS-Leistung gemeinsam betrachtet werden. Nur bei ausreichend belegten, fachlich vergleichbaren Workouts wird beschrieben, ob sich die relative Herzfrequenz bei ähnlicher oder deutlich veränderter Bike-Leistung verschoben hat. Kadenz und Leistung bleiben optionale Sensorsignale. Aus einer günstigeren historischen Relation folgt keine automatische Erhöhung von Zielpuls, Dauer, Widerstand oder sonstiger Trainingsintensität.
+
 ## ADR-019 – Cross-Feature-Coaching-Orchestrierung liegt im App-Layer
 **Status:** Akzeptiert
 
@@ -1509,7 +1516,7 @@ Legende: **Vorhanden**, **Teilweise/optional**, **Geplant**.
 | Betrieb | `provision.sh` / `prepare.sh` | Vorhanden |
 | Betrieb | lokaler LLM-Service | Vorhanden/optional |
 | Coaching | zentrale Event-Priorisierung | Geplant |
-| Coaching | weitere Signale wie Kadenz/Leistung | Geplant |
+| Coaching | historische HR-/Leistungs-Korrelation aus aggregierten Hauptphasenwerten | Vorhanden |
 | Workout | automatische adaptive Anpassung | Geplant |
 | Sprache | Spracheingabe | Geplant |
 | Betrieb | Rollback/Watchdog/Health-Härtung | Geplant |
@@ -1547,7 +1554,7 @@ Ziele:
 
 ## Phase B – Live-Coaching ausbauen
 
-- Kadenz und Leistung als weitere Signale;
+- Kadenz und Leistung zusätzlich **live** als Coaching-Signale nutzen; die historische deskriptive Auswertung ist bereits vorhanden;
 - Sensorverfügbarkeit expliziter modellieren;
 - „gute Konstanz“ und weitere positive Rückmeldungen nur aus belastbaren Signalen;
 - konfigurierbare Feedback-Frequenz.
@@ -1701,7 +1708,7 @@ Die früheren arc42-Varianten können nach erfolgreicher Übernahme in Git archi
 /opt/health-coach/data/models/llm
     lokale LLM-Modelle
 
-/opt/health-coach/data/models/piper
+/opt/health-coach/data/models/piper-tts
     Piper-Voice-Modell
 
 /opt/health-coach/data/videos
