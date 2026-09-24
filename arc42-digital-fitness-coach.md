@@ -454,6 +454,14 @@ Der `LoadResponseContext` bündelt die bereits deterministisch abgeleiteten Sign
 
 Die heutige Readiness wird dabei als separates Vorsichtssignal mitgeführt; sie verändert die historische Einordnung nicht rückwirkend. Umgekehrt darf ein günstiger historischer Verlauf keine automatische Intensitätssteigerung auslösen. Der Context ist damit eine gemeinsame fachliche Grundlage für UI und eine spätere adaptive Policy, aber selbst **keine** adaptive Trainingsentscheidung.
 
+### AdaptiveWorkoutPolicy
+
+Die `AdaptiveWorkoutPolicy` liest den `LoadResponseContext` zusammen mit Readiness, historischer Zielbereichsreaktion und dem bereits deterministisch gewählten Workout-Typ. Sie erzeugt ausschließlich strukturierte konservative Vorschläge: `keep_plan`, `reduce_duration`, `reduce_intensity`, `extend_warmup` oder `prefer_recovery`.
+
+Jeder Vorschlag kennzeichnet zusätzlich, ob er im aktuellen Plan bereits berücksichtigt ist. Bereits bestehende Dauerbegrenzungen aus Readiness oder HF-Historie werden als reflektiert ausgewiesen. Vorschläge zur Intensitätsreduktion oder zu einer längeren Aufwärmphase bleiben zunächst advisory-only und verändern weder Zielpuls noch Bike-Widerstand automatisch. Ein günstiger Verlauf (`lower_hr_at_similar_load`) führt explizit **nicht** zu automatischer Progression.
+
+Die API liefert Aktion, stabile Reason Codes, den Reflektionsstatus und gegebenenfalls die empfohlene Dauer strukturiert an das Frontend. Die UI formuliert daraus transparent, was bereits angepasst wurde und was nur als konservativer Hinweis vorliegt.
+
 ## 5.4 Live-Coaching-Bausteine
 
 ```text
@@ -1242,6 +1250,14 @@ Für historische Belastungsreaktionen dürfen Herzfrequenz und aggregierte FTMS-
 **Begründung:** Die Signale sind gemeinsam aussagekräftiger als isoliert, reichen aber noch nicht für eine belastbare automatische Anpassung von Dauer, Zielpuls oder Widerstand. Die Trennung schafft eine stabile, testbare Zwischenstufe vor späteren adaptiven Policies.
 
 **Konsequenz:** Eine spätere automatische Anpassung benötigt eine eigene deterministische Policy mit expliziten Regeln und Safety-Grenzen; der `LoadResponseContext` bleibt beobachtend.
+
+## ADR-018e – AdaptiveWorkoutPolicy bleibt konservativ und transparent
+
+**Entscheidung:** Eine eigene `AdaptiveWorkoutPolicy` darf aus `LoadResponseContext`, Readiness und historischer HF-Reaktion deterministische Anpassungsvorschläge ableiten. Sie darf keine automatische Progression aus einem günstigen Verlauf erzeugen.
+
+**Begründung:** Historische HF-/Bike-Signale sind nützlich, aber nicht ausreichend, um Zielpuls, Widerstand oder Trainingslast automatisch zu erhöhen. Konservative Vorschläge müssen von Safety-Grenzen und Gerätesteuerung getrennt bleiben.
+
+**Konsequenz:** Bereits vorhandene Dauerbegrenzungen können als im Plan reflektiert ausgewiesen werden. Intensitätsreduktion und längeres Warm-up bleiben zunächst advisory-only. Eine spätere automatische Anwendung benötigt einen eigenen Use Case mit expliziten Grenzen, Tests und Safety-Regeln.
 
 ## ADR-019 – Cross-Feature-Coaching-Orchestrierung liegt im App-Layer
 **Status:** Akzeptiert

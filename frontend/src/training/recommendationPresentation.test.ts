@@ -23,6 +23,7 @@ function recommendation(reasonCodes: string[]): TrainingRecommendation {
     },
     heartRateHistory: null,
     loadResponse: null,
+    adaptiveWorkoutAdvice: null,
     reasonCodes,
     weightGoalProgress: null,
     phases: [],

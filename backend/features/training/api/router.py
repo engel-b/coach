@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Path
 
 from apps.api import wiring
 from features.training.api.contracts.training import (
+    AdaptiveWorkoutAdviceResponse,
     HeartRateHistoryResponse,
     HeartRateTargetBasisResponse,
     LoadResponseResponse,
@@ -137,6 +138,20 @@ async def training_recommendation(
                 median_power_w=recommendation.load_response.median_power_w,
                 median_cadence_rpm=recommendation.load_response.median_cadence_rpm,
                 readiness_caution=recommendation.load_response.readiness_caution,
+            )
+        ),
+        adaptive_workout_advice=(
+            None
+            if recommendation.adaptive_workout_advice is None
+            else AdaptiveWorkoutAdviceResponse(
+                action=recommendation.adaptive_workout_advice.action.value,
+                reason_codes=[
+                    reason.value for reason in recommendation.adaptive_workout_advice.reason_codes
+                ],
+                plan_reflects_advice=(recommendation.adaptive_workout_advice.plan_reflects_advice),
+                recommended_duration_minutes=(
+                    recommendation.adaptive_workout_advice.recommended_duration_minutes
+                ),
             )
         ),
         weight_goal_progress=(

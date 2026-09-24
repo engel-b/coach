@@ -1,4 +1,10 @@
+from dataclasses import replace
 from datetime import UTC, datetime
+
+from features.training.domain.adaptive_workout import (
+    AdaptiveWorkoutAction,
+    AdaptiveWorkoutAdvice,
+)
 
 from features.check_in.domain.check_in import CheckIn
 from features.person.domain.profile import TrainingGoal
@@ -272,3 +278,15 @@ def test_high_heart_rate_history_can_only_reduce_duration() -> None:
     )
     assert RecommendationReasonCode.HEART_RATE_HISTORY_ABOVE_TARGET in recommendation.reason_codes
     assert "Zielpuls- und Safety-Grenzen werden dadurch nicht angehoben" in recommendation.reason
+
+
+def test_adaptive_workout_advice_is_forwarded_to_recommendation() -> None:
+    advice = AdaptiveWorkoutAdvice(
+        action=AdaptiveWorkoutAction.EXTEND_WARMUP,
+        reason_codes=(),
+        plan_reflects_advice=False,
+    )
+
+    recommendation = planner().recommend(replace(context(), adaptive_workout_advice=advice))
+
+    assert recommendation.adaptive_workout_advice == advice

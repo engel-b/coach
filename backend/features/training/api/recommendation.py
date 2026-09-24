@@ -80,6 +80,13 @@ def create_training_recommendation(
         readiness=readiness,
         workout_type=provisional_recommendation.workout_type,
     )
+    adaptive_workout_advice = wiring.adaptive_workout_policy.assess(
+        workout_type=provisional_recommendation.workout_type,
+        available_training_minutes=check_in.available_training_minutes,
+        readiness=readiness,
+        heart_rate_history=heart_rate_history,
+        load_response=load_response,
+    )
 
     return wiring.pre_workout_coaching_planner.recommend(
         PreWorkoutCoachingContext(
@@ -94,5 +101,6 @@ def create_training_recommendation(
             readiness=readiness,
             heart_rate_history=heart_rate_history,
             load_response=load_response,
+            adaptive_workout_advice=adaptive_workout_advice,
         )
     )

@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+from features.training.service.adaptive_workout_policy import AdaptiveWorkoutPolicy
+
 from adapters.llm.local_llm_coach_message_generator import LocalLlmCoachMessageGenerator
 from apps.api.live_coaching_event_publisher import LiveCoachingEventPublisher
 from apps.api.live_coaching_lifecycle import LiveCoachingLifecycle
@@ -130,6 +132,7 @@ readiness_rules = ReadinessRules(
 readiness_service = ReadinessService(rules=readiness_rules)
 resting_heart_rate_baseline_service = RestingHeartRateBaselineService()
 load_response_service = LoadResponseService()
+adaptive_workout_policy = AdaptiveWorkoutPolicy()
 
 heart_rate_history_service = HeartRateHistoryService(
     rules=HeartRateHistoryRules(

@@ -3,6 +3,7 @@ from enum import StrEnum
 
 from features.check_in.domain.check_in import CheckIn
 from features.person.domain.profile import TrainingGoal
+from features.training.domain.adaptive_workout import AdaptiveWorkoutAdvice
 from features.training.domain.heart_rate_history import (
     HeartRateHistoryContext,
     HeartRateHistoryStatus,
@@ -56,6 +57,7 @@ class PreWorkoutCoachingContext:
         )
     )
     load_response: LoadResponseContext | None = None
+    adaptive_workout_advice: AdaptiveWorkoutAdvice | None = None
     resting_heart_rate: int | None = None
     resting_heart_rate_source: HeartRateTargetSource | None = None
     resting_heart_rate_sample_count: int = 0

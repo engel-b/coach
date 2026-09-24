@@ -7,6 +7,7 @@ import {
   recommendationReasonLabels,
   workoutTitle,
 } from "./recommendationPresentation";
+import { adaptiveWorkoutPresentation } from "./adaptiveWorkoutPresentation";
 import { WeightGoalProgress } from "./WeightGoalProgress";
 import { heartRateHistoryPresentation } from "./heartRateHistoryPresentation";
 import { loadResponsePresentation } from "./loadResponsePresentation";
@@ -69,6 +70,9 @@ function HeartRateTargetExplanation({
   );
   const loadResponseText = loadResponsePresentation(
     recommendation.loadResponse,
+  );
+  const adaptivePresentation = adaptiveWorkoutPresentation(
+    recommendation.adaptiveWorkoutAdvice,
   );
 
   if (mainPhase === undefined) {
@@ -169,6 +173,13 @@ function HeartRateTargetExplanation({
         <div className="heart-rate-history-note">
           <strong>Belastungsreaktion</strong>
           <p>{loadResponseText}</p>
+        </div>
+      )}
+
+      {adaptivePresentation !== null && (
+        <div className="heart-rate-history-note">
+          <strong>{adaptivePresentation.title}</strong>
+          <p>{adaptivePresentation.text}</p>
         </div>
       )}
     </div>

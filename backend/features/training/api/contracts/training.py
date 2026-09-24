@@ -156,6 +156,21 @@ class LoadResponseResponse(BaseModel):
     readiness_caution: bool
 
 
+class AdaptiveWorkoutAdviceResponse(BaseModel):
+    """Deterministischer, konservativer Anpassungsvorschlag fuer den heutigen Plan."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    action: str
+    reason_codes: list[str] = Field(default_factory=list)
+    plan_reflects_advice: bool = Field(
+        description=(
+            "Gibt an, ob der aktuelle Trainingsplan den Vorschlag bereits beruecksichtigt."
+        )
+    )
+    recommended_duration_minutes: int | None = Field(default=None, ge=1)
+
+
 class TrainingRecommendationResponse(BaseModel):
     """Individuelle Empfehlung für eine Trainingseinheit."""
 
@@ -184,6 +199,13 @@ class TrainingRecommendationResponse(BaseModel):
         description=(
             "Rein deskriptiver Belastungsreaktions-Kontext. Er verändert keine "
             "Trainingsparameter automatisch."
+        ),
+    )
+    adaptive_workout_advice: AdaptiveWorkoutAdviceResponse | None = Field(
+        default=None,
+        description=(
+            "Deterministischer, konservativer Anpassungsvorschlag. Nicht bereits "
+            "im Plan reflektierte Vorschlaege werden nicht automatisch angewendet."
         ),
     )
     heart_rate_history: HeartRateHistoryResponse | None = Field(

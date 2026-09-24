@@ -96,6 +96,20 @@ export interface LoadResponse {
   readinessCaution: boolean;
 }
 
+export type AdaptiveWorkoutAction =
+  | "keep_plan"
+  | "reduce_duration"
+  | "reduce_intensity"
+  | "extend_warmup"
+  | "prefer_recovery";
+
+export interface AdaptiveWorkoutAdvice {
+  action: AdaptiveWorkoutAction;
+  reasonCodes: string[];
+  planReflectsAdvice: boolean;
+  recommendedDurationMinutes: number | null;
+}
+
 export interface TrainingRecommendation {
   workoutType: WorkoutType;
   totalDurationMinutes: number;
@@ -103,6 +117,7 @@ export interface TrainingRecommendation {
   heartRateTargetBasis: HeartRateTargetBasis;
   heartRateHistory: HeartRateHistory | null;
   loadResponse: LoadResponse | null;
+  adaptiveWorkoutAdvice: AdaptiveWorkoutAdvice | null;
   reasonCodes: string[];
   weightGoalProgress: WeightGoalProgress | null;
   phases: WorkoutPhase[];
