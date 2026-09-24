@@ -129,9 +129,7 @@ async def training_recommendation(
             else LoadResponseResponse(
                 status=recommendation.load_response.status.value,
                 workout_type=recommendation.load_response.workout_type.value,
-                comparable_workout_count=(
-                    recommendation.load_response.comparable_workout_count
-                ),
+                comparable_workout_count=(recommendation.load_response.comparable_workout_count),
                 heart_rate_trend=recommendation.load_response.heart_rate_trend.value,
                 load_adjusted_heart_rate_trend=(
                     recommendation.load_response.load_adjusted_heart_rate_trend.value

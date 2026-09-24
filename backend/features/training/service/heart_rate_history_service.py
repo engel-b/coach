@@ -159,9 +159,7 @@ class HeartRateHistoryService:
             and workout.bike_summary.cadence_sample_count
             >= self._rules.min_cadence_samples_per_workout
         ]
-        median_cadence = (
-            round(median(cadence_values), 1) if cadence_values else None
-        )
+        median_cadence = round(median(cadence_values), 1) if cadence_values else None
 
         if len(eligible) < self._rules.min_workout_count:
             return HeartRateHistoryContext(

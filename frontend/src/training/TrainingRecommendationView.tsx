@@ -67,7 +67,9 @@ function HeartRateTargetExplanation({
   const historyPresentation = heartRateHistoryPresentation(
     recommendation.heartRateHistory,
   );
-  const loadResponseText = loadResponsePresentation(recommendation.loadResponse);
+  const loadResponseText = loadResponsePresentation(
+    recommendation.loadResponse,
+  );
 
   if (mainPhase === undefined) {
     return null;

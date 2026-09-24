@@ -3,9 +3,7 @@ import { describe, expect, it } from "vitest";
 import { heartRateHistoryPresentation } from "./heartRateHistoryPresentation";
 import type { HeartRateHistory } from "./types";
 
-function history(
-  overrides: Partial<HeartRateHistory> = {},
-): HeartRateHistory {
+function history(overrides: Partial<HeartRateHistory> = {}): HeartRateHistory {
   return {
     status: "mostly_in_target",
     workoutCount: 4,
@@ -77,9 +75,7 @@ describe("heartRateHistoryPresentation", () => {
     expect(presentation?.responseTrendText).toContain(
       "niedriger als bei den älteren",
     );
-    expect(presentation?.responseTrendText).toContain(
-      "-20 Prozentpunkte",
-    );
+    expect(presentation?.responseTrendText).toContain("-20 Prozentpunkte");
     expect(presentation?.loadAdjustedTrendText).toContain(
       "obwohl die durchschnittliche Bike-Leistung ähnlich blieb",
     );
@@ -125,7 +121,6 @@ describe("heartRateHistoryPresentation", () => {
       "Leistungsänderung: +18 %",
     );
   });
-
 
   it("describes the remaining load-adjusted states without turning them into prescriptions", () => {
     const cases = [

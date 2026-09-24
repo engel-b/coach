@@ -8,6 +8,7 @@ from features.training.domain.heart_rate_history import (
     HeartRateResponseTrend,
     LoadAdjustedHeartRateTrend,
 )
+
 if TYPE_CHECKING:
     from features.training.domain.recommendation import WorkoutType
 
