@@ -99,7 +99,7 @@ health-coach/
 
 Die virtuelle Umgebung liegt im Ordner `backend`, nicht im Repository-Root. Alle Make-Targets werden aus dem Repository-Root ausgeführt.
 
-Lokale Laufzeitdaten liegen unter `data/`. Insbesondere nutzt die Anwendung standardmäßig `data/db/health-coach.db`, `data/models/llm`, `data/models/piper` und `data/videos`. Diese Verzeichnisse sind keine Python-Package-Struktur.
+Lokale Laufzeitdaten liegen unter `data/`. Insbesondere nutzt die Anwendung standardmäßig `data/db/health-coach.db`, `data/models/llm`, `data/models/piper-tts` und `data/videos`. Diese Verzeichnisse sind keine Python-Package-Struktur.
 
 ## 4. Python-Entwicklungsumgebung installieren
 

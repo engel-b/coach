@@ -297,17 +297,6 @@ sync_managed_file() {
     return 1
 }
 
-migrate_file_if_needed() {
-    local source="$1"
-    local target="$2"
-
-    if [[ -f "${source}" && ! -e "${target}" ]]; then
-        mkdir -p "$(dirname "${target}")"
-        echo "Moving legacy runtime file: ${source} -> ${target}"
-        mv "${source}" "${target}"
-    fi
-}
-
 load_runtime_environment() {
     set -a
     if [[ -r "${BACKEND_ENV_TARGET}" ]]; then
@@ -326,21 +315,8 @@ configure_runtime_data_layout() {
     mkdir -p \
         "${DATA_DIR}/db" \
         "${DATA_DIR}/models/llm" \
-        "${DATA_DIR}/models/piper" \
+        "${DATA_DIR}/models/piper-tts" \
         "${DATA_DIR}/videos"
-
-    migrate_file_if_needed \
-        "${BACKEND_DIR}/data/health-coach.db" \
-        "${DATA_DIR}/db/health-coach.db"
-    migrate_file_if_needed \
-        "${BACKEND_DIR}/models/llm/qwen3.5-0.8b-q4_0.gguf" \
-        "${DATA_DIR}/models/llm/qwen3.5-0.8b-q4_0.gguf"
-    migrate_file_if_needed \
-        "${BACKEND_DIR}/models/piper/de_DE-thorsten-medium.onnx" \
-        "${DATA_DIR}/models/piper/de_DE-thorsten-medium.onnx"
-    migrate_file_if_needed \
-        "${BACKEND_DIR}/models/piper/de_DE-thorsten-medium.onnx.json" \
-        "${DATA_DIR}/models/piper/de_DE-thorsten-medium.onnx.json"
 }
 
 sync_systemd_units() {

@@ -131,7 +131,7 @@ See `DEPLOYMENT.md` for installation, Caddy/systemd, update workflow, kiosk oper
 
 ## Local LLM and TTS
 
-The LLM is optional. It is used only for wording/explanation and never replaces deterministic workout or safety decisions. The default local model lives under `data/models/llm/`; Piper voices live under `data/models/piper/`.
+The LLM is optional. It is used only for wording/explanation and never replaces deterministic workout or safety decisions. The default local model lives under `data/models/llm/`; Piper voices live under `data/models/piper-tts/`.
 
 See `LOCAL-LLM.md` for the local model runtime and `DEPLOYMENT.md` for production service configuration.
 
