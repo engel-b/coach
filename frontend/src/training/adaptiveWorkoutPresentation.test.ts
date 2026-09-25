@@ -56,6 +56,14 @@ describe("adaptiveWorkoutPresentation", () => {
     expect(value?.reflectedInPlan).toBe(false);
   });
 
+  it("explains an applied longer warm-up", () => {
+    const value = adaptiveWorkoutPresentation(
+      advice({ action: "extend_warmup", planReflectsAdvice: true }),
+    );
+    expect(value?.text).toContain("zwei Minuten");
+    expect(value?.reflectedInPlan).toBe(true);
+  });
+
   it("does not turn lower HR at similar load into automatic progression", () => {
     const value = adaptiveWorkoutPresentation(
       advice({

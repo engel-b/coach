@@ -30,6 +30,13 @@ export function coachingMessage(event: LiveCoachingEvent): string {
             : `Dein Puls liegt seit ${seconds} s unter dem Zielbereich. Erhöhe die Intensität etwas.`;
 
         case "reduce_intensity":
+          if (event.reason === "warmup_extend_suggested")
+            return "Dein Puls ist beim Aufwärmen länger erhöht. Rolle noch etwas locker ein und beginne die Hauptphase erst, wenn du dich bereit fühlst.";
+          if (
+            event.reason === "sustained_high_hr_with_cadence" ||
+            event.reason === "sustained_high_hr_with_power"
+          )
+            return "Dein Puls bleibt bei deiner aktuellen Trittfrequenz oder Leistung erhöht. Nimm etwas Tempo heraus.";
           return event.deviationSeverity === "large"
             ? `Dein Puls liegt deutlich über dem Zielbereich (${event.deviationBpm} bpm). Nimm jetzt Tempo heraus.`
             : `Dein Puls liegt seit ${seconds} s über dem Zielbereich. Nimm etwas Tempo heraus.`;

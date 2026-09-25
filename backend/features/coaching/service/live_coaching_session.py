@@ -1,4 +1,7 @@
+from dataclasses import replace
+
 from features.coaching.domain.live_coaching import (
+    CoachingAction,
     LiveCoachingDecision,
     LiveCoachingPhaseEnding,
     LiveCoachingPhaseStarted,
@@ -50,6 +53,7 @@ class LiveCoachingSession:
         self._main_power_sum_w = 0
         self._main_cadence_sample_count = 0
         self._main_cadence_sum_rpm = 0.0
+        self._recent_bike: BikeTelemetry | None = None
 
     @property
     def workout_id(self) -> str:
@@ -84,6 +88,7 @@ class LiveCoachingSession:
 
         if next_phase_index != self._phase_index:
             self._coaching_service.reset()
+            self._recent_bike = None
             self._phase_index = next_phase_index
 
         return events
@@ -99,6 +104,7 @@ class LiveCoachingSession:
 
         self._runtime_state = runtime_state
         self._coaching_service.reset()
+        self._recent_bike = None
         return True
 
     def handle_heart_rate(
@@ -125,16 +131,38 @@ class LiveCoachingSession:
                 target_max_bpm=phase.target_heart_rate_max,
             )
 
-        return self._coaching_service.evaluate_heart_rate(
+        decision = self._coaching_service.evaluate_heart_rate(
             timestamp_seconds=sample.timestamp.timestamp(),
             heart_rate_bpm=sample.bpm,
             target_min_bpm=phase.target_heart_rate_min,
             target_max_bpm=phase.target_heart_rate_max,
         )
+        bike = self._recent_bike
+        bike_age = (sample.timestamp - bike.timestamp).total_seconds() if bike is not None else None
+        if bike_age is None or bike_age < 0 or bike_age > 15:
+            bike = None
+        if decision.action is CoachingAction.INCREASE_INTENSITY:
+            # A low pulse with little or no pedalling is no reason to ask for more load.
+            if bike is None or bike.cadence_rpm is None or bike.cadence_rpm < 50:
+                return replace(
+                    decision, action=CoachingAction.NONE, reason="cadence_or_power_unavailable"
+                )
+            if bike.power_w is not None and bike.power_w < 30:
+                return replace(decision, action=CoachingAction.NONE, reason="low_power")
+        if decision.action is CoachingAction.REDUCE_INTENSITY and bike is not None:
+            if phase.phase_type.value == "warm_up" and decision.outside_target_seconds >= 45:
+                return replace(decision, reason="warmup_extend_suggested")
+            if phase.phase_type.value == "main" and decision.outside_target_seconds >= 30:
+                if bike.cadence_rpm is not None and bike.cadence_rpm >= 55:
+                    return replace(decision, reason="sustained_high_hr_with_cadence")
+                if bike.power_w is not None and bike.power_w >= 30:
+                    return replace(decision, reason="sustained_high_hr_with_power")
+        return decision
 
     def handle_bike_telemetry(self, telemetry: BikeTelemetry) -> None:
         if self._runtime_state is not WorkoutRuntimeState.RUNNING:
             return
+        self._recent_bike = telemetry
 
         progress = get_current_phase(
             self._workout,

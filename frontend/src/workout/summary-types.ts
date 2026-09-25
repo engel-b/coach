@@ -22,4 +22,10 @@ export interface WorkoutSummary {
   status: "running" | "completed" | "aborted";
   heartRateSummary: WorkoutHeartRateSummary | null;
   bikeSummary: WorkoutBikeSummary | null;
+  adaptiveEvaluation: {
+    heartRateResponse: string;
+    powerResponse: string;
+    expectationMatch: string;
+    observedResponse: string;
+  } | null;
 }

@@ -1,4 +1,5 @@
 from features.workout.api.contracts.workout import (
+    AdaptiveEvaluationResponse,
     WorkoutBikeSummaryResponse,
     WorkoutHeartRateSummaryResponse,
     WorkoutPhaseResponse,
@@ -63,6 +64,11 @@ def to_workout_summary_response(
                 above_target_percent=summary.heart_rate_summary.above_target_percent,
             )
             if summary.heart_rate_summary is not None
+            else None
+        ),
+        adaptive_evaluation=(
+            AdaptiveEvaluationResponse(**vars(summary.adaptive_evaluation))
+            if summary.adaptive_evaluation is not None
             else None
         ),
         bike_summary=(

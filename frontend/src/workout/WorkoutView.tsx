@@ -8,7 +8,10 @@ import {
 } from "../api/workouts";
 import { coachingMessage } from "../coaching/coachingMessage";
 import { CoachAvatar } from "../coaching/CoachAvatar";
-import { useCoachSpeech } from "../coaching/useCoachSpeech";
+import {
+  useCoachSpeech,
+  type CoachSpeechStatus,
+} from "../coaching/useCoachSpeech";
 import type { LiveCoachingEvent } from "../coaching/types";
 import { useLiveCoaching } from "../coaching/useLiveCoaching";
 import type { DeviceState } from "../devices/types";
@@ -145,6 +148,8 @@ export function WorkoutView({
 
   const [latestCoachingEvent, setLatestCoachingEvent] =
     useState<LiveCoachingEvent | null>(null);
+  const [speechStatus, setSpeechStatus] = useState<CoachSpeechStatus>("idle");
+  const greetedWorkoutIdRef = useRef<string | null>(null);
 
   const [videoLoadState, setVideoLoadState] = useState<VideoLoadState>({
     status: "loading",
@@ -153,7 +158,7 @@ export function WorkoutView({
 
   const [videoLoadAttempt, setVideoLoadAttempt] = useState(0);
 
-  const speakCoachingEvent = useCoachSpeech();
+  const speakCoachingEvent = useCoachSpeech(setSpeechStatus);
 
   const handleCoachingMessage = useCallback(
     (message: LiveCoachingEvent): void => {
@@ -168,6 +173,27 @@ export function WorkoutView({
   const coachingConnected = useLiveCoaching({
     onMessage: handleCoachingMessage,
   });
+
+  // Das erste Phasen-Event entsteht vor dem WebSocket-Verbindungsaufbau.
+  // Sobald der Coach verbunden ist, begrüßen wir deshalb einmal pro Workout.
+  useEffect(() => {
+    if (!coachingConnected || greetedWorkoutIdRef.current === workout.id)
+      return;
+    const firstPhase = workout.phases[0];
+    if (!firstPhase) return;
+    greetedWorkoutIdRef.current = workout.id;
+    speakCoachingEvent({
+      type: "coaching.phase_started",
+      timestamp: new Date().toISOString(),
+      workoutId: workout.id,
+      phaseIndex: 0,
+      phaseType: firstPhase.phaseType,
+      durationMinutes: firstPhase.durationMinutes,
+      targetMinBpm: firstPhase.targetHeartRateMin,
+      targetMaxBpm: firstPhase.targetHeartRateMax,
+      isFinalPhase: false,
+    });
+  }, [coachingConnected, speakCoachingEvent, workout.id, workout.phases]);
 
   /*
    * Eine Coaching-Nachricht soll Aufmerksamkeit erzeugen, aber nicht
@@ -872,6 +898,45 @@ export function WorkoutView({
                 : "Coach online · Kein Pulssensor"
               : "Coach verbindet …"}
           </div>
+          <div
+            className="coach-avatar-status coach-speech-status"
+            role="status"
+          >
+            Sprache:{" "}
+            {
+              (
+                {
+                  idle: "bereit",
+                  synthesizing: "Piper erzeugt Audio …",
+                  playing: "Ansage läuft",
+                  browser_fallback:
+                    "Lokale Ansage fehlgeschlagen · Browserstimme versucht",
+                  unavailable: "Ansage fehlgeschlagen · Konsole und API prüfen",
+                } satisfies Record<CoachSpeechStatus, string>
+              )[speechStatus]
+            }
+          </div>
+          <button
+            type="button"
+            className="secondary-action coach-test-speech-button"
+            onClick={() => {
+              const phase = workout.phases[0];
+              if (!phase) return;
+              speakCoachingEvent({
+                type: "coaching.phase_started",
+                timestamp: new Date().toISOString(),
+                workoutId: workout.id,
+                phaseIndex: 0,
+                phaseType: phase.phaseType,
+                durationMinutes: phase.durationMinutes,
+                targetMinBpm: phase.targetHeartRateMin,
+                targetMaxBpm: phase.targetHeartRateMax,
+                isFinalPhase: false,
+              });
+            }}
+          >
+            Testansage
+          </button>
         </div>
 
         {engineState.state === "paused" && (

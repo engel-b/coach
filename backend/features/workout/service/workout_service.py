@@ -2,7 +2,9 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from uuid import uuid4
 
+from features.training.domain.load_response import LoadResponseStatus
 from features.training.domain.recommendation import TrainingRecommendation
+from features.workout.domain.adaptive_evaluation import WorkoutExpectation
 from features.workout.domain.bike_summary import WorkoutBikeSummary
 from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 from features.workout.domain.repository import WorkoutRepository
@@ -83,6 +85,34 @@ class WorkoutService:
             phases=recommendation.phases,
             total_duration_minutes=recommendation.total_duration_minutes,
             workout_type=recommendation.workout_type,
+            expectation=(
+                WorkoutExpectation(
+                    workout_type=recommendation.workout_type,
+                    historical_response=(
+                        recommendation.load_response.status
+                        if recommendation.load_response.workout_type is recommendation.workout_type
+                        else LoadResponseStatus.INSUFFICIENT_DATA
+                    ),
+                    comparable_workout_count=(
+                        recommendation.load_response.comparable_workout_count
+                        if recommendation.load_response.workout_type is recommendation.workout_type
+                        else 0
+                    ),
+                    median_target_position_percent=(
+                        recommendation.heart_rate_history.median_target_position_percent
+                        if recommendation.heart_rate_history
+                        and recommendation.load_response.workout_type is recommendation.workout_type
+                        else None
+                    ),
+                    median_power_w=(
+                        recommendation.load_response.median_power_w
+                        if recommendation.load_response.workout_type is recommendation.workout_type
+                        else None
+                    ),
+                )
+                if recommendation.load_response
+                else None
+            ),
             video_id=selected_video_id,
             video_position_seconds=video_position_seconds,
         )
@@ -174,6 +204,7 @@ class WorkoutService:
             status=workout.status,
             heart_rate_summary=workout.heart_rate_summary,
             bike_summary=workout.bike_summary,
+            expectation=workout.expectation,
         )
 
     def _get_running_workout(

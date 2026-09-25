@@ -18,9 +18,8 @@ class AdaptiveWorkoutPolicy:
     Leitet konservative Anpassungsvorschläge aus bereits bewerteten Signalen ab.
 
     Die Policy darf keine automatische Progression auslösen. Bestehende
-    Dauerbegrenzungen aus Readiness und HF-Historie werden als bereits im Plan
-    reflektiert ausgewiesen; Änderungen an Intensität oder Warm-up bleiben in
-    dieser Ausbaustufe advisory-only.
+    Dauerbegrenzungen und Recovery werden im Plan reflektiert. Bei ausreichend
+    vergleichbarer Historie kann ein längeres Warm-up eingeplant werden.
     """
 
     def assess(
@@ -44,6 +43,18 @@ class AdaptiveWorkoutPolicy:
         )
 
         if workout_type is WorkoutType.RECOVERY:
+            return AdaptiveWorkoutAdvice(
+                action=AdaptiveWorkoutAction.PREFER_RECOVERY,
+                reason_codes=(AdaptiveWorkoutReasonCode.RECOVERY_PLAN_SELECTED,),
+                plan_reflects_advice=True,
+                decision_context=decision_context,
+            )
+
+        if (
+            load_response.readiness_caution
+            and heart_rate_history.status is HeartRateHistoryStatus.MOSTLY_ABOVE_TARGET
+            and heart_rate_history.workout_count >= 3
+        ):
             return AdaptiveWorkoutAdvice(
                 action=AdaptiveWorkoutAction.PREFER_RECOVERY,
                 reason_codes=(AdaptiveWorkoutReasonCode.RECOVERY_PLAN_SELECTED,),
@@ -79,19 +90,15 @@ class AdaptiveWorkoutPolicy:
                     recommended_duration_minutes=duration_cap,
                 )
 
-        if load_response.status is LoadResponseStatus.HIGHER_HR_AT_SIMILAR_LOAD:
-            if heart_rate_history.status is HeartRateHistoryStatus.MOSTLY_ABOVE_TARGET:
-                return AdaptiveWorkoutAdvice(
-                    action=AdaptiveWorkoutAction.REDUCE_INTENSITY,
-                    reason_codes=(AdaptiveWorkoutReasonCode.HIGHER_HR_AT_SIMILAR_LOAD,),
-                    plan_reflects_advice=False,
-                    decision_context=decision_context,
-                )
-
+        effective_duration = min([available_training_minutes] + [cap for cap, _ in duration_caps])
+        if (
+            load_response.status is LoadResponseStatus.HIGHER_HR_AT_SIMILAR_LOAD
+            and load_response.comparable_workout_count >= 3
+        ):
             return AdaptiveWorkoutAdvice(
                 action=AdaptiveWorkoutAction.EXTEND_WARMUP,
                 reason_codes=(AdaptiveWorkoutReasonCode.HIGHER_HR_AT_SIMILAR_LOAD,),
-                plan_reflects_advice=False,
+                plan_reflects_advice=effective_duration >= 15,
                 decision_context=decision_context,
             )
 

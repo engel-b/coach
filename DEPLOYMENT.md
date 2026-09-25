@@ -581,6 +581,24 @@ HEALTH_COACH_VIDEO_SCAN_INTERVAL_SECONDS=300
 
 Die angegebenen TTS-Werte bilden das aktuelle Coach-Preset. Sie koennen auf dem Produktivsystem ohne Codeaenderung angepasst werden; danach reicht ein Neustart der API. Sehr hohe Noise-Werte koennen die Verstaendlichkeit verschlechtern.
 
+### Wenn die Coach-Ansagen ausbleiben
+
+Während eines Workouts zeigt „Coach online“ nur die WebSocket-Verbindung an. Eine Ansage entsteht beim Verbinden, bei Phasenwechseln und bei relevanten, ausreichend lang anhaltenden Pulsabweichungen. Der Trainingsabschluss-Sound benutzt eine eigene Audiodatei und bestätigt daher nicht die Funktion der Piper-Stimme.
+
+1. „Testansage“ im Workout anklicken. Der angezeigte Sprachstatus unterscheidet Synthese, Wiedergabe, Browser-Fallback und Fehlschlag. Die Testansage funktioniert auch ohne Pulssensor und ohne Live-Coaching-Event.
+2. Bleibt „Coach verbindet …“ stehen, im Chromium-Entwicklerwerkzeug unter Network die Verbindung `/ws/coaching` prüfen. Bei Verbindung ohne Live-Hinweise den Pulssensor, die `/ws/device-agent`-Verbindung und die aktuelle Workout-Phase prüfen. Nach dem Start wird eine erste Ansage beim Verbindungsaufbau ausgelöst.
+3. Steht „Browserstimme versucht“ oder „Ansage fehlgeschlagen“, auf dem Coach-PC die lokale Synthese testen:
+
+   ```bash
+   curl -sS -o /tmp/coach-test.wav -w 'HTTP %{http_code}, Typ %{content_type}, Bytes %{size_download}\n' \
+     -H 'Content-Type: application/json' \
+     -d '{"text":"Dies ist eine Testansage."}' \
+     http://127.0.0.1/api/speech/synthesize
+   journalctl -u health-coach-api -n 100 --no-pager
+   ```
+
+   HTTP 200 mit einer WAV-Datei deutet auf ein Wiedergabeproblem im Browser. Bei 503 den konfigurierten `HEALTH_COACH_PIPER_MODEL`-Pfad, die zugehörige `.onnx.json`-Datei, Dateirechte und die installierten Backend-Abhängigkeiten prüfen. Bei 500 den Python-Traceback im API-Journal prüfen. Auch in der Chromium-Konsole stehen Fehler zur lokalen Audiowiedergabe und zum Browser-Fallback.
+
 Falls das LLM vorübergehend deaktiviert werden soll:
 
 ```ini

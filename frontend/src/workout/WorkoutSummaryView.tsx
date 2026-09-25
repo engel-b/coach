@@ -243,6 +243,63 @@ export function WorkoutSummaryView({
         </div>
       </section>
 
+      {summary?.adaptiveEvaluation && (
+        <section className="dashboard-card completion-results-card">
+          <div className="dashboard-card-header">
+            <div>
+              <div className="dashboard-section-label">ADAPTIVE AUSWERTUNG</div>
+              <h2>Wie hat dein Körper reagiert?</h2>
+            </div>
+          </div>
+          <p>
+            Vergleich der Hauptphase mit der vor dem Start gespeicherten
+            Historie. Rein beschreibend.
+          </p>
+          <div className="completion-detail-row">
+            <span>HF-Reaktion</span>
+            <strong>
+              {(
+                {
+                  higher: "Eher hoch",
+                  lower: "Eher niedrig",
+                  similar: "Ähnlich",
+                  insufficient_data: "Zu wenig vergleichbare Daten",
+                } as Record<string, string>
+              )[summary.adaptiveEvaluation.heartRateResponse] ??
+                "Nicht einordenbar"}
+            </strong>
+          </div>
+          <div className="completion-detail-row">
+            <span>Leistung</span>
+            <strong>
+              {(
+                {
+                  higher: "Höher",
+                  lower: "Niedriger",
+                  similar: "Vergleichbar",
+                  insufficient_data: "Zu wenig Leistungsdaten",
+                } as Record<string, string>
+              )[summary.adaptiveEvaluation.powerResponse] ??
+                "Nicht einordenbar"}
+            </strong>
+          </div>
+          <div className="completion-detail-row">
+            <span>Vergleich mit der Erwartung</span>
+            <strong>
+              {(
+                {
+                  matched: "Passt zum bisherigen Verlauf",
+                  different: "Anders als bisher",
+                  not_comparable: "Belastung nicht vergleichbar",
+                  insufficient_data: "Nicht beurteilbar",
+                } as Record<string, string>
+              )[summary.adaptiveEvaluation.expectationMatch] ??
+                "Nicht beurteilbar"}
+            </strong>
+          </div>
+        </section>
+      )}
+
       <section className="dashboard-card dashboard-badges-card">
         <div className="dashboard-card-header">
           <div>

@@ -71,9 +71,16 @@ export function useLiveCoaching({
 
           if (message !== null) {
             onMessage(message);
+          } else {
+            console.warn(
+              "Unrecognized live coaching event",
+              typeof parsed === "object" && parsed !== null && "type" in parsed
+                ? parsed.type
+                : "unknown",
+            );
           }
-        } catch {
-          // Ungültiges JSON wird an der Systemgrenze verworfen.
+        } catch (error) {
+          console.warn("Invalid live coaching message", error);
         }
       };
 

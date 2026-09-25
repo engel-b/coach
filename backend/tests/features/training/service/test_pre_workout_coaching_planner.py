@@ -303,3 +303,27 @@ def test_adaptive_workout_advice_is_forwarded_to_recommendation() -> None:
     recommendation = planner().recommend(replace(context(), adaptive_workout_advice=advice))
 
     assert recommendation.adaptive_workout_advice == advice
+
+
+def test_applied_warmup_keeps_total_duration_and_main_phase() -> None:
+    from features.training.domain.heart_rate_history import HeartRateHistoryStatus
+    from features.training.domain.load_response import LoadResponseStatus
+
+    advice = AdaptiveWorkoutAdvice(
+        action=AdaptiveWorkoutAction.EXTEND_WARMUP,
+        reason_codes=(),
+        plan_reflects_advice=True,
+        decision_context=AdaptiveWorkoutDecisionContext(
+            workout_type=WorkoutType.BASE_ENDURANCE,
+            available_training_minutes=30,
+            readiness_max_duration_minutes=None,
+            heart_rate_history_status=HeartRateHistoryStatus.MOSTLY_IN_TARGET,
+            heart_rate_history_max_duration_minutes=None,
+            load_response_status=LoadResponseStatus.HIGHER_HR_AT_SIMILAR_LOAD,
+            comparable_workout_count=5,
+            readiness_caution=False,
+        ),
+    )
+    recommendation = planner().recommend(replace(context(), adaptive_workout_advice=advice))
+    assert recommendation.total_duration_minutes == 30
+    assert [phase.duration_minutes for phase in recommendation.phases] == [7, 18, 5]

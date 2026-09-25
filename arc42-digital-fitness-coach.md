@@ -458,13 +458,15 @@ Die heutige Readiness wird dabei als separates Vorsichtssignal mitgeführt; sie 
 
 Die `AdaptiveWorkoutPolicy` liest den `LoadResponseContext` zusammen mit Readiness, historischer Zielbereichsreaktion und dem bereits deterministisch gewählten Workout-Typ. Sie erzeugt ausschließlich strukturierte konservative Vorschläge: `keep_plan`, `reduce_duration`, `reduce_intensity`, `extend_warmup` oder `prefer_recovery`.
 
-Jeder Vorschlag kennzeichnet zusätzlich, ob er im aktuellen Plan bereits berücksichtigt ist. Bereits bestehende Dauerbegrenzungen aus Readiness oder HF-Historie werden als reflektiert ausgewiesen. Vorschläge zur Intensitätsreduktion oder zu einer längeren Aufwärmphase bleiben zunächst advisory-only und verändern weder Zielpuls noch Bike-Widerstand automatisch. Ein günstiger Verlauf (`lower_hr_at_similar_load`) führt explizit **nicht** zu automatischer Progression.
+Jeder Vorschlag kennzeichnet zusätzlich, ob er im aktuellen Plan bereits berücksichtigt ist. Dauerbegrenzungen aus Readiness oder HF-Historie greifen weiterhin automatisch. Wenn heutige Vorsicht und mindestens drei vergleichbare Einheiten mit häufigem Überschreiten des Zielbereichs zusammenkommen, wird eine regenerative Einheit bevorzugt. Bei mindestens drei vergleichbaren Einheiten und höherem Puls bei ähnlicher Leistung verlängert die Planung das Warm-up um zwei Minuten zulasten der Hauptphase, sofern insgesamt mindestens 15 Minuten verfügbar sind. Zielpuls und Bike-Widerstand werden nicht automatisch verändert. Ein günstiger Verlauf (`lower_hr_at_similar_load`) löst keine Progression aus.
 
 Die API liefert Aktion, stabile Reason Codes, den Reflektionsstatus und gegebenenfalls die empfohlene Dauer strukturiert an das Frontend. Die UI formuliert daraus transparent, was bereits angepasst wurde und was nur als konservativer Hinweis vorliegt.
 
 Jede adaptive Entscheidung enthält zusätzlich einen `AdaptiveWorkoutDecisionContext`. Dieser Snapshot hält die für die Entscheidung verwendeten, bereits normalisierten Signale fest: Workout-Typ, verfügbare Trainingszeit, Readiness-Dauerlimit, Status und Dauerlimit der HF-Historie, `LoadResponseStatus`, Anzahl vergleichbarer Workouts und das heutige Readiness-Vorsichtssignal. API und Frontend verwenden diesen Snapshot für die Erklärung „Warum diese Empfehlung?“, statt die Entscheidung im Browser erneut herzuleiten.
 
 Bei der Erzeugung einer Trainingsempfehlung wird die adaptive Entscheidung serverseitig als strukturierte Key/Value-Logzeile protokolliert. Geloggt werden Aktion, Reason-Codes und der Decision-Context, nicht jedoch Roh-HF- oder komplette Telemetrie-Zeitreihen. So lässt sich nach realen Einheiten nachvollziehen, welche deterministischen Eingangssignale zu einem Vorschlag geführt haben.
+
+Beim Start eines Workouts werden Workout-Typ, historische Belastungsreaktion, Zahl vergleichbarer Einheiten, mediane Zielbereichsposition und mediane Leistung als Erwartung gespeichert. Die Summary vergleicht damit die Hauptphase: mindestens 30 HF- und 30 Leistungswerte sowie mindestens drei vergleichbare Einheiten sind für eine gemeinsame HF-/Leistungsbewertung erforderlich. Eine Abweichung der Zielbereichsposition um mindestens 15 Prozentpunkte gilt als höher/niedriger, Leistung innerhalb von ±10 % als vergleichbar. Fehlen Werte oder weicht die Leistung ab, wird die Übereinstimmung mit der Erwartung als nicht beurteilbar beziehungsweise nicht vergleichbar ausgewiesen. Bestehende Workouts ohne gespeicherte Erwartung bekommen keine rückwirkend konstruierte Auswertung.
 
 ## 5.4 Live-Coaching-Bausteine
 
@@ -507,6 +509,8 @@ coaching.workout_halfway
 ```
 
 Runtime-Events umfassen insbesondere Pause und Resume. Die Runtime-Aktualisierung ist nicht an das Auftreten eines Struktur-Events gekoppelt.
+
+Für Live-Hinweise berücksichtigt die Session neben der zusammenhängenden HF-Abweichungsdauer nur Bike-Daten, die höchstens 15 Sekunden vom HF-Sample entfernt liegen. Bei niedrigem Puls und fehlender oder geringer Kadenz (unter 50 rpm) wird keine Intensitätssteigerung empfohlen. Bei anhaltend hohem Puls und plausibler Leistung/Kadenz wird zu ruhigerem Tempo geraten; während des Warm-ups kann nach 45 Sekunden Überschreitung zum weiteren lockeren Einrollen geraten werden. Pausen, Phasenwechsel und Telemetrielücken setzen die relevante Historie zurück. Diese Hinweise verändern keine Phasengrenzen oder den FTMS-Widerstand.
 
 ## 5.5 Frontend
 
@@ -1791,4 +1795,3 @@ Entwicklungsports richten sich nach Makefile/Vite-Konfiguration und dürfen vom 
 13. Generative Komponenten formulieren, entscheiden aber keine Safety-/Trainingsregeln.
 14. Cross-Feature-Orchestrierung liegt im Composition Root.
 15. Persistierte Medienpfade sind relative fachliche Pfade, keine Browser-URLs.
-

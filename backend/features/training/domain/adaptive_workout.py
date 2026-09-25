@@ -54,8 +54,7 @@ class AdaptiveWorkoutAdvice:
 
     `plan_reflects_advice` bedeutet, dass der aktuelle Plan den Rat bereits
     berücksichtigt. Die Policy steuert kein Gerät und erhöht niemals die
-    Trainingsintensität. Nicht reflektierte Vorschläge bleiben zunächst rein
-    informativ für Person und spätere explizite Anpassungs-Use-Cases.
+    Trainingsintensität.
 
     `decision_context` hält die deterministisch bewerteten Eingangssignale fest,
     damit API, UI, Tests und Logs dieselbe Erklärung verwenden können.

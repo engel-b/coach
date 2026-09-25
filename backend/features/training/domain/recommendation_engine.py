@@ -34,6 +34,7 @@ class TrainingRecommendationEngine:
         resting_heart_rate: int | None = None,
         resting_heart_rate_source: HeartRateTargetSource | None = None,
         resting_heart_rate_sample_count: int = 0,
+        prefer_recovery: bool = False,
     ) -> TrainingRecommendation:
         target_basis = self._heart_rate_target_policy.describe_basis(
             max_heart_rate_bpm=max_heart_rate,
@@ -42,7 +43,7 @@ class TrainingRecommendationEngine:
             resting_heart_rate_sample_count=resting_heart_rate_sample_count,
         )
 
-        if self._needs_recovery(check_in):
+        if prefer_recovery or self._needs_recovery(check_in):
             return self._create_recovery(
                 check_in,
                 max_heart_rate,

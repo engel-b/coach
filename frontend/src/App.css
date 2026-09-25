@@ -1006,6 +1006,18 @@ h1 {
   font-weight: 700;
 }
 
+.coach-speech-status {
+  max-width: 245px;
+  text-align: center;
+}
+
+.coach-test-speech-button {
+  min-width: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
 .workout-pause-overlay {
   position: absolute;
   top: 50%;
