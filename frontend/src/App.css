@@ -508,6 +508,7 @@ h1 {
 }
 
 .workout-view {
+  position: relative;
   display: grid;
   grid-template-rows: 72px minmax(0, 1fr);
 
@@ -518,6 +519,29 @@ h1 {
   overflow: hidden;
 
   background: #070b10;
+}
+
+.workout-speech-banner {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  z-index: 30;
+
+  display: grid;
+  gap: 4px;
+
+  width: min(560px, calc(100% - 32px));
+  padding: 12px 16px;
+  transform: translateX(-50%);
+
+  border: 1px solid #d89d51;
+  border-radius: 10px;
+
+  color: #fff4df;
+  background: #382612;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+  font-size: 14px;
 }
 
 .workout-stage-header {

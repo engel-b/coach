@@ -581,11 +581,13 @@ HEALTH_COACH_VIDEO_SCAN_INTERVAL_SECONDS=300
 
 Die angegebenen TTS-Werte bilden das aktuelle Coach-Preset. Sie koennen auf dem Produktivsystem ohne Codeaenderung angepasst werden; danach reicht ein Neustart der API. Sehr hohe Noise-Werte koennen die Verstaendlichkeit verschlechtern.
 
+`deploy/provision.sh` lädt die konfigurierte Piper-Stimme vor einem Neustart zur Prüfung mit derselben Bibliothek wie die API. Bei einem defekten Modell werden neue Modell- und Konfigurationsdatei zunächst separat heruntergeladen und geprüft. Erst danach werden die Dateien ersetzt; die alten Dateien bleiben als `.bak.<kennung>` im Modellverzeichnis erhalten. Schlägt Download oder Prüfung fehl, bricht die Bereitstellung ab und lässt die vorhandenen Dateien unverändert. Für diese Prüfung braucht die Bereitstellung Netzwerkzugang; der normale API-Start lädt keine Modelle herunter.
+
 ### Wenn die Coach-Ansagen ausbleiben
 
 Während eines Workouts zeigt „Coach online“ nur die WebSocket-Verbindung an. Eine Ansage entsteht beim Verbinden, bei Phasenwechseln und bei relevanten, ausreichend lang anhaltenden Pulsabweichungen. Der Trainingsabschluss-Sound benutzt eine eigene Audiodatei und bestätigt daher nicht die Funktion der Piper-Stimme.
 
-1. „Testansage“ im Workout anklicken. Der angezeigte Sprachstatus unterscheidet Synthese, Wiedergabe, Browser-Fallback und Fehlschlag. Die Testansage funktioniert auch ohne Pulssensor und ohne Live-Coaching-Event.
+1. „Testansage“ im Workout anklicken. Der angezeigte Sprachstatus unterscheidet Synthese, Wiedergabe, Browser-Fallback und Fehlschlag; ein sichtbarer Hinweis erscheint bei Fallback oder Ausfall. Die Testansage funktioniert auch ohne Pulssensor und ohne Live-Coaching-Event.
 2. Bleibt „Coach verbindet …“ stehen, im Chromium-Entwicklerwerkzeug unter Network die Verbindung `/ws/coaching` prüfen. Bei Verbindung ohne Live-Hinweise den Pulssensor, die `/ws/device-agent`-Verbindung und die aktuelle Workout-Phase prüfen. Nach dem Start wird eine erste Ansage beim Verbindungsaufbau ausgelöst.
 3. Steht „Browserstimme versucht“ oder „Ansage fehlgeschlagen“, auf dem Coach-PC die lokale Synthese testen:
 
