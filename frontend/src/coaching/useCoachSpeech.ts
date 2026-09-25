@@ -66,9 +66,7 @@ export function useCoachSpeech(
       objectUrlRef.current = null;
     }
 
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
+    window.speechSynthesis?.cancel();
   }, []);
 
   useEffect(() => stopCurrentSpeech, [stopCurrentSpeech]);
