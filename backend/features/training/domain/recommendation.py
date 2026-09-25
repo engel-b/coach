@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
+from features.training.domain.adaptive_workout import AdaptiveWorkoutAdvice
 from features.training.domain.heart_rate_history import HeartRateHistoryContext
 from features.training.domain.heart_rate_target import HeartRateTargetSource
+from features.training.domain.load_response import LoadResponseContext
 from features.training.domain.pre_workout import RecommendationReasonCode
 from features.training.domain.weight_goal_progress import WeightGoalProgress
 
@@ -52,3 +54,5 @@ class TrainingRecommendation:
     weight_goal_progress: WeightGoalProgress | None = None
     heart_rate_target_basis: HeartRateTargetBasis | None = None
     heart_rate_history: HeartRateHistoryContext | None = None
+    load_response: LoadResponseContext | None = None
+    adaptive_workout_advice: AdaptiveWorkoutAdvice | None = None

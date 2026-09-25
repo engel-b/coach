@@ -2726,3 +2726,35 @@ h1 {
   color: #ccd3dc;
   line-height: 1.5;
 }
+
+.adaptive-explanation-heading {
+  margin-top: 12px;
+  color: #8a97a8;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.adaptive-explanation ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  color: #c3ccd6;
+  line-height: 1.55;
+}
+
+.adaptive-explanation details {
+  margin-top: 12px;
+  color: #aeb8c5;
+}
+
+.adaptive-explanation summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.recommendation-reason .adaptive-explanation {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(115, 213, 91, 0.12);
+}

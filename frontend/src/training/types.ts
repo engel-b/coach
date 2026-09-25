@@ -72,7 +72,54 @@ export interface HeartRateHistory {
   targetPositionChangePoints: number | null;
   loadAdjustedTrend: LoadAdjustedHeartRateTrend;
   medianPowerW: number | null;
+  medianCadenceRpm: number | null;
   powerChangePercent: number | null;
+}
+
+export type LoadResponseStatus =
+  | "insufficient_data"
+  | "stable"
+  | "lower_hr_at_similar_load"
+  | "higher_hr_at_similar_load"
+  | "lower_load"
+  | "higher_load"
+  | "mixed";
+
+export interface LoadResponse {
+  status: LoadResponseStatus;
+  workoutType: WorkoutType;
+  comparableWorkoutCount: number;
+  heartRateTrend: HeartRateResponseTrend;
+  loadAdjustedHeartRateTrend: LoadAdjustedHeartRateTrend;
+  medianPowerW: number | null;
+  medianCadenceRpm: number | null;
+  readinessCaution: boolean;
+}
+
+export type AdaptiveWorkoutAction =
+  | "keep_plan"
+  | "reduce_duration"
+  | "reduce_intensity"
+  | "extend_warmup"
+  | "prefer_recovery";
+
+export interface AdaptiveWorkoutDecisionContext {
+  workoutType: WorkoutType;
+  availableTrainingMinutes: number;
+  readinessMaxDurationMinutes: number | null;
+  heartRateHistoryStatus: HeartRateHistoryStatus;
+  heartRateHistoryMaxDurationMinutes: number | null;
+  loadResponseStatus: LoadResponseStatus;
+  comparableWorkoutCount: number;
+  readinessCaution: boolean;
+}
+
+export interface AdaptiveWorkoutAdvice {
+  action: AdaptiveWorkoutAction;
+  reasonCodes: string[];
+  planReflectsAdvice: boolean;
+  recommendedDurationMinutes: number | null;
+  decisionContext: AdaptiveWorkoutDecisionContext;
 }
 
 export interface TrainingRecommendation {
@@ -81,6 +128,8 @@ export interface TrainingRecommendation {
   reason: string;
   heartRateTargetBasis: HeartRateTargetBasis;
   heartRateHistory: HeartRateHistory | null;
+  loadResponse: LoadResponse | null;
+  adaptiveWorkoutAdvice: AdaptiveWorkoutAdvice | null;
   reasonCodes: string[];
   weightGoalProgress: WeightGoalProgress | null;
   phases: WorkoutPhase[];

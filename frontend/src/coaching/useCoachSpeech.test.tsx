@@ -128,6 +128,30 @@ describe("useCoachSpeech", () => {
     expect(abort).toHaveBeenCalled();
   });
 
+  it("forwards structure coaching events to local TTS", async () => {
+    const { result } = renderHook(() => useCoachSpeech());
+
+    act(() => {
+      result.current({
+        type: "coaching.phase_started",
+        timestamp: "2026-09-13T08:30:00Z",
+        workoutId: "workout-1",
+        phaseIndex: 1,
+        phaseType: "main",
+        durationMinutes: 20,
+        targetMinBpm: 125,
+        targetMaxBpm: 145,
+        isFinalPhase: false,
+      });
+    });
+    await act(flushPromises);
+
+    expect(synthesizeSpeechMock).toHaveBeenCalledWith(
+      "Jetzt geht's in die Hauptphase! Finde deinen Rhythmus und bleib dran.",
+      expect.any(AbortSignal),
+    );
+  });
+
   it("speaks pause events even without a heart-rate decision", async () => {
     const { result } = renderHook(() => useCoachSpeech());
 

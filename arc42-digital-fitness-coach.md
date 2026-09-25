@@ -448,6 +448,24 @@ Die resultierende Einordnung ist ausdrücklich **keine automatische Fitnessbewer
 
 Die Workout-Zusammenfassung zeigt die dafür verwendeten aggregierten Hauptphasenwerte (durchschnittliche Herzfrequenz, Zielbereichsanteile, durchschnittliche Leistung und durchschnittliche Kadenz) zusammen mit der jeweiligen Stichprobenanzahl. Die Trainingsempfehlung formuliert die historische HR-/Power-Einordnung aus strukturierten API-Daten; das Frontend berechnet weder Zielbereiche noch Fitnessbewertungen selbst. Fehlende oder nicht ausreichend belastbare Historie wird nicht durch spekulative Aussagen ersetzt.
 
+### LoadResponseContext
+
+Der `LoadResponseContext` bündelt die bereits deterministisch abgeleiteten Signale aus Herzfrequenzverlauf, leistungsadjustierter HF-Reaktion, aggregierter Kadenz, aktuellem Readiness-Kontext und fachlichem Workout-Typ. Er liefert ausschließlich eine deskriptive Einordnung wie `stable`, `lower_hr_at_similar_load`, `higher_hr_at_similar_load`, `lower_load`, `higher_load`, `mixed` oder `insufficient_data`.
+
+Die heutige Readiness wird dabei als separates Vorsichtssignal mitgeführt; sie verändert die historische Einordnung nicht rückwirkend. Umgekehrt darf ein günstiger historischer Verlauf keine automatische Intensitätssteigerung auslösen. Der Context ist damit eine gemeinsame fachliche Grundlage für UI und eine spätere adaptive Policy, aber selbst **keine** adaptive Trainingsentscheidung.
+
+### AdaptiveWorkoutPolicy
+
+Die `AdaptiveWorkoutPolicy` liest den `LoadResponseContext` zusammen mit Readiness, historischer Zielbereichsreaktion und dem bereits deterministisch gewählten Workout-Typ. Sie erzeugt ausschließlich strukturierte konservative Vorschläge: `keep_plan`, `reduce_duration`, `reduce_intensity`, `extend_warmup` oder `prefer_recovery`.
+
+Jeder Vorschlag kennzeichnet zusätzlich, ob er im aktuellen Plan bereits berücksichtigt ist. Bereits bestehende Dauerbegrenzungen aus Readiness oder HF-Historie werden als reflektiert ausgewiesen. Vorschläge zur Intensitätsreduktion oder zu einer längeren Aufwärmphase bleiben zunächst advisory-only und verändern weder Zielpuls noch Bike-Widerstand automatisch. Ein günstiger Verlauf (`lower_hr_at_similar_load`) führt explizit **nicht** zu automatischer Progression.
+
+Die API liefert Aktion, stabile Reason Codes, den Reflektionsstatus und gegebenenfalls die empfohlene Dauer strukturiert an das Frontend. Die UI formuliert daraus transparent, was bereits angepasst wurde und was nur als konservativer Hinweis vorliegt.
+
+Jede adaptive Entscheidung enthält zusätzlich einen `AdaptiveWorkoutDecisionContext`. Dieser Snapshot hält die für die Entscheidung verwendeten, bereits normalisierten Signale fest: Workout-Typ, verfügbare Trainingszeit, Readiness-Dauerlimit, Status und Dauerlimit der HF-Historie, `LoadResponseStatus`, Anzahl vergleichbarer Workouts und das heutige Readiness-Vorsichtssignal. API und Frontend verwenden diesen Snapshot für die Erklärung „Warum diese Empfehlung?“, statt die Entscheidung im Browser erneut herzuleiten.
+
+Bei der Erzeugung einer Trainingsempfehlung wird die adaptive Entscheidung serverseitig als strukturierte Key/Value-Logzeile protokolliert. Geloggt werden Aktion, Reason-Codes und der Decision-Context, nicht jedoch Roh-HF- oder komplette Telemetrie-Zeitreihen. So lässt sich nach realen Einheiten nachvollziehen, welche deterministischen Eingangssignale zu einem Vorschlag geführt haben.
+
 ## 5.4 Live-Coaching-Bausteine
 
 ```text
@@ -1227,6 +1245,23 @@ Für abgeschlossene Workouts wird eine kompakte Herzfrequenz-Zusammenfassung der
 **Status:** Akzeptiert
 
 Für historische Belastungsreaktionen dürfen Herzfrequenz und aggregierte FTMS-Leistung gemeinsam betrachtet werden. Nur bei ausreichend belegten, fachlich vergleichbaren Workouts wird beschrieben, ob sich die relative Herzfrequenz bei ähnlicher oder deutlich veränderter Bike-Leistung verschoben hat. Kadenz und Leistung bleiben optionale Sensorsignale. Aus einer günstigeren historischen Relation folgt keine automatische Erhöhung von Zielpuls, Dauer, Widerstand oder sonstiger Trainingsintensität.
+
+
+## ADR-018d – Belastungsreaktion zunächst nur deskriptiv zusammenführen
+
+**Entscheidung:** Herzfrequenztrend, historische Bike-Leistung, aggregierte Kadenz, heutige Readiness und Workout-Typ werden in einem `LoadResponseContext` zusammengeführt. Dieser Context darf Trainingsparameter nicht selbst verändern.
+
+**Begründung:** Die Signale sind gemeinsam aussagekräftiger als isoliert, reichen aber noch nicht für eine belastbare automatische Anpassung von Dauer, Zielpuls oder Widerstand. Die Trennung schafft eine stabile, testbare Zwischenstufe vor späteren adaptiven Policies.
+
+**Konsequenz:** Eine spätere automatische Anpassung benötigt eine eigene deterministische Policy mit expliziten Regeln und Safety-Grenzen; der `LoadResponseContext` bleibt beobachtend.
+
+## ADR-018e – AdaptiveWorkoutPolicy bleibt konservativ und transparent
+
+**Entscheidung:** Eine eigene `AdaptiveWorkoutPolicy` darf aus `LoadResponseContext`, Readiness und historischer HF-Reaktion deterministische Anpassungsvorschläge ableiten. Sie darf keine automatische Progression aus einem günstigen Verlauf erzeugen.
+
+**Begründung:** Historische HF-/Bike-Signale sind nützlich, aber nicht ausreichend, um Zielpuls, Widerstand oder Trainingslast automatisch zu erhöhen. Konservative Vorschläge müssen von Safety-Grenzen und Gerätesteuerung getrennt bleiben.
+
+**Konsequenz:** Bereits vorhandene Dauerbegrenzungen können als im Plan reflektiert ausgewiesen werden. Intensitätsreduktion und längeres Warm-up bleiben zunächst advisory-only. Eine spätere automatische Anwendung benötigt einen eigenen Use Case mit expliziten Grenzen, Tests und Safety-Regeln.
 
 ## ADR-019 – Cross-Feature-Coaching-Orchestrierung liegt im App-Layer
 **Status:** Akzeptiert

@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 
 from fastapi import HTTPException
@@ -7,6 +8,8 @@ from features.training.domain.heart_rate import get_max_heart_rate
 from features.training.domain.pre_workout import PreWorkoutCoachingContext
 from features.training.domain.readiness import RecentTrainingSession
 from features.training.domain.recommendation import TrainingRecommendation
+
+logger = logging.getLogger(__name__)
 
 
 def create_training_recommendation(
@@ -75,6 +78,38 @@ def create_training_recommendation(
         workouts=recent_workouts,
         workout_type=provisional_recommendation.workout_type,
     )
+    load_response = wiring.load_response_service.assess(
+        history=heart_rate_history,
+        readiness=readiness,
+        workout_type=provisional_recommendation.workout_type,
+    )
+    adaptive_workout_advice = wiring.adaptive_workout_policy.assess(
+        workout_type=provisional_recommendation.workout_type,
+        available_training_minutes=check_in.available_training_minutes,
+        readiness=readiness,
+        heart_rate_history=heart_rate_history,
+        load_response=load_response,
+    )
+    decision_context = adaptive_workout_advice.decision_context
+    logger.info(
+        "adaptive_workout_decision person_id=%s action=%s plan_reflects_advice=%s "
+        "reason_codes=%s workout_type=%s available_training_minutes=%s "
+        "readiness_max_duration_minutes=%s heart_rate_history_status=%s "
+        "heart_rate_history_max_duration_minutes=%s load_response_status=%s "
+        "comparable_workout_count=%s readiness_caution=%s",
+        person_id,
+        adaptive_workout_advice.action.value,
+        adaptive_workout_advice.plan_reflects_advice,
+        ",".join(reason.value for reason in adaptive_workout_advice.reason_codes) or "none",
+        decision_context.workout_type.value,
+        decision_context.available_training_minutes,
+        decision_context.readiness_max_duration_minutes,
+        decision_context.heart_rate_history_status.value,
+        decision_context.heart_rate_history_max_duration_minutes,
+        decision_context.load_response_status.value,
+        decision_context.comparable_workout_count,
+        decision_context.readiness_caution,
+    )
 
     return wiring.pre_workout_coaching_planner.recommend(
         PreWorkoutCoachingContext(
@@ -88,5 +123,7 @@ def create_training_recommendation(
             weight_goal_progress=weight_goal_progress,
             readiness=readiness,
             heart_rate_history=heart_rate_history,
+            load_response=load_response,
+            adaptive_workout_advice=adaptive_workout_advice,
         )
     )

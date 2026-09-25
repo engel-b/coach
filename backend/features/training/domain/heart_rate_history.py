@@ -44,6 +44,7 @@ class HeartRateHistoryRules:
     trend_min_workout_count: int = 4
     trend_change_threshold_points: int = 15
     min_power_samples_per_workout: int = 30
+    min_cadence_samples_per_workout: int = 30
     similar_power_change_percent: int = 10
 
 
@@ -62,3 +63,4 @@ class HeartRateHistoryContext:
     load_adjusted_trend: LoadAdjustedHeartRateTrend = LoadAdjustedHeartRateTrend.INSUFFICIENT_DATA
     median_power_w: int | None = None
     power_change_percent: int | None = None
+    median_cadence_rpm: float | None = None

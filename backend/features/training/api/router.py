@@ -4,8 +4,11 @@ from fastapi import APIRouter, HTTPException, Path
 
 from apps.api import wiring
 from features.training.api.contracts.training import (
+    AdaptiveWorkoutAdviceResponse,
+    AdaptiveWorkoutDecisionContextResponse,
     HeartRateHistoryResponse,
     HeartRateTargetBasisResponse,
+    LoadResponseResponse,
     TrainingRecommendationResponse,
     WeightGoalProgressResponse,
     WorkoutPhaseResponse,
@@ -118,7 +121,64 @@ async def training_recommendation(
                 ),
                 load_adjusted_trend=(recommendation.heart_rate_history.load_adjusted_trend.value),
                 median_power_w=recommendation.heart_rate_history.median_power_w,
+                median_cadence_rpm=recommendation.heart_rate_history.median_cadence_rpm,
                 power_change_percent=(recommendation.heart_rate_history.power_change_percent),
+            )
+        ),
+        load_response=(
+            None
+            if recommendation.load_response is None
+            else LoadResponseResponse(
+                status=recommendation.load_response.status.value,
+                workout_type=recommendation.load_response.workout_type.value,
+                comparable_workout_count=(recommendation.load_response.comparable_workout_count),
+                heart_rate_trend=recommendation.load_response.heart_rate_trend.value,
+                load_adjusted_heart_rate_trend=(
+                    recommendation.load_response.load_adjusted_heart_rate_trend.value
+                ),
+                median_power_w=recommendation.load_response.median_power_w,
+                median_cadence_rpm=recommendation.load_response.median_cadence_rpm,
+                readiness_caution=recommendation.load_response.readiness_caution,
+            )
+        ),
+        adaptive_workout_advice=(
+            None
+            if recommendation.adaptive_workout_advice is None
+            else AdaptiveWorkoutAdviceResponse(
+                action=recommendation.adaptive_workout_advice.action.value,
+                reason_codes=[
+                    reason.value for reason in recommendation.adaptive_workout_advice.reason_codes
+                ],
+                plan_reflects_advice=(recommendation.adaptive_workout_advice.plan_reflects_advice),
+                recommended_duration_minutes=(
+                    recommendation.adaptive_workout_advice.recommended_duration_minutes
+                ),
+                decision_context=AdaptiveWorkoutDecisionContextResponse(
+                    workout_type=(
+                        recommendation.adaptive_workout_advice.decision_context.workout_type.value
+                    ),
+                    available_training_minutes=(
+                        recommendation.adaptive_workout_advice.decision_context.available_training_minutes
+                    ),
+                    readiness_max_duration_minutes=(
+                        recommendation.adaptive_workout_advice.decision_context.readiness_max_duration_minutes
+                    ),
+                    heart_rate_history_status=(
+                        recommendation.adaptive_workout_advice.decision_context.heart_rate_history_status.value
+                    ),
+                    heart_rate_history_max_duration_minutes=(
+                        recommendation.adaptive_workout_advice.decision_context.heart_rate_history_max_duration_minutes
+                    ),
+                    load_response_status=(
+                        recommendation.adaptive_workout_advice.decision_context.load_response_status.value
+                    ),
+                    comparable_workout_count=(
+                        recommendation.adaptive_workout_advice.decision_context.comparable_workout_count
+                    ),
+                    readiness_caution=(
+                        recommendation.adaptive_workout_advice.decision_context.readiness_caution
+                    ),
+                ),
             )
         ),
         weight_goal_progress=(
