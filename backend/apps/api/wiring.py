@@ -1,8 +1,6 @@
 import os
 from pathlib import Path
 
-from features.training.service.adaptive_workout_policy import AdaptiveWorkoutPolicy
-
 from adapters.llm.local_llm_coach_message_generator import LocalLlmCoachMessageGenerator
 from apps.api.live_coaching_event_publisher import LiveCoachingEventPublisher
 from apps.api.live_coaching_lifecycle import LiveCoachingLifecycle
@@ -35,6 +33,7 @@ from features.training.domain.heart_rate_history import HeartRateHistoryRules
 from features.training.domain.readiness import ReadinessRules
 from features.training.domain.recommendation_engine import TrainingRecommendationEngine
 from features.training.domain.weight_trend import WeightTrendRules
+from features.training.service.adaptive_workout_policy import AdaptiveWorkoutPolicy
 from features.training.service.fallback_coach_message_generator import (
     FallbackCoachMessageGenerator,
 )
