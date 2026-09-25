@@ -751,6 +751,18 @@ export function WorkoutView({
         </div>
       </header>
 
+      {(speechStatus === "browser_fallback" ||
+        speechStatus === "unavailable") && (
+        <div className="workout-speech-banner" role="alert">
+          <strong>Coach-Ansage gestört</strong>
+          <span>
+            {speechStatus === "browser_fallback"
+              ? "Die lokale Stimme ist ausgefallen. Die Browserstimme wird als Ersatz versucht; Hinweise bleiben sichtbar."
+              : "Sprachausgabe derzeit nicht verfügbar. Coaching-Hinweise bleiben sichtbar."}
+          </span>
+        </div>
+      )}
+
       <div className="workout-stage">
         {videoLoadState.videoId === workout.videoId &&
         videoLoadState.status === "ready" ? (
