@@ -17,7 +17,9 @@ def model(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
                 raise ValueError("INVALID_PROTOBUF")
             return object()
 
-    monkeypatch.setattr(voices, "import_module", lambda _name: SimpleNamespace(PiperVoice=FakeVoice))
+    monkeypatch.setattr(
+        voices, "import_module", lambda _name: SimpleNamespace(PiperVoice=FakeVoice)
+    )
     return path
 
 
@@ -52,9 +54,7 @@ def test_corrupt_voice_is_backed_up_and_replaced_only_after_validation(
     assert [p.read_bytes() for p in model.parent.glob(f"{model.name}.bak.*")] == [b"broken"]
 
 
-def test_failed_download_keeps_original_voice(
-    model: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_failed_download_keeps_original_voice(model: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     write_voice(model, b"broken")
 
     def download(args: list[str], **_kwargs: object) -> None:

@@ -8,7 +8,10 @@ import {
 } from "../api/workouts";
 import { coachingMessage } from "../coaching/coachingMessage";
 import { CoachAvatar } from "../coaching/CoachAvatar";
-import { useCoachSpeech, type CoachSpeechStatus } from "../coaching/useCoachSpeech";
+import {
+  useCoachSpeech,
+  type CoachSpeechStatus,
+} from "../coaching/useCoachSpeech";
 import type { LiveCoachingEvent } from "../coaching/types";
 import { useLiveCoaching } from "../coaching/useLiveCoaching";
 import type { DeviceState } from "../devices/types";
@@ -174,7 +177,8 @@ export function WorkoutView({
   // Das erste Phasen-Event entsteht vor dem WebSocket-Verbindungsaufbau.
   // Sobald der Coach verbunden ist, begrüßen wir deshalb einmal pro Workout.
   useEffect(() => {
-    if (!coachingConnected || greetedWorkoutIdRef.current === workout.id) return;
+    if (!coachingConnected || greetedWorkoutIdRef.current === workout.id)
+      return;
     const firstPhase = workout.phases[0];
     if (!firstPhase) return;
     greetedWorkoutIdRef.current = workout.id;
@@ -747,7 +751,8 @@ export function WorkoutView({
         </div>
       </header>
 
-      {(speechStatus === "browser_fallback" || speechStatus === "unavailable") && (
+      {(speechStatus === "browser_fallback" ||
+        speechStatus === "unavailable") && (
         <div className="workout-speech-banner" role="alert">
           <strong>Coach-Ansage gestört</strong>
           <span>
@@ -905,14 +910,23 @@ export function WorkoutView({
                 : "Coach online · Kein Pulssensor"
               : "Coach verbindet …"}
           </div>
-          <div className="coach-avatar-status coach-speech-status" role="status">
-            Sprache: {({
-              idle: "bereit",
-              synthesizing: "Piper erzeugt Audio …",
-              playing: "Ansage läuft",
-              browser_fallback: "Lokale Ansage fehlgeschlagen · Browserstimme versucht",
-              unavailable: "Ansage fehlgeschlagen · Konsole und API prüfen",
-            } satisfies Record<CoachSpeechStatus, string>)[speechStatus]}
+          <div
+            className="coach-avatar-status coach-speech-status"
+            role="status"
+          >
+            Sprache:{" "}
+            {
+              (
+                {
+                  idle: "bereit",
+                  synthesizing: "Piper erzeugt Audio …",
+                  playing: "Ansage läuft",
+                  browser_fallback:
+                    "Lokale Ansage fehlgeschlagen · Browserstimme versucht",
+                  unavailable: "Ansage fehlgeschlagen · Konsole und API prüfen",
+                } satisfies Record<CoachSpeechStatus, string>
+              )[speechStatus]
+            }
           </div>
           <button
             type="button"

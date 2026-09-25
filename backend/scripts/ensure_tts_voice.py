@@ -91,7 +91,9 @@ def ensure_tts_voice(model_path: Path | None = None) -> None:
     if voice_is_installed(model_path):
         try:
             _validate_voice(model_path)
-        except Exception as exc:
+        # Piper, ONNX Runtime und ihre nativen Bindings melden Ladefehler
+        # mit unterschiedlichen Exception-Typen. Jeder davon erfordert Ersatz.
+        except Exception as exc:  # noqa: BLE001
             print(
                 f"Piper voice cannot be loaded ({exc}); trying a validated replacement.",
                 file=sys.stderr,
