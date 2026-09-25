@@ -7,7 +7,6 @@ Die Dokumentation liegt im Repository unter `docs/`. Die VitePress-Site ist die 
 Node.js 24 gemäß `.nvmrc` verwenden und im Repository-Root ausführen:
 
 ```bash
-make docs-build
 make docs-dev
 ```
 
@@ -18,7 +17,7 @@ make docs-build
 make docs-preview
 ```
 
-Die lokale Vorschau des Builds ist unter **http://127.0.0.1:4174/** erreichbar. Der statische Build liegt unter `docs/.vitepress/dist/`. Dieser Build gehört zur **Projektseite**, nicht zum React-Frontend der Trainingsanwendung unter `frontend/dist/`.
+Die lokale Vorschau des GitHub-Pages-Builds ist unter **http://127.0.0.1:4174/coach/** erreichbar. Der statische Build liegt unter `docs/.vitepress/dist/`. Dieser Build gehört zur **Projektseite**, nicht zum React-Frontend der Trainingsanwendung unter `frontend/dist/`.
 
 Ohne Make funktionieren `cd docs && npm ci && npm run dev`. Wenn eine vorhandene Installation beschädigt ist, im `docs/`-Ordner `npm ci` erneut ausführen.
 
@@ -40,5 +39,7 @@ Die Dokumentations-Site wird separat erstellt. `deploy/provision.sh` baut weiter
 ## GitHub Pages
 
 Der Workflow `.github/workflows/docs-pages.yml` baut die Site bei Änderungen an `docs/` auf dem Standardbranch und veröffentlicht `docs/.vitepress/dist/` über GitHub Pages. Er kann auch manuell über **Actions → Publish documentation** gestartet werden, sofern der Standardbranch ausgewählt ist. Der Build setzt den VitePress-Basispfad aus dem Repository-Namen; für `engel-b/coach` lautet die Adresse nach Aktivierung voraussichtlich `https://engel-b.github.io/coach/`.
+
+Jeder Produktions-Build verwendet standardmäßig `/coach/`, auch wenn er nicht über den Pages-Workflow gestartet wird. `npm run build` überprüft anschließend die generierten HTML-Links; ein versehentlicher Root-Build wird so vor der Veröffentlichung sichtbar. Für eine andere Domain oder einen anderen Repository-Pfad `DOCS_BASE` beim Build auf den gewünschten Pfad setzen (mit führendem und abschließendem `/`). Der lokale Dev-Server bleibt unter `http://127.0.0.1:5174/` erreichbar.
 
 Vor der ersten Veröffentlichung unter **Settings → Pages → Build and deployment → Source** die Option **GitHub Actions** wählen. Falls GitHub Pages für das Repository beziehungsweise den Tarif nicht verfügbar ist, wird der Job nicht erfolgreich veröffentlichen. GitHub Pages kann eine Site auch aus einem privaten Repository öffentlich erreichbar machen; die Sichtbarkeit in den Pages-Einstellungen vor dem Aktivieren prüfen. Keine Geheimnisse oder personenbezogenen Trainingsdaten in die Dokumentation aufnehmen.
