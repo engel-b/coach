@@ -1,6 +1,7 @@
 from dataclasses import replace
 
 from features.person.domain.profile import TrainingGoal
+from features.training.domain.adaptive_workout import AdaptiveWorkoutAction
 from features.training.domain.coach_message import CoachMessageContext
 from features.training.domain.coach_message_generator import CoachMessageGenerator
 from features.training.domain.heart_rate_history import HeartRateHistoryStatus
@@ -13,7 +14,7 @@ from features.training.domain.readiness import (
     RecentTrainingLoadStatus,
     SleepStatus,
 )
-from features.training.domain.recommendation import TrainingRecommendation
+from features.training.domain.recommendation import TrainingRecommendation, WorkoutPhaseType
 from features.training.domain.recommendation_engine import TrainingRecommendationEngine
 from features.training.domain.weight_goal_progress import WeightGoalStatus
 from features.training.domain.weight_trend import WeightTrendDirection
@@ -71,7 +72,35 @@ class PreWorkoutCoachingPlanner:
             resting_heart_rate=context.resting_heart_rate,
             resting_heart_rate_source=context.resting_heart_rate_source,
             resting_heart_rate_sample_count=context.resting_heart_rate_sample_count,
+            prefer_recovery=(
+                context.adaptive_workout_advice is not None
+                and context.adaptive_workout_advice.action is AdaptiveWorkoutAction.PREFER_RECOVERY
+            ),
         )
+        if (
+            context.adaptive_workout_advice is not None
+            and context.adaptive_workout_advice.action is AdaptiveWorkoutAction.EXTEND_WARMUP
+            and context.adaptive_workout_advice.plan_reflects_advice
+            and recommendation.total_duration_minutes >= 15
+        ):
+            warm_up = next(
+                (p for p in recommendation.phases if p.phase_type is WorkoutPhaseType.WARM_UP), None
+            )
+            main = next(
+                (p for p in recommendation.phases if p.phase_type is WorkoutPhaseType.MAIN), None
+            )
+            if warm_up is not None and main is not None and main.duration_minutes >= 5:
+                recommendation = replace(
+                    recommendation,
+                    phases=tuple(
+                        replace(
+                            phase,
+                            duration_minutes=phase.duration_minutes
+                            + (2 if phase is warm_up else -2 if phase is main else 0),
+                        )
+                        for phase in recommendation.phases
+                    ),
+                )
         reason_codes = self._reason_codes(context)
 
         return replace(

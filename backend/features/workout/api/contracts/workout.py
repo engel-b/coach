@@ -212,6 +212,14 @@ class WorkoutBikeSummaryResponse(BaseModel):
     average_cadence_rpm: float | None = Field(default=None, ge=0)
 
 
+class AdaptiveEvaluationResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+    heart_rate_response: str
+    power_response: str
+    expectation_match: str
+    observed_response: str
+
+
 class WorkoutSummaryResponse(BaseModel):
     """Zusammenfassung der geplanten und absolvierten Trainingsleistung."""
 
@@ -247,6 +255,7 @@ class WorkoutSummaryResponse(BaseModel):
             "Live-Herzfrequenzdaten vorhanden waren."
         ),
     )
+    adaptive_evaluation: AdaptiveEvaluationResponse | None = None
     bike_summary: WorkoutBikeSummaryResponse | None = Field(
         default=None,
         description=(

@@ -26,6 +26,10 @@ class FakeAudio {
   addEventListener(type: string, listener: () => void): void {
     this.listeners.set(type, listener);
   }
+
+  emit(type: string): void {
+    this.listeners.get(type)?.();
+  }
 }
 
 function event(action: CoachingAction): HeartRateCoachingEvent {
@@ -92,6 +96,32 @@ describe("useCoachSpeech", () => {
     );
     expect(FakeAudio.instances).toHaveLength(1);
     expect(FakeAudio.instances[0].play).toHaveBeenCalledOnce();
+  });
+
+  it("shows synthesis and playback status and clears it when the audio ends", async () => {
+    const onStatus = vi.fn();
+    const { result } = renderHook(() => useCoachSpeech(onStatus));
+
+    act(() => result.current(event("reduce_intensity")));
+    expect(onStatus).toHaveBeenCalledWith("synthesizing");
+    await act(flushPromises);
+    expect(onStatus).toHaveBeenLastCalledWith("playing");
+
+    act(() => FakeAudio.instances[0].emit("ended"));
+    expect(onStatus).toHaveBeenLastCalledWith("idle");
+  });
+
+  it("reports unavailable speech if TTS and the browser voice both fail", async () => {
+    const onStatus = vi.fn();
+    vi.stubGlobal("speechSynthesis", undefined);
+    vi.stubGlobal("SpeechSynthesisUtterance", undefined);
+    synthesizeSpeechMock.mockRejectedValue(new Error("Piper unavailable"));
+    const { result } = renderHook(() => useCoachSpeech(onStatus));
+
+    act(() => result.current(event("reduce_intensity")));
+    await act(flushPromises);
+
+    expect(onStatus).toHaveBeenLastCalledWith("unavailable");
   });
 
   it("does not repeat the same action during the cooldown", () => {

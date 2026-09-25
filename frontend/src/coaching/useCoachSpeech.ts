@@ -14,22 +14,26 @@ const INITIAL_STATE: CoachingSpeechState = {
   lastSpokenAtMs: null,
 };
 
-function speakWithBrowserFallback(text: string): void {
-  if (
-    !("speechSynthesis" in window) ||
-    !("SpeechSynthesisUtterance" in window)
-  ) {
-    return;
+export type CoachSpeechStatus =
+  "idle" | "synthesizing" | "playing" | "browser_fallback" | "unavailable";
+
+function speakWithBrowserFallback(text: string): boolean {
+  try {
+    if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) {
+      return false;
+    }
+    const utterance = new window.SpeechSynthesisUtterance(text);
+    utterance.lang = "de-DE";
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+    return true;
+  } catch (error) {
+    console.warn("Browser coach speech failed", error);
+    return false;
   }
-
-  const utterance = new window.SpeechSynthesisUtterance(text);
-  utterance.lang = "de-DE";
-  utterance.rate = 1;
-  utterance.pitch = 1;
-  utterance.volume = 1;
-
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
 }
 
 /**
@@ -39,7 +43,9 @@ function speakWithBrowserFallback(text: string): void {
  * nur als technischer Fallback erhalten, falls der lokale Adapter nicht
  * erreichbar oder noch nicht eingerichtet ist.
  */
-export function useCoachSpeech(): (event: LiveCoachingEvent) => void {
+export function useCoachSpeech(
+  onStatus?: (status: CoachSpeechStatus) => void,
+): (event: LiveCoachingEvent) => void {
   const speechStateRef = useRef<CoachingSpeechState>(INITIAL_STATE);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const requestRef = useRef<AbortController | null>(null);
@@ -84,6 +90,7 @@ export function useCoachSpeech(): (event: LiveCoachingEvent) => void {
       const text = coachingSpeechMessage(event);
 
       stopCurrentSpeech();
+      onStatus?.("synthesizing");
 
       const controller = new AbortController();
       requestRef.current = controller;
@@ -110,15 +117,44 @@ export function useCoachSpeech(): (event: LiveCoachingEvent) => void {
             }
           };
 
-          audio.addEventListener("ended", cleanupAudio, { once: true });
-          audio.addEventListener("error", cleanupAudio, { once: true });
+          audio.addEventListener(
+            "ended",
+            () => {
+              if (audioRef.current === audio) onStatus?.("idle");
+              cleanupAudio();
+            },
+            { once: true },
+          );
+          audio.addEventListener(
+            "error",
+            () => {
+              const active = audioRef.current === audio;
+              cleanupAudio();
+              if (active && !controller.signal.aborted) {
+                onStatus?.(
+                  speakWithBrowserFallback(text)
+                    ? "browser_fallback"
+                    : "unavailable",
+                );
+              }
+            },
+            { once: true },
+          );
 
           try {
             await audio.play();
+            if (!controller.signal.aborted) onStatus?.("playing");
           } catch (error) {
+            const active = audioRef.current === audio;
             cleanupAudio();
-            console.warn("Local coach audio playback failed", error);
-            speakWithBrowserFallback(text);
+            if (active && !controller.signal.aborted) {
+              console.warn("Local coach audio playback failed", error);
+              onStatus?.(
+                speakWithBrowserFallback(text)
+                  ? "browser_fallback"
+                  : "unavailable",
+              );
+            }
           }
         })
         .catch((error: unknown) => {
@@ -127,9 +163,11 @@ export function useCoachSpeech(): (event: LiveCoachingEvent) => void {
           }
 
           console.warn("Local coach TTS failed; using browser fallback", error);
-          speakWithBrowserFallback(text);
+          onStatus?.(
+            speakWithBrowserFallback(text) ? "browser_fallback" : "unavailable",
+          );
         });
     },
-    [stopCurrentSpeech],
+    [onStatus, stopCurrentSpeech],
   );
 }

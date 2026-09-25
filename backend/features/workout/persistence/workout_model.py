@@ -1,9 +1,18 @@
 from datetime import datetime
+from typing import TypedDict
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from adapters.persistence.database import Base
+
+
+class WorkoutExpectationData(TypedDict):
+    workout_type: str
+    historical_response: str
+    comparable_workout_count: int
+    median_target_position_percent: int | None
+    median_power_w: int | None
 
 
 class WorkoutModel(Base):
@@ -84,6 +93,8 @@ class WorkoutModel(Base):
     bike_average_power_w: Mapped[int | None] = mapped_column(Integer, nullable=True)
     bike_cadence_sample_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     bike_average_cadence_rpm: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    expectation: Mapped[WorkoutExpectationData | None] = mapped_column(JSON, nullable=True)
 
     phases: Mapped[list["WorkoutPhaseModel"]] = relationship(
         back_populates="workout",

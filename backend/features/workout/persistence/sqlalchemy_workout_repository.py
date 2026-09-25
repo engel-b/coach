@@ -2,11 +2,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from adapters.persistence.database import create_session
+from features.training.domain.load_response import LoadResponseStatus
 from features.training.domain.recommendation import (
     WorkoutPhase,
     WorkoutPhaseType,
     WorkoutType,
 )
+from features.workout.domain.adaptive_evaluation import WorkoutExpectation
 from features.workout.domain.bike_summary import WorkoutBikeSummary
 from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 from features.workout.domain.session import (
@@ -14,6 +16,7 @@ from features.workout.domain.session import (
     WorkoutStatus,
 )
 from features.workout.persistence.workout_model import (
+    WorkoutExpectationData,
     WorkoutModel,
     WorkoutPhaseModel,
 )
@@ -49,6 +52,7 @@ class SqlAlchemyWorkoutRepository:
                     video_id=workout.video_id,
                     video_position_seconds=workout.video_position_seconds,
                     completed_at=workout.completed_at,
+                    expectation=self._expectation_data(workout.expectation),
                     heart_rate_sample_count=(
                         workout.heart_rate_summary.sample_count
                         if workout.heart_rate_summary is not None
@@ -124,6 +128,7 @@ class SqlAlchemyWorkoutRepository:
                 existing.video_id = workout.video_id
                 existing.video_position_seconds = workout.video_position_seconds
                 existing.completed_at = workout.completed_at
+                existing.expectation = self._expectation_data(workout.expectation)
                 if workout.heart_rate_summary is not None:
                     existing.heart_rate_sample_count = workout.heart_rate_summary.sample_count
                     existing.heart_rate_average_bpm = workout.heart_rate_summary.average_bpm
@@ -183,6 +188,18 @@ class SqlAlchemyWorkoutRepository:
             return [self._to_domain(model) for model in models]
 
     @staticmethod
+    def _expectation_data(value: WorkoutExpectation | None) -> WorkoutExpectationData | None:
+        if value is None:
+            return None
+        return {
+            "workout_type": value.workout_type.value,
+            "historical_response": value.historical_response.value,
+            "comparable_workout_count": value.comparable_workout_count,
+            "median_target_position_percent": value.median_target_position_percent,
+            "median_power_w": value.median_power_w,
+        }
+
+    @staticmethod
     def _to_domain(
         model: WorkoutModel,
     ) -> WorkoutSession:
@@ -200,6 +217,21 @@ class SqlAlchemyWorkoutRepository:
             video_id=model.video_id,
             video_position_seconds=model.video_position_seconds,
             completed_at=model.completed_at,
+            expectation=(
+                WorkoutExpectation(
+                    workout_type=WorkoutType(model.expectation["workout_type"]),
+                    historical_response=LoadResponseStatus(
+                        model.expectation["historical_response"]
+                    ),
+                    comparable_workout_count=model.expectation["comparable_workout_count"],
+                    median_target_position_percent=model.expectation[
+                        "median_target_position_percent"
+                    ],
+                    median_power_w=model.expectation["median_power_w"],
+                )
+                if model.expectation is not None
+                else None
+            ),
             heart_rate_summary=(
                 WorkoutHeartRateSummary(
                     sample_count=model.heart_rate_sample_count,

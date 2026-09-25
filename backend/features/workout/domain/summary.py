@@ -1,5 +1,10 @@
 from dataclasses import dataclass
 
+from features.workout.domain.adaptive_evaluation import (
+    AdaptiveEvaluation,
+    WorkoutExpectation,
+    evaluate_workout,
+)
 from features.workout.domain.bike_summary import WorkoutBikeSummary
 from features.workout.domain.heart_rate_summary import WorkoutHeartRateSummary
 from features.workout.domain.session import WorkoutStatus
@@ -23,6 +28,7 @@ class WorkoutSummary:
     status: WorkoutStatus
     heart_rate_summary: WorkoutHeartRateSummary | None = None
     bike_summary: WorkoutBikeSummary | None = None
+    adaptive_evaluation: AdaptiveEvaluation | None = None
 
 
 def create_workout_summary(
@@ -33,6 +39,7 @@ def create_workout_summary(
     status: WorkoutStatus,
     heart_rate_summary: WorkoutHeartRateSummary | None = None,
     bike_summary: WorkoutBikeSummary | None = None,
+    expectation: WorkoutExpectation | None = None,
 ) -> WorkoutSummary:
     """
     Erzeugt die fachliche Auswertung eines Workouts.
@@ -61,4 +68,5 @@ def create_workout_summary(
         status=status,
         heart_rate_summary=heart_rate_summary,
         bike_summary=bike_summary,
+        adaptive_evaluation=evaluate_workout(expectation, heart_rate_summary, bike_summary),
     )

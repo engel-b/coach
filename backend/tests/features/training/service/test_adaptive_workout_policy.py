@@ -91,7 +91,7 @@ def test_existing_readiness_cap_is_exposed_as_applied_duration_reduction() -> No
     assert AdaptiveWorkoutReasonCode.READINESS_DURATION_CAP in advice.reason_codes
 
 
-def test_strong_high_hr_history_suggests_lower_intensity_without_auto_applying_it() -> None:
+def test_strong_high_hr_history_extends_warmup_without_changing_intensity() -> None:
     advice = AdaptiveWorkoutPolicy().assess(
         workout_type=WorkoutType.BASE_ENDURANCE,
         available_training_minutes=30,
@@ -100,8 +100,8 @@ def test_strong_high_hr_history_suggests_lower_intensity_without_auto_applying_i
         load_response=load_response(LoadResponseStatus.HIGHER_HR_AT_SIMILAR_LOAD),
     )
 
-    assert advice.action is AdaptiveWorkoutAction.REDUCE_INTENSITY
-    assert advice.plan_reflects_advice is False
+    assert advice.action is AdaptiveWorkoutAction.EXTEND_WARMUP
+    assert advice.plan_reflects_advice is True
     assert advice.recommended_duration_minutes is None
 
 
@@ -117,7 +117,7 @@ def test_higher_hr_at_similar_load_suggests_longer_warmup_when_history_is_not_do
     )
 
     assert advice.action is AdaptiveWorkoutAction.EXTEND_WARMUP
-    assert advice.plan_reflects_advice is False
+    assert advice.plan_reflects_advice is True
 
 
 def test_lower_hr_at_similar_load_never_triggers_automatic_progression() -> None:

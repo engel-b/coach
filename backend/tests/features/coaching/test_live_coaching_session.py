@@ -139,6 +139,40 @@ def test_sustained_high_heart_rate_in_main_phase_reduces_intensity() -> None:
     assert second.action is CoachingAction.REDUCE_INTENSITY
 
 
+def test_low_heart_rate_without_pedalling_does_not_request_more_intensity() -> None:
+    session = create_session()
+    session.update_elapsed_seconds(300)
+    now = datetime.now(UTC)
+    session.handle_bike_telemetry(
+        BikeTelemetry(device_id="bike", timestamp=now, cadence_rpm=0, power_w=0)
+    )
+    session.handle_heart_rate(HeartRateSample(device_id="hr", timestamp=now, bpm=100))
+    later = now + timedelta(seconds=21)
+    session.handle_bike_telemetry(
+        BikeTelemetry(device_id="bike", timestamp=later, cadence_rpm=0, power_w=0)
+    )
+    decision = session.handle_heart_rate(HeartRateSample(device_id="hr", timestamp=later, bpm=100))
+    assert decision is not None
+    assert decision.action is CoachingAction.NONE
+
+
+def test_sustained_high_heart_rate_with_fresh_cadence_has_adaptive_reason() -> None:
+    session = create_session()
+    session.update_elapsed_seconds(300)
+    now = datetime.now(UTC)
+    for seconds in (0, 20, 35):
+        timestamp = now + timedelta(seconds=seconds)
+        session.handle_bike_telemetry(
+            BikeTelemetry(device_id="bike", timestamp=timestamp, cadence_rpm=70, power_w=90)
+        )
+        decision = session.handle_heart_rate(
+            HeartRateSample(device_id="hr", timestamp=timestamp, bpm=150)
+        )
+    assert decision is not None
+    assert decision.action is CoachingAction.REDUCE_INTENSITY
+    assert decision.reason == "sustained_high_hr_with_cadence"
+
+
 def test_no_coaching_decision_after_planned_workout_duration() -> None:
     session = create_session()
 
