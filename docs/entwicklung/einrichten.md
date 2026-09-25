@@ -49,11 +49,11 @@ py --version
 py -m pip --version
 node --version
 npm --version
-
-Für das Frontend wird Node.js **>=24.15.0 <25** benötigt. Die im Projekt getestete Version steht in `.nvmrc`; mit `nvm use` kann sie direkt aktiviert werden.
 git --version
 make --version
 ```
+
+Für das Frontend wird Node.js **>=24.15.0 <25** benötigt. Die im Projekt getestete Version steht in `.nvmrc`; mit `nvm use` kann sie direkt aktiviert werden.
 
 Wenn `make` nicht im PATH liegt, den vollständigen Pfad zur ausführbaren Datei verwenden. Ein neues Terminal öffnen, nachdem Installationsprogramme den PATH geändert haben.
 
@@ -370,7 +370,7 @@ Prüfen, dass nicht gleichzeitig Entwicklungs- und Produktions-Device-Agent auf 
 
 Die virtuelle Umgebung und generierte Abhängigkeiten gehören normalerweise nicht ins Repository. Die `.gitignore` sollte mindestens die relevanten lokalen Verzeichnisse ausschließen:
 
-```gitignore
+```text
 backend/.venv/
 frontend/node_modules/
 ```
@@ -388,15 +388,14 @@ Wer WSL verwendet, sollte Python-venv und Node-Abhängigkeiten innerhalb der Lin
 
 GitHub Actions führt die Projektchecks auf Pushes und Pull Requests aus. Lokal sollte vor einem Push mindestens `make check` laufen; `make format` darf Quellcode verändern und ist deshalb kein CI-Ersatz für `make format-check`.
 
-Dependabot ist für npm (`/frontend`), pip (`/backend`) und GitHub Actions (`/`) konfiguriert. Der aktuelle Schedule steht in `.github/dependabot.yml`; derzeit werden die Abhängigkeiten täglich geprüft.
+Dependabot ist für npm (`/frontend` und `/docs`), pip (`/backend`) und GitHub Actions (`/`) konfiguriert. Der aktuelle Schedule steht in `.github/dependabot.yml`; derzeit werden die Abhängigkeiten täglich geprüft.
 
 Die Python-Testabhängigkeiten werden über das `dev`-Extra in `backend/pyproject.toml` verwaltet. FastAPI/Starlette-`TestClient` verwendet im aktuellen Projekt `httpx2`; Warnungen sollten durch konsistente Abhängigkeiten behoben und nicht global unterdrückt werden.
 
 ## 14. Weiterführende Dokumentation
 
-- `README.md`: Projekteinstieg
-- `arc42-digital-fitness-coach.md`: kanonische Architektur
-- `DEPLOYMENT.md`: Debian/Caddy/systemd/Provisionierung/Betrieb
-- `LOCAL-LLM.md`: lokale LLM-Runtime
-
-Die früheren `_old.md`-Varianten werden nach dieser Konsolidierung nicht mehr parallel gepflegt.
+- [Architektur nach arc42](/architektur/)
+- [Deployment und Betrieb](/betrieb/deployment)
+- [Lokales LLM](/betrieb/lokales-llm)
+- [WebSocket-Verträge](/schnittstellen/websockets)
+- [Dokumentation bearbeiten](/entwicklung/dokumentation)

@@ -1,4 +1,4 @@
-.PHONY: dev backend device-agent frontend test check check-backend check-frontend format format-check build db-upgrade db-current db-history migration tts-voice llm-model llm-server
+.PHONY: dev backend device-agent frontend test check check-backend check-frontend docs-setup docs-dev docs-build docs-preview format format-check build db-upgrade db-current db-history migration tts-voice llm-model llm-server
 
 
 # ---------------------------------------------------------------------------
@@ -72,6 +72,16 @@ device-agent:
 
 frontend:
 	cd frontend && npm run dev -- --host 0.0.0.0
+
+docs-dev: docs-setup
+	cd docs && npm run dev
+
+docs-build: docs-setup
+	cd docs && npm ci
+	cd docs && npm run build
+
+docs-preview: docs-setup
+	cd docs && npm run preview
 
 
 # ---------------------------------------------------------------------------
@@ -161,4 +171,3 @@ llm-model:
 
 llm-server:
 	cd backend && $(PYTHON) scripts/run_llm_server.py
-

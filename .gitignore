@@ -7,6 +7,9 @@ __pycache__/
 .env
 data/
 frontend/public/videos/
+docs/node_modules/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
 
 # Python package/build metadata
 *.egg-info/
