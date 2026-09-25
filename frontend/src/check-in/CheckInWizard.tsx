@@ -589,7 +589,7 @@ export function CheckInWizard({
           <footer className="check-in-footer">
             <button
               type="button"
-              className="secondary-button"
+              className="secondary-action"
               onClick={goBack}
               disabled={saving}
             >
@@ -598,7 +598,7 @@ export function CheckInWizard({
 
             <button
               type="submit"
-              className="primary-button"
+              className="primary-action"
               disabled={saving || loadingPrevious}
             >
               {saving ? "Wird gespeichert …" : "Check-in speichern"}
@@ -659,7 +659,7 @@ export function CheckInWizard({
       <footer className="check-in-footer">
         <button
           type="button"
-          className="secondary-button"
+          className="secondary-action"
           onClick={goBack}
           disabled={saving}
         >
