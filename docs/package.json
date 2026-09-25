@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vitepress dev . --host 127.0.0.1 --port 5174",
-    "build": "vitepress build .",
+    "build": "vitepress build . && node scripts/check-base.mjs",
     "preview": "vitepress preview . --host 127.0.0.1 --port 4174"
   },
   "devDependencies": {

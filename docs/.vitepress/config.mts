@@ -1,7 +1,8 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  base: process.env.DOCS_BASE || '/',
+  // npm run dev uses the local root; every build defaults to the Pages subpath.
+  base: process.env.DOCS_BASE ?? (process.env.npm_lifecycle_event === 'dev' ? '/' : '/coach/'),
   lang: 'de-DE',
   title: 'Health Coach',
   description: 'Architektur, Entwicklung und Betrieb des lokalen Fitness-Coachs',
