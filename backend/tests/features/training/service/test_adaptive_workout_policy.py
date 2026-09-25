@@ -132,3 +132,21 @@ def test_lower_hr_at_similar_load_never_triggers_automatic_progression() -> None
     assert advice.action is AdaptiveWorkoutAction.KEEP_PLAN
     assert advice.plan_reflects_advice is True
     assert AdaptiveWorkoutReasonCode.NO_AUTOMATIC_PROGRESSION in advice.reason_codes
+
+
+def test_advice_carries_the_deterministic_decision_context() -> None:
+    advice = AdaptiveWorkoutPolicy().assess(
+        workout_type=WorkoutType.BASE_ENDURANCE,
+        available_training_minutes=60,
+        readiness=readiness(duration_cap=30),
+        heart_rate_history=history(status=HeartRateHistoryStatus.MOSTLY_ABOVE_TARGET),
+        load_response=load_response(LoadResponseStatus.HIGHER_HR_AT_SIMILAR_LOAD),
+    )
+
+    context = advice.decision_context
+    assert context.workout_type is WorkoutType.BASE_ENDURANCE
+    assert context.available_training_minutes == 60
+    assert context.readiness_max_duration_minutes == 30
+    assert context.heart_rate_history_status is HeartRateHistoryStatus.MOSTLY_ABOVE_TARGET
+    assert context.load_response_status is LoadResponseStatus.HIGHER_HR_AT_SIMILAR_LOAD
+    assert context.comparable_workout_count == 5

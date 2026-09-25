@@ -462,6 +462,10 @@ Jeder Vorschlag kennzeichnet zusätzlich, ob er im aktuellen Plan bereits berüc
 
 Die API liefert Aktion, stabile Reason Codes, den Reflektionsstatus und gegebenenfalls die empfohlene Dauer strukturiert an das Frontend. Die UI formuliert daraus transparent, was bereits angepasst wurde und was nur als konservativer Hinweis vorliegt.
 
+Jede adaptive Entscheidung enthält zusätzlich einen `AdaptiveWorkoutDecisionContext`. Dieser Snapshot hält die für die Entscheidung verwendeten, bereits normalisierten Signale fest: Workout-Typ, verfügbare Trainingszeit, Readiness-Dauerlimit, Status und Dauerlimit der HF-Historie, `LoadResponseStatus`, Anzahl vergleichbarer Workouts und das heutige Readiness-Vorsichtssignal. API und Frontend verwenden diesen Snapshot für die Erklärung „Warum diese Empfehlung?“, statt die Entscheidung im Browser erneut herzuleiten.
+
+Bei der Erzeugung einer Trainingsempfehlung wird die adaptive Entscheidung serverseitig als strukturierte Key/Value-Logzeile protokolliert. Geloggt werden Aktion, Reason-Codes und der Decision-Context, nicht jedoch Roh-HF- oder komplette Telemetrie-Zeitreihen. So lässt sich nach realen Einheiten nachvollziehen, welche deterministischen Eingangssignale zu einem Vorschlag geführt haben.
+
 ## 5.4 Live-Coaching-Bausteine
 
 ```text

@@ -1,5 +1,14 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import TYPE_CHECKING
+
+from features.training.domain.heart_rate_history import HeartRateHistoryStatus
+from features.training.domain.load_response import LoadResponseStatus
+
+if TYPE_CHECKING:
+    from features.training.domain.recommendation import WorkoutType
 
 
 class AdaptiveWorkoutAction(StrEnum):
@@ -25,6 +34,20 @@ class AdaptiveWorkoutReasonCode(StrEnum):
 
 
 @dataclass(frozen=True)
+class AdaptiveWorkoutDecisionContext:
+    """Nachvollziehbarer Snapshot der Eingaben einer adaptiven Entscheidung."""
+
+    workout_type: WorkoutType
+    available_training_minutes: int
+    readiness_max_duration_minutes: int | None
+    heart_rate_history_status: HeartRateHistoryStatus
+    heart_rate_history_max_duration_minutes: int | None
+    load_response_status: LoadResponseStatus
+    comparable_workout_count: int
+    readiness_caution: bool
+
+
+@dataclass(frozen=True)
 class AdaptiveWorkoutAdvice:
     """
     Deterministischer Anpassungsvorschlag für die geplante Einheit.
@@ -33,9 +56,13 @@ class AdaptiveWorkoutAdvice:
     berücksichtigt. Die Policy steuert kein Gerät und erhöht niemals die
     Trainingsintensität. Nicht reflektierte Vorschläge bleiben zunächst rein
     informativ für Person und spätere explizite Anpassungs-Use-Cases.
+
+    `decision_context` hält die deterministisch bewerteten Eingangssignale fest,
+    damit API, UI, Tests und Logs dieselbe Erklärung verwenden können.
     """
 
     action: AdaptiveWorkoutAction
     reason_codes: tuple[AdaptiveWorkoutReasonCode, ...]
     plan_reflects_advice: bool
+    decision_context: AdaptiveWorkoutDecisionContext
     recommended_duration_minutes: int | None = None

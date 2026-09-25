@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Path
 from apps.api import wiring
 from features.training.api.contracts.training import (
     AdaptiveWorkoutAdviceResponse,
+    AdaptiveWorkoutDecisionContextResponse,
     HeartRateHistoryResponse,
     HeartRateTargetBasisResponse,
     LoadResponseResponse,
@@ -151,6 +152,32 @@ async def training_recommendation(
                 plan_reflects_advice=(recommendation.adaptive_workout_advice.plan_reflects_advice),
                 recommended_duration_minutes=(
                     recommendation.adaptive_workout_advice.recommended_duration_minutes
+                ),
+                decision_context=AdaptiveWorkoutDecisionContextResponse(
+                    workout_type=(
+                        recommendation.adaptive_workout_advice.decision_context.workout_type.value
+                    ),
+                    available_training_minutes=(
+                        recommendation.adaptive_workout_advice.decision_context.available_training_minutes
+                    ),
+                    readiness_max_duration_minutes=(
+                        recommendation.adaptive_workout_advice.decision_context.readiness_max_duration_minutes
+                    ),
+                    heart_rate_history_status=(
+                        recommendation.adaptive_workout_advice.decision_context.heart_rate_history_status.value
+                    ),
+                    heart_rate_history_max_duration_minutes=(
+                        recommendation.adaptive_workout_advice.decision_context.heart_rate_history_max_duration_minutes
+                    ),
+                    load_response_status=(
+                        recommendation.adaptive_workout_advice.decision_context.load_response_status.value
+                    ),
+                    comparable_workout_count=(
+                        recommendation.adaptive_workout_advice.decision_context.comparable_workout_count
+                    ),
+                    readiness_caution=(
+                        recommendation.adaptive_workout_advice.decision_context.readiness_caution
+                    ),
                 ),
             )
         ),

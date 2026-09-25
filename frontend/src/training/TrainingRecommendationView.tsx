@@ -71,9 +71,6 @@ function HeartRateTargetExplanation({
   const loadResponseText = loadResponsePresentation(
     recommendation.loadResponse,
   );
-  const adaptivePresentation = adaptiveWorkoutPresentation(
-    recommendation.adaptiveWorkoutAdvice,
-  );
 
   if (mainPhase === undefined) {
     return null;
@@ -175,13 +172,6 @@ function HeartRateTargetExplanation({
           <p>{loadResponseText}</p>
         </div>
       )}
-
-      {adaptivePresentation !== null && (
-        <div className="heart-rate-history-note">
-          <strong>{adaptivePresentation.title}</strong>
-          <p>{adaptivePresentation.text}</p>
-        </div>
-      )}
     </div>
   );
 }
@@ -201,6 +191,9 @@ export function TrainingRecommendationView({
   const [videosError, setVideosError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const reasonLabels = recommendationReasonLabels(recommendation);
+  const adaptivePresentation = adaptiveWorkoutPresentation(
+    recommendation.adaptiveWorkoutAdvice,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -311,7 +304,7 @@ export function TrainingRecommendationView({
         <HeartRateTargetExplanation recommendation={recommendation} />
 
         <div className="recommendation-reason">
-          <div className="reason-title">Warum dieses Training?</div>
+          <div className="reason-title">Warum diese Empfehlung?</div>
 
           <p>{recommendation.reason}</p>
 
@@ -322,6 +315,35 @@ export function TrainingRecommendationView({
               {reasonLabels.map((label) => (
                 <span key={label}>{label}</span>
               ))}
+            </div>
+          )}
+
+          {adaptivePresentation !== null && (
+            <div className="adaptive-explanation">
+              <strong>{adaptivePresentation.title}</strong>
+              <p>{adaptivePresentation.text}</p>
+
+              {adaptivePresentation.reasons.length > 0 && (
+                <>
+                  <div className="adaptive-explanation-heading">
+                    Entscheidungsgründe
+                  </div>
+                  <ul>
+                    {adaptivePresentation.reasons.map((reason) => (
+                      <li key={reason}>{reason}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+
+              <details>
+                <summary>Entscheidungsgrundlage anzeigen</summary>
+                <ul>
+                  {adaptivePresentation.context.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </details>
             </div>
           )}
         </div>

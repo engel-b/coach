@@ -156,6 +156,21 @@ class LoadResponseResponse(BaseModel):
     readiness_caution: bool
 
 
+class AdaptiveWorkoutDecisionContextResponse(BaseModel):
+    """Deterministischer Eingabe-Snapshot einer adaptiven Entscheidung."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    workout_type: str
+    available_training_minutes: int = Field(ge=1)
+    readiness_max_duration_minutes: int | None = Field(default=None, ge=1)
+    heart_rate_history_status: str
+    heart_rate_history_max_duration_minutes: int | None = Field(default=None, ge=1)
+    load_response_status: str
+    comparable_workout_count: int = Field(ge=0)
+    readiness_caution: bool
+
+
 class AdaptiveWorkoutAdviceResponse(BaseModel):
     """Deterministischer, konservativer Anpassungsvorschlag fuer den heutigen Plan."""
 
@@ -169,6 +184,7 @@ class AdaptiveWorkoutAdviceResponse(BaseModel):
         )
     )
     recommended_duration_minutes: int | None = Field(default=None, ge=1)
+    decision_context: AdaptiveWorkoutDecisionContextResponse
 
 
 class TrainingRecommendationResponse(BaseModel):

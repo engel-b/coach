@@ -103,11 +103,23 @@ export type AdaptiveWorkoutAction =
   | "extend_warmup"
   | "prefer_recovery";
 
+export interface AdaptiveWorkoutDecisionContext {
+  workoutType: WorkoutType;
+  availableTrainingMinutes: number;
+  readinessMaxDurationMinutes: number | null;
+  heartRateHistoryStatus: HeartRateHistoryStatus;
+  heartRateHistoryMaxDurationMinutes: number | null;
+  loadResponseStatus: LoadResponseStatus;
+  comparableWorkoutCount: number;
+  readinessCaution: boolean;
+}
+
 export interface AdaptiveWorkoutAdvice {
   action: AdaptiveWorkoutAction;
   reasonCodes: string[];
   planReflectsAdvice: boolean;
   recommendedDurationMinutes: number | null;
+  decisionContext: AdaptiveWorkoutDecisionContext;
 }
 
 export interface TrainingRecommendation {

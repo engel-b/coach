@@ -11,6 +11,16 @@ function advice(
     reasonCodes: [],
     planReflectsAdvice: true,
     recommendedDurationMinutes: null,
+    decisionContext: {
+      workoutType: "base_endurance",
+      availableTrainingMinutes: 45,
+      readinessMaxDurationMinutes: null,
+      heartRateHistoryStatus: "mostly_in_target",
+      heartRateHistoryMaxDurationMinutes: null,
+      loadResponseStatus: "stable",
+      comparableWorkoutCount: 5,
+      readinessCaution: false,
+    },
     ...overrides,
   };
 }
@@ -53,6 +63,32 @@ describe("adaptiveWorkoutPresentation", () => {
       }),
     );
 
-    expect(value?.text).toContain("nicht automatisch zu erhöhen");
+    expect(value?.text).toContain("bleibt unverändert");
+  });
+
+  it("explains reason codes and exposes the decision context", () => {
+    const value = adaptiveWorkoutPresentation(
+      advice({
+        action: "reduce_duration",
+        reasonCodes: ["readiness_duration_cap"],
+        recommendedDurationMinutes: 30,
+        decisionContext: {
+          workoutType: "base_endurance",
+          availableTrainingMinutes: 60,
+          readinessMaxDurationMinutes: 30,
+          heartRateHistoryStatus: "mostly_in_target",
+          heartRateHistoryMaxDurationMinutes: null,
+          loadResponseStatus: "stable",
+          comparableWorkoutCount: 5,
+          readinessCaution: true,
+        },
+      }),
+    );
+
+    expect(value?.reasons).toContain(
+      "Die heutige Tagesform begrenzt die sinnvolle Dauer.",
+    );
+    expect(value?.context).toContain("Readiness-Dauerlimit: 30 min");
+    expect(value?.context).toContain("Readiness: heute mit Vorsichtssignal");
   });
 });

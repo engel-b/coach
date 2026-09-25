@@ -1,6 +1,7 @@
 from features.training.domain.adaptive_workout import (
     AdaptiveWorkoutAction,
     AdaptiveWorkoutAdvice,
+    AdaptiveWorkoutDecisionContext,
     AdaptiveWorkoutReasonCode,
 )
 from features.training.domain.heart_rate_history import (
@@ -31,11 +32,23 @@ class AdaptiveWorkoutPolicy:
         heart_rate_history: HeartRateHistoryContext,
         load_response: LoadResponseContext,
     ) -> AdaptiveWorkoutAdvice:
+        decision_context = AdaptiveWorkoutDecisionContext(
+            workout_type=workout_type,
+            available_training_minutes=available_training_minutes,
+            readiness_max_duration_minutes=readiness.max_duration_minutes,
+            heart_rate_history_status=heart_rate_history.status,
+            heart_rate_history_max_duration_minutes=(heart_rate_history.max_duration_minutes),
+            load_response_status=load_response.status,
+            comparable_workout_count=load_response.comparable_workout_count,
+            readiness_caution=load_response.readiness_caution,
+        )
+
         if workout_type is WorkoutType.RECOVERY:
             return AdaptiveWorkoutAdvice(
                 action=AdaptiveWorkoutAction.PREFER_RECOVERY,
                 reason_codes=(AdaptiveWorkoutReasonCode.RECOVERY_PLAN_SELECTED,),
                 plan_reflects_advice=True,
+                decision_context=decision_context,
             )
 
         duration_caps: list[tuple[int, AdaptiveWorkoutReasonCode]] = []
@@ -62,6 +75,7 @@ class AdaptiveWorkoutPolicy:
                     action=AdaptiveWorkoutAction.REDUCE_DURATION,
                     reason_codes=reasons,
                     plan_reflects_advice=True,
+                    decision_context=decision_context,
                     recommended_duration_minutes=duration_cap,
                 )
 
@@ -71,12 +85,14 @@ class AdaptiveWorkoutPolicy:
                     action=AdaptiveWorkoutAction.REDUCE_INTENSITY,
                     reason_codes=(AdaptiveWorkoutReasonCode.HIGHER_HR_AT_SIMILAR_LOAD,),
                     plan_reflects_advice=False,
+                    decision_context=decision_context,
                 )
 
             return AdaptiveWorkoutAdvice(
                 action=AdaptiveWorkoutAction.EXTEND_WARMUP,
                 reason_codes=(AdaptiveWorkoutReasonCode.HIGHER_HR_AT_SIMILAR_LOAD,),
                 plan_reflects_advice=False,
+                decision_context=decision_context,
             )
 
         if load_response.status is LoadResponseStatus.LOWER_HR_AT_SIMILAR_LOAD:
@@ -87,6 +103,7 @@ class AdaptiveWorkoutPolicy:
                     AdaptiveWorkoutReasonCode.NO_AUTOMATIC_PROGRESSION,
                 ),
                 plan_reflects_advice=True,
+                decision_context=decision_context,
             )
 
         if load_response.status is LoadResponseStatus.INSUFFICIENT_DATA:
@@ -94,10 +111,12 @@ class AdaptiveWorkoutPolicy:
                 action=AdaptiveWorkoutAction.KEEP_PLAN,
                 reason_codes=(AdaptiveWorkoutReasonCode.INSUFFICIENT_COMPARABLE_DATA,),
                 plan_reflects_advice=True,
+                decision_context=decision_context,
             )
 
         return AdaptiveWorkoutAdvice(
             action=AdaptiveWorkoutAction.KEEP_PLAN,
             reason_codes=(),
             plan_reflects_advice=True,
+            decision_context=decision_context,
         )
